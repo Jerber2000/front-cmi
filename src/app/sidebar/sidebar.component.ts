@@ -1,0 +1,91 @@
+import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { CommonModule } from '@angular/common'; // <-- importa CommonModule
+
+export interface MenuItem {
+  label: string;
+  icon?: string;
+  route?: string;
+  children?: MenuItem[];
+  expanded?: boolean;
+}
+
+@Component({
+  standalone: true,
+  selector: 'app-sidebar',
+  templateUrl: './sidebar.component.html',
+  styleUrls: ['./sidebar.component.scss'],
+  imports: [CommonModule]  // <--- aquí debes agregarlo
+})
+
+export class SidebarComponent {
+  @Input() isExpanded: boolean = true;
+  @Input() userInfo: { name: string; avatar?: string } = { name: 'Usuario' };
+  @Input() menuItems: MenuItem[] = [];
+  @Input() footerText: string = '© 2024 MyMedical Studio. Todos los derechos reservados.';
+  
+  @Output() toggleSidebar = new EventEmitter<boolean>();
+  @Output() menuItemClick = new EventEmitter<MenuItem>();
+
+  defaultMenuItems: MenuItem[] = [
+    {
+      label: 'Gestión de pacientes',
+      icon: 'fas fa-users',
+      children: [
+        { label: 'Creación de pacientes', route: '/pacientes/crear' },
+        { label: 'Traslados', route: '/pacientes/traslados' },
+        { label: 'Citas', route: '/pacientes/citas' }
+      ]
+    },
+    {
+      label: 'Gestión de clínica',
+      icon: 'fas fa-hospital',
+      children: [
+        { label: 'Administración', route: '/clinica/admin' },
+        { label: 'Educación Inclusiva', route: '/clinica/educacion' },
+        { label: 'Fisioterapia', route: '/clinica/fisioterapia' },
+        { label: 'Medicina General', route: '/clinica/medicina' },
+        { label: 'Nutrición', route: '/clinica/nutricion' },
+        { label: 'Psicología', route: '/clinica/psicologia' }
+      ]
+    },
+    {
+      label: 'Informes',
+      icon: 'fas fa-chart-bar',
+      children: [
+        { label: 'Informes de pacientes', route: '/informes/pacientes' }
+      ]
+    },
+    {
+      label: 'Acerca de',
+      icon: 'fas fa-info-circle',
+      children: [
+        { label: 'Quienes somos', route: '/acerca/nosotros' },
+        { label: 'Misión y visión', route: '/acerca/mision' },
+        { label: 'Contáctanos', route: '/acerca/contacto' }
+      ]
+    }
+  ];
+
+  constructor() {}
+
+  get currentMenuItems(): MenuItem[] {
+    return this.menuItems.length > 0 ? this.menuItems : this.defaultMenuItems;
+  }
+
+  onToggleSidebar() {
+    this.isExpanded = !this.isExpanded;
+    this.toggleSidebar.emit(this.isExpanded);
+  }
+
+  onMenuItemClick(item: MenuItem) {
+    if (item.children && item.children.length > 0) {
+      item.expanded = !item.expanded;
+    } else {
+      this.menuItemClick.emit(item);
+    }
+  }
+
+  onSubMenuItemClick(item: MenuItem) {
+    this.menuItemClick.emit(item);
+  }
+}
