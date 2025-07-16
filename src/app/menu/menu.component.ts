@@ -21,6 +21,20 @@ export class MenuComponent {
   // Estado del sidebar (visible/oculto)
   sidebarVisible = false;
 
+  userInfo = { name: 'Usuario', avatar: '' };
+
+  ngOnInit() {
+  const storedUser = localStorage.getItem('usuario');
+  if (storedUser) {
+    const user = JSON.parse(storedUser);
+    this.userInfo = {
+      name: `${user.nombres} ${user.apellidos}`,
+      avatar: user.rutafotoperfil
+    };
+  }
+}
+
+
   // Estado del modal
   modalVisible = false;
   selectedItem: MenuItem | null = null;
@@ -109,6 +123,8 @@ export class MenuComponent {
       this.updateTooltipPosition(event);
     }
   }
+  
+
 
   // Calcular posición del tooltip
   private updateTooltipPosition(event: MouseEvent): void {

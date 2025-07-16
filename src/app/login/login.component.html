@@ -43,14 +43,11 @@
     <div class="right-panel">
       <form *ngIf="!modoOlvidoClave" (ngSubmit)="onSubmitLogin()" class="form-container fade-in">
         <h3>Ingrese con usuario</h3>
-        <input type="text" placeholder="Usuario" required />
-        <input type="password" placeholder="Contraseña" required />
+        <input type="text" placeholder="Usuario" required [(ngModel)]="usuario" name="usuario" />
+        <input type="password" placeholder="Contraseña" required [(ngModel)]="clave" name="clave" />
         <button type="submit" class="primary-button">Iniciar Sesión</button>
-        <button type="button" class="test-button" (click)="irAMenu()">
-          <i class="fas fa-rocket"></i> Acceso de Prueba
-        </button>
         <p class="link" (click)="cambiarModo()">¿Olvidaste tu clave?</p>
-        
+
         <div class="social-icons">
           <i class="fab fa-facebook"></i>
           <i class="fab fa-instagram"></i>
@@ -59,6 +56,7 @@
           <i class="fab fa-tiktok"></i>
         </div>
       </form>
+
 
       <form *ngIf="modoOlvidoClave" (ngSubmit)="onSubmitReset()" class="form-container fade-in">
         <h3>Complete los campos</h3>
