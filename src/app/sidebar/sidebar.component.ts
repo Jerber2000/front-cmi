@@ -1,5 +1,7 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { CommonModule } from '@angular/common'; // <-- importa CommonModule
+import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 
 export interface MenuItem {
   label: string;
@@ -14,15 +16,14 @@ export interface MenuItem {
   selector: 'app-sidebar',
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.scss'],
-  imports: [CommonModule]  // <--- aquí debes agregarlo
+  imports: [CommonModule],
 })
-
 export class SidebarComponent {
   @Input() isExpanded: boolean = true;
   @Input() userInfo: { name: string; avatar?: string } = { name: 'Usuario' };
   @Input() menuItems: MenuItem[] = [];
   @Input() footerText: string = '© 2024 MyMedical Studio. Todos los derechos reservados.';
-  
+
   @Output() toggleSidebar = new EventEmitter<boolean>();
   @Output() menuItemClick = new EventEmitter<MenuItem>();
 
@@ -63,10 +64,17 @@ export class SidebarComponent {
         { label: 'Misión y visión', route: '/acerca/mision' },
         { label: 'Contáctanos', route: '/acerca/contacto' }
       ]
+    },
+    {
+      label: 'Cerrar Sesion',
+      icon: 'fas fa-sign-out-alt',
+      children: [
+        { label: 'Cerrar Sesion', route: '/logout/logout' }
+      ]
     }
   ];
 
-  constructor() {}
+  constructor(private router: Router, private http: HttpClient) {}
 
   get currentMenuItems(): MenuItem[] {
     return this.menuItems.length > 0 ? this.menuItems : this.defaultMenuItems;
@@ -86,6 +94,25 @@ export class SidebarComponent {
   }
 
   onSubMenuItemClick(item: MenuItem) {
-    this.menuItemClick.emit(item);
+    if (item.label === 'Cerrar Sesion') {
+      this.logout();
+    } else {
+      this.menuItemClick.emit(item);
+    }
+  }
+
+  logout() {
+    this.http.post('http://localhost:3000/api/auth/logout', {}).subscribe({
+      next: () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('usuario');
+        this.router.navigate(['/login']);
+      },
+      error: () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('usuario');
+        this.router.navigate(['/login']);
+      }
+    });
   }
 }
