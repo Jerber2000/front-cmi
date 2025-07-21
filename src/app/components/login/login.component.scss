@@ -1,3 +1,4 @@
+/*login.component.scss*/
 @use 'variables' as *;
 @use 'mixins' as *;
 
@@ -252,7 +253,27 @@ input:focus {
   display: flex;
   gap: 1rem;
   justify-content: center;
+  align-items: center;
   margin-top: 1rem;
+  
+  // ✅ Agregar esto para centrarlos mejor:
+  .secondary-button, .primary-button {
+    min-width: 140px;         
+    max-width: 160px;        
+    text-align: center;      
+    padding: 15px 20px;      
+  }
+}
+
+.envelope-icon {
+  font-size: 120px;        // ← Igual que user-icon
+  color: white;
+  transition: transform 0.3s ease;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+}
+
+.envelope-icon:hover {
+  transform: scale(1.1);   // ← Mismo efecto hover
 }
 
 .social-icons {
@@ -412,4 +433,6 @@ input:focus {
     padding: 12px 24px;
     min-width: 100px;
   }
+
+
 }

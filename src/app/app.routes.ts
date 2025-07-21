@@ -5,17 +5,24 @@ export const routes: Routes = [
   {
     path: 'login',
     loadComponent: () =>
-      import('./login/login.component').then(m => m.LoginComponent),
+      import('./components/login/login.component').then(m => m.LoginComponent),
+  },
+  // ✅ AGREGAR esta ruta nueva
+  {
+    path: 'bienvenida',
+    loadComponent: () =>
+      import('./components/bienvenida/pantallaBienvenida.component').then(m => m.PantallaBienvenidaComponent),
+    canActivate: [authGuard],
   },
   {
     path: 'menu',
     loadComponent: () =>
-      import('./menu/menu.component').then(m => m.MenuComponent),
+      import('./components/menu/menu.component').then(m => m.MenuComponent),
     canActivate: [authGuard],
   },
   {
     path: '',
     redirectTo: '/login',
-    pathMatch: 'full', // ¡perfecto!
+    pathMatch: 'full',
   },
 ];
