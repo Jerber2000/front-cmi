@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SidebarComponent } from '../sidebar/sidebar.component'; // Ajusta la ruta según tu estructura
+import { SidebarComponent } from '../sidebar/sidebar.component';
+import { AuthService } from '../../services/auth.service';
+import { Subscription } from 'rxjs';
 
 interface MenuItem {
   id: string;
@@ -17,23 +19,17 @@ interface MenuItem {
   styleUrls: ['./menu.component.scss'],
   imports: [CommonModule, SidebarComponent]
 })
-export class MenuComponent {
+export class MenuComponent implements OnInit, OnDestroy {
   // Estado del sidebar (visible/oculto)
   sidebarVisible = false;
 
   userInfo = { name: 'Usuario', avatar: '' };
 
-  ngOnInit() {
-  const storedUser = localStorage.getItem('usuario');
-  if (storedUser) {
-    const user = JSON.parse(storedUser);
-    this.userInfo = {
-      name: `${user.nombres} ${user.apellidos}`,
-      avatar: user.rutafotoperfil
-    };
-  }
-}
+  // ✅ Propiedad para mensaje de bienvenida
+  showWelcomeMessage = false;
 
+  // ✅ Suscripción para cleanup
+  private welcomeSubscription?: Subscription;
 
   // Estado del modal
   modalVisible = false;
@@ -42,6 +38,37 @@ export class MenuComponent {
   // Estado del tooltip
   hoveredItem: MenuItem | null = null;
   tooltipPosition = { x: 0, y: 0 };
+
+  constructor(private authService: AuthService) {}
+
+  ngOnInit() {
+    const storedUser = localStorage.getItem('usuario');
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      this.userInfo = {
+        name: `${user.nombres} ${user.apellidos}`,
+        avatar: user.rutafotoperfil
+      };
+    }
+
+    // ✅ ESCUCHAR cuando debe mostrar bienvenida
+    this.welcomeSubscription = this.authService.showWelcome$.subscribe(() => {
+      this.showWelcomeMessage = true;
+      setTimeout(() => {
+        this.hideWelcomeMessage();
+      }, 5000);
+    });
+  }
+
+  ngOnDestroy() {
+    // ✅ Cleanup de suscripción
+    this.welcomeSubscription?.unsubscribe();
+  }
+
+  // ✅ Método para ocultar mensaje
+  hideWelcomeMessage(): void {
+    this.showWelcomeMessage = false;
+  }
 
   // Lista de botones del menú
   menuItems: MenuItem[] = [
@@ -123,8 +150,6 @@ export class MenuComponent {
       this.updateTooltipPosition(event);
     }
   }
-  
-
 
   // Calcular posición del tooltip
   private updateTooltipPosition(event: MouseEvent): void {
@@ -133,4 +158,5 @@ export class MenuComponent {
       y: event.clientY - 10
     };
   }
+
 }

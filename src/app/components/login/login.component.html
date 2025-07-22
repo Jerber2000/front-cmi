@@ -1,16 +1,9 @@
-
 <div class="full-screen-container">
   <!-- Header con logo de la municipalidad -->
   <div class="header-container">
     <div class="logo-section">
-      <!-- Prueba estas opciones una por una -->
       <img src="assets/img/LogoFraijanes.png" alt="Municipalidad de Fraijanes" class="municipality-logo">
-      <img src="https://via.placeholder.com/150" alt="Prueba" class="municipality-logo">
-
-
-      
-      <div class="municipality-text">      
-      </div>
+      <div class="municipality-text"></div>
     </div>
   </div>
 
@@ -33,15 +26,25 @@
       </div>
       <div *ngIf="modoOlvidoClave" class="panel-content fade-in">
         <div class="icon-container">
-          <i class="fas fa-rocket rocket-icon"></i>
+          <i class="fas fa-envelope envelope-icon"></i>
         </div>
-        <h2>Restablecer contraseña</h2>
-        <p class="subtitle">Crea una nueva contraseña segura</p>
+        <h2>Recuperar contraseña</h2>
+        <p class="subtitle">Te enviaremos una contraseña temporal a tu correo</p>
       </div>
     </div>
 
     <div class="right-panel">
+      <!-- FORMULARIO DE LOGIN -->
       <form *ngIf="!modoOlvidoClave" (ngSubmit)="onSubmitLogin()" class="form-container fade-in">
+        
+        <!-- ✅ NOTIFICACIÓN PARA LOGIN -->
+        <div class="notification-container" *ngIf="notification.show && !modoOlvidoClave" [class]="'notification-' + notification.type">
+          <div class="notification-content">
+            <i class="notification-icon" [class]="getNotificationIcon()"></i>
+            <span class="notification-message">{{ notification.message }}</span>
+          </div>
+        </div>
+
         <h3>Ingrese con usuario</h3>
         <input type="text" placeholder="Usuario" required [(ngModel)]="usuario" name="usuario" />
         <input type="password" placeholder="Contraseña" required [(ngModel)]="clave" name="clave" />
@@ -57,16 +60,36 @@
         </div>
       </form>
 
-
+      <!-- FORMULARIO DE RECUPERACIÓN -->
       <form *ngIf="modoOlvidoClave" (ngSubmit)="onSubmitReset()" class="form-container fade-in">
-        <h3>Complete los campos</h3>
-        <input type="text" placeholder="Usuario" required />
-        <input type="password" placeholder="Ingrese Contraseña" required />
-        <input type="password" placeholder="Confirmar Contraseña" required />
+        
+        <!-- ✅ NOTIFICACIÓN PARA RECUPERACIÓN -->
+        <div class="notification-container" *ngIf="notification.show && modoOlvidoClave" [class]="'notification-' + notification.type">
+          <div class="notification-content">
+            <i class="notification-icon" [class]="getNotificationIcon()"></i>
+            <span class="notification-message">{{ notification.message }}</span>
+          </div>
+        </div>
+
+        <h3>Recuperar contraseña</h3>
+        <p class="reset-description">Ingresa tu correo electrónico y te enviaremos una contraseña temporal</p>
+        
+        <input 
+          type="email" 
+          placeholder="Correo electrónico" 
+          required 
+          [(ngModel)]="correoRecuperacion" 
+          name="correoRecuperacion" />
+        
         <div class="button-group">
           <button type="button" class="secondary-button" (click)="cambiarModo()">Cancelar</button>
-          <button type="submit" class="primary-button">Confirmar</button>
+          <button type="submit" class="primary-button">Recuperar contraseña</button>
         </div>
+        
+        <p class="help-text">
+          <i class="fas fa-info-circle"></i>
+          Revisa tu bandeja de entrada y spam
+        </p>
       </form>
     </div>
   </div>
