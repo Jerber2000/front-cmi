@@ -7,7 +7,7 @@ import { Router } from '@angular/router';
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:3000/api/auth';
+  private apiUrl = 'https://back-cmi-production.up.railway.app/api/auth';;
 
   // ✅ AGREGAR para mensaje de bienvenida
   private showWelcomeSubject = new Subject<boolean>();

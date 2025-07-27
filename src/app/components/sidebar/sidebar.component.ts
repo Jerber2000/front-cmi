@@ -105,7 +105,7 @@ export class SidebarComponent {
   }
 
   logout() {
-    this.http.post('http://localhost:3000/api/auth/logout', {}).subscribe({
+    this.http.post('https://back-cmi-production.up.railway.app/api/auth/logout', {}).subscribe({
       next: () => {
         localStorage.removeItem('token');
         localStorage.removeItem('usuario');
