@@ -1,6 +1,3 @@
-  // sidebar.component.ts
-
-
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -36,44 +33,44 @@ export class SidebarComponent {
       label: 'Gestión de pacientes',
       icon: 'fas fa-users',
       children: [
-        { label: 'Creación de pacientes', route: '/pacientes/crear' },
-        { label: 'Traslados', route: '/pacientes/traslados' },
-        { label: 'Citas', route: '/pacientes/citas' }
+        { label: 'Creación de pacientes', route: '/pacientes-crear' },
+        { label: 'Traslados', route: '/pacientes-traslados' },
+        { label: 'Citas', route: '/pacientes-citas' }
       ]
     },
     {
       label: 'Gestión de clínica',
       icon: 'fas fa-hospital',
       children: [
-        { label: 'Administración', route: '/clinica/admin' },
-        { label: 'Educación Inclusiva', route: '/clinica/educacion' },
-        { label: 'Fisioterapia', route: '/clinica/fisioterapia' },
-        { label: 'Medicina General', route: '/clinica/medicina' },
-        { label: 'Nutrición', route: '/clinica/nutricion' },
-        { label: 'Psicología', route: '/clinica/psicologia' }
+        { label: 'Administración', route: '/clinica-admin' },
+        { label: 'Educación Inclusiva', route: '/clinica-educacion' },
+        { label: 'Fisioterapia', route: '/clinica-fisioterapia' },
+        { label: 'Medicina General', route: '/clinica-medicina' },
+        { label: 'Nutrición', route: '/clinica-nutricion' },
+        { label: 'Psicología', route: '/clinica-psicologia' }
       ]
     },
     {
       label: 'Informes',
       icon: 'fas fa-chart-bar',
       children: [
-        { label: 'Informes de pacientes', route: '/informes/pacientes' }
+        { label: 'Informes de pacientes', route: '/informes-pacientes' }
       ]
     },
     {
       label: 'Acerca de',
       icon: 'fas fa-info-circle',
       children: [
-        { label: 'Quienes somos', route: '/acerca/nosotros' },
-        { label: 'Misión y visión', route: '/acerca/mision' },
-        { label: 'Contáctanos', route: '/acerca/contacto' }
+        { label: 'Quienes somos', route: '/acerca-nosotros' },
+        { label: 'Misión y visión', route: '/acerca-mision' },
+        { label: 'Contáctanos', route: '/acerca-contacto' }
       ]
     },
     {
       label: 'Cerrar Sesion',
       icon: 'fas fa-sign-out-alt',
       children: [
-        { label: 'Cerrar Sesion', route: '/logout/logout' }
+        { label: 'Cerrar Sesion', route: '/logout' }
       ]
     }
   ];
@@ -106,7 +103,7 @@ export class SidebarComponent {
   }
 
   logout() {
-     this.http.post(`${environment.apiUrl}/auth/logout`, {}).subscribe({
+    this.http.post(`${environment.apiUrl}/auth/logout`, {}).subscribe({
       next: () => {
         localStorage.removeItem('token');
         localStorage.removeItem('usuario');
