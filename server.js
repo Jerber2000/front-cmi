@@ -1,21 +1,18 @@
 const express = require('express');
 const path = require('path');
-const app = express();
 
-// Servir archivos estáticos
+const app = express();
+const port = process.env.PORT || 3000;
+
+// Configuración básica
 app.use(express.static(path.join(__dirname, 'dist/cmi-front')));
 
-// API para health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+// Una sola ruta que maneja TODO
+app.get('*', function(req, res) {
+  res.sendFile(path.resolve(__dirname, 'dist/cmi-front/index.html'));
 });
 
-// Todas las rutas devuelven index.html (para SPA)
-app.get('/*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist/cmi-front/index.html'));
-});
-const port = process.env.PORT || 3000;
-app.listen(port, '0.0.0.0', () => {
-  console.log(`🚀 Servidor corriendo en puerto ${port}`);
-  console.log(`🌐 Modo: ${process.env.NODE_ENV || 'production'}`);
+// Iniciar servidor
+app.listen(port, function() {
+  console.log('App running on port ' + port);
 });
