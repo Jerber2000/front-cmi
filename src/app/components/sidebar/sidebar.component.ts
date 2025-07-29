@@ -5,6 +5,7 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 export interface MenuItem {
   label: string;
@@ -105,7 +106,7 @@ export class SidebarComponent {
   }
 
   logout() {
-    this.http.post('https://back-cmi-production.up.railway.app/api/auth/logout', {}).subscribe({
+     this.http.post(`${environment.apiUrl}/auth/logout`, {}).subscribe({
       next: () => {
         localStorage.removeItem('token');
         localStorage.removeItem('usuario');
