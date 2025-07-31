@@ -92,13 +92,16 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Iniciar servidor
-const server = app.listen(port, '0.0.0.0', () => {
+// Iniciar servidor - CRÍTICO: Sin especificar host para Railway
+const server = app.listen(port, () => {
   console.log('🚀 Server successfully started!');
   console.log(`📡 Listening on port ${port}`);
-  console.log(`🌐 Server URL: http://0.0.0.0:${port}`);
+  console.log(`🌐 Server URL: http://localhost:${port}`);
   console.log(`📁 Serving files from: ${distPath}`);
   console.log('✅ Server ready to accept connections');
+  
+  // Log adicional para debugging
+  console.log('🔍 Server address:', server.address());
 });
 
 // Graceful shutdown
