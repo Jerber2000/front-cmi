@@ -7,8 +7,7 @@
     "build": "ng build --configuration production",
     "dev": "ng serve",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test",
-    "postinstall": "ng build --configuration production"
+    "test": "ng test"
   },
   "private": true,
   "engines": {
