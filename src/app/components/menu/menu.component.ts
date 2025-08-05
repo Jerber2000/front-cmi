@@ -1,6 +1,7 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SidebarComponent } from '../sidebar/sidebar.component';
+import { Router } from '@angular/router'; // ← AGREGAR IMPORT
+import { SidebarComponent, MenuItem as SidebarMenuItem } from '../sidebar/sidebar.component'; // ← IMPORTAR TIPO
 import { AuthService } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
 
@@ -19,10 +20,10 @@ interface MenuItem {
   styleUrls: ['./menu.component.scss'],
   imports: [CommonModule, SidebarComponent]
 })
-export class MenuComponent implements OnInit, OnDestroy {
+export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
   // Estado del sidebar (visible/oculto)
   sidebarVisible = false;
-
+  sidebarExpanded = true;
   userInfo = { name: 'Usuario', avatar: '' };
 
   // ✅ Propiedad para mensaje de bienvenida
@@ -39,15 +40,19 @@ export class MenuComponent implements OnInit, OnDestroy {
   hoveredItem: MenuItem | null = null;
   tooltipPosition = { x: 0, y: 0 };
 
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router // ← AGREGAR ROUTER
+  ) {}
 
   ngOnInit() {
+    // this.loadUserInfo();
     const storedUser = localStorage.getItem('usuario');
     if (storedUser) {
       const user = JSON.parse(storedUser);
       this.userInfo = {
         name: `${user.nombres} ${user.apellidos}`,
-        avatar: user.rutafotoperfil
+        avatar: user.rutafotoperfil 
       };
     }
 
@@ -63,6 +68,36 @@ export class MenuComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     // ✅ Cleanup de suscripción
     this.welcomeSubscription?.unsubscribe();
+  }
+
+  ngAfterViewInit(): void {
+    this.detectSidebarState();
+  }
+
+  detectSidebarState(): void {
+    const checkSidebar = () => {
+      const sidebar = document.querySelector('.sidebar-container');
+      if (sidebar) {
+        const wasExpanded = this.sidebarExpanded;
+        this.sidebarExpanded = sidebar.classList.contains('expanded');
+        
+        if (wasExpanded !== this.sidebarExpanded) {
+          console.log('Sidebar state changed:', this.sidebarExpanded ? 'expanded' : 'collapsed');
+        }
+      }
+    };
+
+    setTimeout(checkSidebar, 100);
+
+    const observer = new MutationObserver(checkSidebar);
+    const sidebar = document.querySelector('.sidebar-container');
+    
+    if (sidebar) {
+      observer.observe(sidebar, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
+    }
   }
 
   // ✅ Método para ocultar mensaje
@@ -121,7 +156,25 @@ export class MenuComponent implements OnInit, OnDestroy {
     this.sidebarVisible = !this.sidebarVisible;
   }
 
-  // Abrir modal con detalle del botón
+  // ✅ NUEVO: Manejar clicks del sidebar
+  onSidebarMenuItemClick(item: SidebarMenuItem): void {
+    if (item.route) {
+      console.log('Navegando a:', item.route); // Para debug
+      this.router.navigate([item.route]);
+      
+      // Opcional: cerrar sidebar en móviles después de navegar
+      if (window.innerWidth <= 768) {
+        this.sidebarVisible = false;
+      }
+    }
+  }
+
+  // ✅ NUEVO: Manejar toggle del sidebar desde el sidebar component
+  onSidebarToggle(isExpanded: boolean): void {
+    this.sidebarVisible = isExpanded;
+  }
+
+  // Abrir modal con detalle del botón (para el menú principal)
   onMenuItemClick(item: MenuItem): void {
     this.selectedItem = item;
     this.modalVisible = true;
@@ -158,5 +211,4 @@ export class MenuComponent implements OnInit, OnDestroy {
       y: event.clientY - 10
     };
   }
-
 }

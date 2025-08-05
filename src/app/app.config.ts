@@ -1,11 +1,15 @@
-// app.config.ts
+import { ApplicationConfig } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { routes } from './app.routes';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { authInterceptor } from '../interceptors/auth.interceptor';
 
-export const appConfig = {
+export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
-    provideHttpClient(withInterceptorsFromDi()),  // Activa interceptores registrados en DI
-  ],
+    // ✅ Configuración para interceptors funcionales (moderno)
+    provideHttpClient(
+      withInterceptors([authInterceptor])
+    )
+  ]
 };

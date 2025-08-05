@@ -1,0 +1,554 @@
+/* src/app/components/paciente/paciente-list.component.scss */
+
+// Variables de colores Fraijanes
+$fraijanes-green: #4a9d7e;
+$fraijanes-dark-green: #3a7a5e;
+$fraijanes-light-green: #5fb49c;
+$fraijanes-bg: #f8f9fa;
+
+.pacientes-container {
+  min-height: 100vh;
+  background: $fraijanes-bg;
+  
+  // Header estilo Fraijanes
+  .header-fraijanes {
+    background: linear-gradient(90deg, $fraijanes-green 0%, $fraijanes-light-green 100%);
+    height: 80px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    
+    .header-content {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .module-title {
+      color: white;
+      font-size: 2rem;
+      font-weight: 600;
+      margin: 0;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+      
+      .logo-fraijanes {
+        height: 60px;
+        width: auto;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+      }
+    }
+  }
+  
+  // Alertas
+  .alerts-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem 2rem 0;
+    
+    .alert {
+      border-radius: 12px;
+      border: none;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1rem;
+    }
+  }
+  
+  // Sección de búsqueda
+  .search-section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    
+    .search-container {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+      
+      .search-box {
+        position: relative;
+        flex: 1;
+        min-width: 300px;
+        
+        .search-input {
+          background: white;
+          border: 2px solid #e9ecef;
+          border-radius: 25px;
+          padding: 0.75rem 3rem 0.75rem 1.5rem;
+          font-size: 1rem;
+          transition: all 0.3s ease;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+          
+          &:focus {
+            outline: none;
+            border-color: $fraijanes-green;
+            box-shadow: 0 4px 20px rgba(74, 157, 126, 0.2);
+          }
+          
+          &::placeholder {
+            color: #6c757d;
+            font-style: italic;
+          }
+        }
+        
+        .search-icon {
+          position: absolute;
+          right: 1.2rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #6c757d;
+          font-size: 1.1rem;
+        }
+      }
+      
+      .btn-add-patient {
+        background: $fraijanes-dark-green;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(58, 122, 94, 0.3);
+        white-space: nowrap;
+        
+        &:hover {
+          background: #2d5a45; // ← CAMBIAR: usar color directo en lugar de darken()
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(58, 122, 94, 0.4);
+        }
+        
+        &:active {
+          transform: translateY(0);
+        }
+      }
+    }
+  }
+  
+  // Loading
+  .loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 4rem;
+    
+    .spinner-border {
+      color: $fraijanes-green;
+      width: 3rem;
+      height: 3rem;
+    }
+  }
+  
+  // Tabla
+  .table-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    
+    .table-responsive {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    
+    .patients-table {
+      margin: 0;
+      border-collapse: separate;
+      border-spacing: 0;
+      
+      thead {
+        background: linear-gradient(90deg, $fraijanes-green 0%, $fraijanes-light-green 100%);
+        
+        th {
+          color: white;
+          font-weight: 600;
+          font-size: 0.9rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          padding: 1.2rem 1rem;
+          border: none;
+          text-align: center;
+          vertical-align: middle;
+          
+          &:first-child {
+            text-align: left;
+          }
+        }
+      }
+      
+      tbody {
+        tr {
+          transition: all 0.2s ease;
+          border-bottom: 1px solid #f1f3f4;
+          
+          &:hover {
+            background: rgba(74, 157, 126, 0.05);
+          }
+          
+          &:last-child {
+            border-bottom: none;
+          }
+        }
+        
+        td {
+          padding: 1rem;
+          vertical-align: middle;
+          color: #495057;
+          text-align: center;
+          border: none;
+          
+          &.patient-name {
+            text-align: left;
+            font-weight: 600;
+            color: $fraijanes-dark-green;
+          }
+          
+          &.address-cell {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-align: left;
+          }
+        }
+      }
+      
+      .badge-gender {
+        display: inline-block;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        
+        &.male {
+          background: rgba(0, 123, 255, 0.1);
+          color: #007bff;
+        }
+        
+        &.female {
+          background: rgba(255, 193, 7, 0.1);
+          color: #ffc107;
+        }
+      }
+      
+      .btn-action {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        margin: 0 0.2rem;
+        
+        &.btn-edit {
+          background: rgba(40, 167, 69, 0.1);
+          color: #28a745;
+          
+          &:hover {
+            background: #28a745;
+            color: white;
+            transform: scale(1.1);
+          }
+        }
+        
+        &.btn-delete {
+          background: rgba(220, 53, 69, 0.1);
+          color: #dc3545;
+          
+          &:hover {
+            background: #dc3545;
+            color: white;
+            transform: scale(1.1);
+          }
+        }
+      }
+      
+      .no-data {
+        text-align: center;
+        padding: 3rem !important;
+        
+        .no-data-content {
+          color: #6c757d;
+          
+          i {
+            margin-bottom: 1rem;
+            opacity: 0.5;
+          }
+          
+          p {
+            margin: 0;
+            font-size: 1.1rem;
+          }
+        }
+      }
+    }
+  }
+  
+  // Paginación
+  .pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 2rem auto 0;
+    padding: 0 2rem 2rem;
+    
+    .pagination-info {
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
+    
+    .pagination-nav {
+      .pagination {
+        display: flex;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        gap: 0.3rem;
+        
+        li {
+          &.active button {
+            background: $fraijanes-green;
+            color: white;
+            border-color: $fraijanes-green;
+          }
+          
+          &.disabled button {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+          
+          button {
+            padding: 0.5rem 0.8rem;
+            border: 1px solid #dee2e6;
+            background: white;
+            color: #6c757d;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            min-width: 40px;
+            
+            &:hover:not(:disabled) {
+              background: $fraijanes-green;
+              color: white;
+              border-color: $fraijanes-green;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Modal
+.modal {
+  .modal-dialog {
+    margin: 1rem auto;
+    
+    .modal-content {
+      border: none;
+      border-radius: 15px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      
+      .modal-header {
+        background: linear-gradient(90deg, $fraijanes-green 0%, $fraijanes-light-green 100%);
+        color: white;
+        border-radius: 15px 15px 0 0;
+        border-bottom: none;
+        padding: 1.5rem;
+        
+        .modal-title {
+          font-weight: 600;
+          font-size: 1.3rem;
+        }
+        
+        .btn-close {
+          filter: invert(1);
+          opacity: 0.8;
+          
+          &:hover {
+            opacity: 1;
+          }
+        }
+      }
+      
+      .modal-body {
+        padding: 2rem;
+        max-height: 70vh;
+        overflow-y: auto;
+        
+        .form-section {
+          margin-bottom: 2rem;
+          
+          &:last-child {
+            margin-bottom: 0;
+          }
+          
+          .section-title {
+            color: $fraijanes-dark-green;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid rgba(74, 157, 126, 0.2);
+          }
+        }
+        
+        .form-label {
+          font-weight: 600;
+          color: #495057;
+          margin-bottom: 0.5rem;
+        }
+        
+        .form-control {
+          border: 2px solid #e9ecef;
+          border-radius: 8px;
+          padding: 0.75rem 1rem;
+          transition: all 0.3s ease;
+          
+          &:focus {
+            border-color: $fraijanes-green;
+            box-shadow: 0 0 0 0.2rem rgba(74, 157, 126, 0.15);
+          }
+          
+          &.is-invalid {
+            border-color: #dc3545;
+          }
+        }
+        
+        .invalid-feedback {
+          display: block;
+          font-size: 0.875rem;
+          color: #dc3545;
+          margin-top: 0.25rem;
+        }
+        
+        .text-muted {
+          font-size: 0.85rem;
+          color: #6c757d !important;
+        }
+      }
+      
+      .modal-footer {
+        border-top: 2px solid #f8f9fa;
+        padding: 1.5rem;
+        
+        .btn {
+          border-radius: 8px;
+          padding: 0.75rem 1.5rem;
+          font-weight: 600;
+          transition: all 0.3s ease;
+          
+          &.btn-primary {
+            background: $fraijanes-green;
+            border-color: $fraijanes-green;
+            
+            &:hover:not(:disabled) {
+              background: $fraijanes-dark-green;
+              border-color: $fraijanes-dark-green;
+              transform: translateY(-1px);
+            }
+            
+            &:disabled {
+              opacity: 0.6;
+            }
+          }
+          
+          &.btn-secondary {
+            &:hover {
+              transform: translateY(-1px);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .pacientes-container {
+    .header-fraijanes {
+      height: auto;
+      padding: 1rem 0;
+      
+      .header-content {
+        padding: 0 1rem;
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+      }
+      
+      .module-title {
+        font-size: 1.5rem;
+      }
+      
+      .logo-fraijanes {
+        height: 45px;
+      }
+    }
+    
+    .search-section {
+      padding: 1rem;
+      
+      .search-container {
+        flex-direction: column;
+        align-items: stretch;
+        
+        .search-box {
+          min-width: 100%;
+        }
+        
+        .btn-add-patient {
+          text-align: center;
+        }
+      }
+    }
+    
+    .table-container {
+      padding: 0 1rem;
+      
+      .patients-table {
+        font-size: 0.85rem;
+        
+        th, td {
+          padding: 0.5rem 0.3rem;
+        }
+        
+        .address-cell {
+          max-width: 120px;
+        }
+      }
+    }
+    
+    .pagination-container {
+      flex-direction: column;
+      gap: 1rem;
+      text-align: center;
+    }
+  }
+  
+  .modal {
+    .modal-dialog {
+      margin: 0.5rem;
+      
+      .modal-content .modal-body {
+        padding: 1rem;
+        max-height: 60vh;
+      }
+    }
+  }
+}
