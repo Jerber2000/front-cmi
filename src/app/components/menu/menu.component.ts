@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SidebarComponent } from '../sidebar/sidebar.component';
+import { Router } from '@angular/router'; // ← AGREGAR IMPORT
+import { SidebarComponent, MenuItem as SidebarMenuItem } from '../sidebar/sidebar.component'; // ← IMPORTAR TIPO
 import { AuthService } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
 
@@ -39,7 +40,10 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
   hoveredItem: MenuItem | null = null;
   tooltipPosition = { x: 0, y: 0 };
 
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router // ← AGREGAR ROUTER
+  ) {}
 
   ngOnInit() {
     // this.loadUserInfo();
@@ -152,7 +156,25 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
     this.sidebarVisible = !this.sidebarVisible;
   }
 
-  // Abrir modal con detalle del botón
+  // ✅ NUEVO: Manejar clicks del sidebar
+  onSidebarMenuItemClick(item: SidebarMenuItem): void {
+    if (item.route) {
+      console.log('Navegando a:', item.route); // Para debug
+      this.router.navigate([item.route]);
+      
+      // Opcional: cerrar sidebar en móviles después de navegar
+      if (window.innerWidth <= 768) {
+        this.sidebarVisible = false;
+      }
+    }
+  }
+
+  // ✅ NUEVO: Manejar toggle del sidebar desde el sidebar component
+  onSidebarToggle(isExpanded: boolean): void {
+    this.sidebarVisible = isExpanded;
+  }
+
+  // Abrir modal con detalle del botón (para el menú principal)
   onMenuItemClick(item: MenuItem): void {
     this.selectedItem = item;
     this.modalVisible = true;
@@ -189,5 +211,4 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
       y: event.clientY - 10
     };
   }
-
 }

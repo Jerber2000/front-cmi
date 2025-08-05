@@ -1,7 +1,14 @@
 <!-- menu.component.html -->
 <div class="menu-layout" [class.sidebar-expanded]="sidebarExpanded">
   
-  <app-sidebar [userInfo]="userInfo"></app-sidebar>
+  <!-- ✅ ACTUALIZAR: Agregar los eventos al sidebar -->
+  <app-sidebar 
+    [userInfo]="userInfo"
+    [isExpanded]="sidebarVisible"
+    (toggleSidebar)="onSidebarToggle($event)"
+    (menuItemClick)="onSidebarMenuItemClick($event)">
+  </app-sidebar>
+  
   <!-- Contenido del menú -->
   <div class="menu-container">
     <!-- Encabezado -->

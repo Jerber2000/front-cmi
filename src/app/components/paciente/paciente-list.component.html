@@ -1,0 +1,495 @@
+<!-- src/app/components/paciente/paciente-list.component.html -->
+<div class="pacientes-container">
+  <!-- Header con estilo Fraijanes -->
+  <div class="header-fraijanes">
+    <div class="header-content">
+      <h1 class="module-title">Pacientes</h1>
+      <div class="logo-container">
+        <img src="assets/img/LogoFraijanes.png" alt="Municipalidad de Fraijanes" class="logo-fraijanes">
+      </div>
+    </div>
+  </div>
+
+  <!-- Alertas -->
+  <div class="alerts-container">
+    <div *ngIf="success" class="alert alert-success alert-dismissible fade show" role="alert">
+      <i class="fas fa-check-circle me-2"></i>{{ success }}
+      <button type="button" class="btn-close" (click)="success = ''" aria-label="Close"></button>
+    </div>
+
+    <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+      <i class="fas fa-exclamation-circle me-2"></i>{{ error }}
+      <button type="button" class="btn-close" (click)="error = ''" aria-label="Close"></button>
+    </div>
+  </div>
+
+  <!-- Sección de búsqueda y nuevo paciente -->
+  <div class="search-section">
+    <div class="search-container">
+      <div class="search-box">
+        <input
+          type="text"
+          class="form-control search-input"
+          placeholder="Buscar por nombre, apellido o CUI..."
+          [value]="searchTerm"
+          (input)="onSearchChange($event)"
+        >
+        <i class="fas fa-search search-icon"></i>
+      </div>
+      <button class="btn btn-add-patient" (click)="openCreateModal()">
+        <i class="fas fa-plus me-2"></i>
+        Crear nuevo paciente
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading spinner -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+  </div>
+
+  <!-- Tabla de pacientes -->
+  <div *ngIf="!loading" class="table-container">
+    <div class="table-responsive">
+      <table class="table patients-table">
+        <thead>
+          <tr>
+            <th>Nombre Paciente</th>
+            <th>Género</th>
+            <th>Edad</th>
+            <th>CUI</th>
+            <th>Dirección</th>
+            <th>Discapacidad</th>
+            <th>Teléfono</th>
+            <th>Municipio</th>
+            <th>Editar</th>
+            <th>Eliminar</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let paciente of pacientes">
+            <td class="patient-name">{{ paciente.nombres }} {{ paciente.apellidos }}</td>
+            <td>
+              <span class="badge-gender" [class]="paciente.genero === 'M' ? 'male' : 'female'">
+                {{ paciente.genero }}
+              </span>
+            </td>
+            <td>{{ calculateAge(paciente.fechanacimiento) }}</td>
+            <td>{{ paciente.cui }}</td>
+            <td class="address-cell">{{ paciente.direccion }}</td>
+            <td>{{ paciente.tipodiscapacidad || 'Ninguna' }}</td>
+            <td>{{ paciente.telefonopersonal || 'N/A' }}</td>
+            <td>{{ paciente.municipio }}</td>
+            <td>
+              <button 
+                class="btn-action btn-edit" 
+                (click)="openEditModal(paciente)"
+                title="Editar paciente">
+                <i class="fas fa-edit"></i>
+              </button>
+            </td>
+            <td>
+              <button 
+                class="btn-action btn-delete" 
+                (click)="deletePaciente(paciente)"
+                title="Eliminar paciente">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="pacientes.length === 0">
+            <td colspan="10" class="no-data">
+              <div class="no-data-content">
+                <i class="fas fa-users fa-3x"></i>
+                <p>{{ searchTerm ? 'No se encontraron pacientes con los criterios de búsqueda' : 'No hay pacientes registrados' }}</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    <div *ngIf="totalPages > 1" class="pagination-container">
+      <div class="pagination-info">
+        <small>
+          Mostrando {{ (currentPage - 1) * pageSize + 1 }} a 
+          {{ Math.min(currentPage * pageSize, totalItems) }} de 
+          {{ totalItems }} registros
+        </small>
+      </div>
+      <nav class="pagination-nav">
+        <ul class="pagination">
+          <li [class.disabled]="currentPage === 1">
+            <button (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 1">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+          </li>
+          <li *ngFor="let page of getPages()" [class.active]="page === currentPage">
+            <button (click)="onPageChange(page)">{{ page }}</button>
+          </li>
+          <li [class.disabled]="currentPage === totalPages">
+            <button (click)="onPageChange(currentPage + 1)" [disabled]="currentPage === totalPages">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para crear/editar paciente -->
+<div class="modal fade" id="pacienteModal" tabindex="-1" aria-labelledby="pacienteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="pacienteModalLabel">
+          <i class="fas fa-user-plus me-2"></i>
+          {{ isEditMode ? 'Editar Paciente' : 'Nuevo Paciente' }}
+        </h5>
+        <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close"></button>
+      </div>
+      
+      <form [formGroup]="pacienteForm" (ngSubmit)="onSubmit()" novalidate>
+        <div class="modal-body">
+          <!-- Datos Personales -->
+          <div class="form-section">
+            <h6 class="section-title">
+              <i class="fas fa-user me-2"></i>Datos Personales
+            </h6>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Nombres *</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="nombres"
+                  [class.is-invalid]="isFieldInvalid('nombres')"
+                  placeholder="Ingrese los nombres"
+                >
+                <div *ngIf="isFieldInvalid('nombres')" class="invalid-feedback">
+                  {{ getFieldError('nombres') }}
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Apellidos *</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="apellidos"
+                  [class.is-invalid]="isFieldInvalid('apellidos')"
+                  placeholder="Ingrese los apellidos"
+                >
+                <div *ngIf="isFieldInvalid('apellidos')" class="invalid-feedback">
+                  {{ getFieldError('apellidos') }}
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">CUI *</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="cui"
+                  [class.is-invalid]="isFieldInvalid('cui')"
+                  placeholder="1234567890123"
+                  maxlength="13"
+                >
+                <div *ngIf="isFieldInvalid('cui')" class="invalid-feedback">
+                  {{ getFieldError('cui') }}
+                </div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Fecha de Nacimiento *</label>
+                <input
+                  type="date"
+                  class="form-control"
+                  formControlName="fechanacimiento"
+                  [class.is-invalid]="isFieldInvalid('fechanacimiento')"
+                >
+                <div *ngIf="isFieldInvalid('fechanacimiento')" class="invalid-feedback">
+                  {{ getFieldError('fechanacimiento') }}
+                </div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Género *</label>
+                <select
+                  class="form-control"
+                  formControlName="genero"
+                  [class.is-invalid]="isFieldInvalid('genero')"
+                >
+                  <option value="">Seleccione género</option>
+                  <option *ngFor="let genero of generos" [value]="genero.value">
+                    {{ genero.label }}
+                  </option>
+                </select>
+                <div *ngIf="isFieldInvalid('genero')" class="invalid-feedback">
+                  {{ getFieldError('genero') }}
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Tipo de Consulta *</label>
+                <select
+                  class="form-control"
+                  formControlName="tipoconsulta"
+                  [class.is-invalid]="isFieldInvalid('tipoconsulta')"
+                >
+                  <option value="">Seleccione tipo</option>
+                  <option *ngFor="let tipo of tiposConsulta" [value]="tipo.value">
+                    {{ tipo.label }}
+                  </option>
+                </select>
+                <div *ngIf="isFieldInvalid('tipoconsulta')" class="invalid-feedback">
+                  {{ getFieldError('tipoconsulta') }}
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Tipo de Discapacidad</label>
+                <select class="form-control" formControlName="tipodiscapacidad">
+                  <option *ngFor="let tipo of tiposDiscapacidad" [value]="tipo.value">
+                    {{ tipo.label }}
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información de Contacto -->
+          <div class="form-section">
+            <h6 class="section-title">
+              <i class="fas fa-phone me-2"></i>Información de Contacto
+            </h6>
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Teléfono Personal</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="telefonopersonal"
+                  [class.is-invalid]="isFieldInvalid('telefonopersonal')"
+                  placeholder="12345678"
+                  maxlength="8"
+                >
+                <div *ngIf="isFieldInvalid('telefonopersonal')" class="invalid-feedback">
+                  {{ getFieldError('telefonopersonal') }}
+                </div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Contacto de Emergencia</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="nombrecontactoemergencia"
+                  placeholder="Nombre del contacto"
+                >
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Teléfono de Emergencia</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="telefonoemergencia"
+                  [class.is-invalid]="isFieldInvalid('telefonoemergencia')"
+                  placeholder="12345678"
+                  maxlength="8"
+                >
+                <div *ngIf="isFieldInvalid('telefonoemergencia')" class="invalid-feedback">
+                  {{ getFieldError('telefonoemergencia') }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Información del Encargado -->
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Nombre del Encargado</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="nombreencargado"
+                  placeholder="Nombre completo"
+                >
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">DPI del Encargado</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="dpiencargado"
+                  [class.is-invalid]="isFieldInvalid('dpiencargado')"
+                  placeholder="1234567890123"
+                  maxlength="13"
+                >
+                <div *ngIf="isFieldInvalid('dpiencargado')" class="invalid-feedback">
+                  {{ getFieldError('dpiencargado') }}
+                </div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Teléfono del Encargado</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="telefonoencargado"
+                  [class.is-invalid]="isFieldInvalid('telefonoencargado')"
+                  placeholder="12345678"
+                  maxlength="8"
+                >
+                <div *ngIf="isFieldInvalid('telefonoencargado')" class="invalid-feedback">
+                  {{ getFieldError('telefonoencargado') }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dirección -->
+          <div class="form-section">
+            <h6 class="section-title">
+              <i class="fas fa-map-marker-alt me-2"></i>Dirección
+            </h6>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Municipio *</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="municipio"
+                  [class.is-invalid]="isFieldInvalid('municipio')"
+                  placeholder="Nombre del municipio"
+                >
+                <div *ngIf="isFieldInvalid('municipio')" class="invalid-feedback">
+                  {{ getFieldError('municipio') }}
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Aldea/Zona</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="aldea"
+                  placeholder="Aldea o zona"
+                >
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-12 mb-3">
+                <label class="form-label">Dirección Completa *</label>
+                <textarea
+                  class="form-control"
+                  formControlName="direccion"
+                  [class.is-invalid]="isFieldInvalid('direccion')"
+                  rows="3"
+                  placeholder="Dirección detallada"
+                ></textarea>
+                <div *ngIf="isFieldInvalid('direccion')" class="invalid-feedback">
+                  {{ getFieldError('direccion') }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información del Expediente (solo para crear) -->
+          <div *ngIf="!isEditMode" class="form-section" [formGroup]="expedienteForm">
+            <h6 class="section-title">
+              <i class="fas fa-file-medical me-2"></i>Expediente Médico
+            </h6>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Número de Expediente</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="numeroexpediente"
+                  placeholder="Se generará automáticamente si se deja vacío"
+                >
+                <small class="text-muted">Formato: YYYY-XXXXXX</small>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-12 mb-3">
+                <label class="form-label">Historia de la Enfermedad</label>
+                <textarea
+                  class="form-control"
+                  formControlName="historiaenfermedad"
+                  rows="3"
+                  placeholder="Descripción de la enfermedad actual"
+                ></textarea>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Antecedentes Médicos</label>
+                <textarea
+                  class="form-control"
+                  formControlName="antmedico"
+                  rows="2"
+                  placeholder="Antecedentes médicos relevantes"
+                ></textarea>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Antecedentes de Medicamentos</label>
+                <textarea
+                  class="form-control"
+                  formControlName="antmedicamento"
+                  rows="2"
+                  placeholder="Medicamentos que toma o ha tomado"
+                ></textarea>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Antecedentes Traumáticos</label>
+                <textarea
+                  class="form-control"
+                  formControlName="anttraumaticos"
+                  rows="2"
+                  placeholder="Traumas o accidentes previos"
+                ></textarea>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Antecedentes Familiares</label>
+                <textarea
+                  class="form-control"
+                  formControlName="antfamiliar"
+                  rows="2"
+                  placeholder="Enfermedades familiares relevantes"
+                ></textarea>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Antecedentes Alérgicos</label>
+                <textarea
+                  class="form-control"
+                  formControlName="antalergico"
+                  rows="2"
+                  placeholder="Alergias conocidas"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">
+            <i class="fas fa-times me-2"></i>Cancelar
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="loading || pacienteForm.invalid"
+          >
+            <span *ngIf="loading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <i *ngIf="!loading" class="fas fa-save me-2"></i>
+            {{ isEditMode ? 'Actualizar' : 'Guardar' }} Paciente
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
