@@ -1,0 +1,448 @@
+<div class="content-area" [class.sidebar-expanded]="sidebarExpanded">
+  <app-sidebar [userInfo]="userInfo"></app-sidebar>
+  <div class="menu-container">
+    <header class="header">
+      <div class="header-content">
+        <div class="header-left">
+          <div class="header-text">
+            <h1 class="title">Gestión de Usuarios</h1>
+          </div>
+          <img src="assets/img/LogoFraijanes.png" alt="Logo Fraijanes" class="logo">
+        </div>
+      </div>
+    </header>
+  </div>
+
+  <div class="control-card">
+    <div class="search-controls">
+      <div class="search-wrapper">
+        <input 
+          type="text" 
+          class="search-input" 
+          placeholder="Buscar"
+          [(ngModel)]="searchTerm"
+          (input)="filterUsers()"
+        >
+        <button class="btn-add" (click)="showForm()" *ngIf="currentView === 'list'">
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
+      
+      <!-- Título y fecha -->
+      <div class="header-info">
+        <div class="date-info">
+          Fecha: {{ currentDate | date:'dd/MM/yy' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-card" *ngIf="currentView === 'list'">
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nombre Usuario</th>
+            <th>Rol</th>
+            <th>Correo Institucional</th>
+            <th>Teléfono Institucional</th>
+            <th>extensión</th>
+            <th>Estado</th>
+            <th>Editar</th>
+            <th>Eliminar</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of filteredUsers" class="table-row">
+            <td class="user-name" (click)="viewUser(user)">
+              {{ user.nombres }} {{ user.apellidos}}
+            </td>
+            <td>
+              {{ user.fkrol == 1 ? 'Administrador' : 
+                user.fkrol == 2 ? 'Doctor' : 
+                user.fkrol == 3 ? 'Enfermero' : 
+                user.fkrol == 4 ? 'Psicólogo' : 
+                user.fkrol == 5 ? 'Fisioterapeuta' : 
+                user.fkrol == 6 ? 'Nutricionista' : 
+                user.fkrol == 7 ? 'Recepcionista' : 'Sin rol' }}
+            </td>
+            <td>{{ user.correo }}</td>
+            <td>{{ user.telinstitucional }}</td>
+            <td>{{ user.extension }}</td>
+            <td>
+              <span class="status-badge">
+                {{ user.estado == "1" ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td>
+              <button 
+                class="action-btn edit-btn" 
+                (click)="editUser(user)"
+                title="Editar"
+              >
+                Editar
+              </button>
+            </td>
+            <td>
+              <button 
+                class="action-btn delete-btn" 
+                (click)="deleteUser(user.id!)"
+                title="Eliminar"
+              >
+                Eliminar
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Estado vacío -->
+      <div *ngIf="filteredUsers.length === 0 && !loading" class="empty-state">
+        <p>No se encontraron usuarios</p>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="loading" class="loading-state">
+        <i class="fas fa-spinner fa-spin"></i>
+        Cargando usuarios...
+      </div>
+    </div>
+  </div>
+
+<!-- 🎯 MODAL FORMULARIO MEJORADO -->
+<div class="modal-backdrop" *ngIf="currentView === 'form'" (click)="closeModal()">
+  <div class="modal-content-large" (click)="$event.stopPropagation()">
+    
+    <!-- Header del modal -->
+    <div class="modal-header">
+      <h3>{{ isEditMode ? 'Editar Usuario' : 'Nuevo Usuario' }}</h3>
+      <button class="modal-close" (click)="closeModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Body del modal con scroll -->
+    <div class="modal-body-scroll">
+      
+      <!-- Sección de foto -->
+      <div class="photo-section">
+        <div class="photo-upload">
+          <div class="photo-preview">
+            <img *ngIf="selectedPhoto" [src]="selectedPhoto" alt="Preview" class="photo-img">
+            <div *ngIf="!selectedPhoto" class="photo-placeholder">
+              <i class="fas fa-user-circle"></i>
+              <span>Foto del usuario</span>
+            </div>
+          </div>
+          <input 
+            type="file" 
+            #fileInput 
+            (change)="onPhotoSelected($event)" 
+            accept="image/*" 
+            style="display: none;"
+          >
+          <button type="button" class="photo-btn" (click)="fileInput.click()">
+            <i class="fas fa-camera"></i> Seleccionar Foto
+          </button>
+        </div>
+      </div>
+
+      <form [formGroup]="userForm" class="user-form">
+        
+        <!-- Información Personal -->
+        <div class="form-section">
+          <h4 class="section-title">
+            <i class="fas fa-user"></i> Información Personal
+          </h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nombres *</label>
+              <input 
+                type="text" 
+                formControlName="nombres"
+                class="form-input"
+                placeholder="Ingrese nombres"
+              >
+            </div>
+
+            <div class="form-group">
+              <label>Apellidos *</label>
+              <input 
+                type="text" 
+                formControlName="apellidos"
+                class="form-input"
+                placeholder="Ingrese apellidos"
+              >
+            </div>
+
+            <div class="form-group">
+              <label>Profesión</label>
+              <input 
+                type="text" 
+                formControlName="profesion"
+                class="form-input"
+                placeholder="Ej: Médico, Enfermero, etc."
+              >
+            </div>
+
+            <div class="form-group">
+              <label>Fecha de Nacimiento</label>
+              <input 
+                type="date" 
+                formControlName="fechaNacimiento"
+                class="form-input"
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Información de Usuario -->
+        <div class="form-section">
+          <h4 class="section-title">
+            <i class="fas fa-key"></i> Credenciales de Usuario
+          </h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Usuario *</label>
+              <input 
+                type="text" 
+                formControlName="usuario"
+                class="form-input"
+                placeholder="Nombre de usuario"
+              >
+            </div>
+
+            <div class="form-group">
+              <label>Contraseña *</label>
+              <input 
+                type="password" 
+                formControlName="password"
+                class="form-input"
+                placeholder="Ingrese contraseña"
+              >
+            </div>
+
+            <div class="form-group">
+              <label>Confirmar Contraseña *</label>
+              <input 
+                type="password" 
+                formControlName="confirmPassword"
+                class="form-input"
+                placeholder="Confirme la contraseña"
+              >
+            </div>
+
+            <div class="form-group">
+              <label>Rol *</label>
+              <select formControlName="role" class="form-input">
+                <option value="">Seleccionar rol</option>
+                <option value="1">Administrador</option>
+                <option value="2">Doctor</option>
+                <option value="3">Enfermero</option>
+                <option value="4">Psicólogo</option>
+                <option value="5">Fisioterapeuta</option>
+                <option value="6">Nutricionista</option>
+                <option value="7">Recepcionista</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Información de Contacto -->
+        <div class="form-section">
+          <h4 class="section-title">
+            <i class="fas fa-envelope"></i> Información de Contacto
+          </h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Correo Institucional *</label>
+              <input 
+                type="email" 
+                formControlName="correo"
+                class="form-input"
+                placeholder="usuario@institucion.com"
+              >
+            </div>
+
+            <div class="form-group">
+              <label>Confirmar Correo *</label>
+              <input 
+                type="email" 
+                formControlName="confirmCorreo"
+                class="form-input"
+                placeholder="Confirme el correo"
+              >
+            </div>
+
+            <div class="form-group">
+              <label>Teléfono Institucional</label>
+              <input 
+                type="text" 
+                formControlName="telinstitucional"
+                class="form-input"
+                placeholder="+502-2345-6789"
+              >
+            </div>
+
+            <div class="form-group">
+              <label>Extensión</label>
+              <input 
+                type="text" 
+                formControlName="extension"
+                class="form-input"
+                placeholder="1234"
+              >
+            </div>
+
+            <div class="form-group">
+              <label>Teléfono Personal</label>
+              <input 
+                type="text" 
+                formControlName="telPersonal"
+                class="form-input"
+                placeholder="+502-1234-5678"
+              >
+            </div>
+
+            <div class="form-group">
+              <label>Puesto Laboral *</label>
+              <input 
+                type="text" 
+                formControlName="puesto"
+                class="form-input"
+                placeholder="Ej: Jefe de Enfermería"
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Contacto de Emergencia -->
+        <div class="form-section">
+          <h4 class="section-title">
+            <i class="fas fa-exclamation-triangle"></i> Contacto de Emergencia
+          </h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nombre de Contacto *</label>
+              <input 
+                type="text" 
+                formControlName="contactoEmergencia"
+                class="form-input"
+                placeholder="Nombre completo"
+              >
+            </div>
+
+            <div class="form-group">
+              <label>Teléfono de Emergencia</label>
+              <input 
+                type="text" 
+                formControlName="telEmergencia"
+                class="form-input"
+                placeholder="+502-9876-5432"
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Información Adicional -->
+        <div class="form-section">
+          <h4 class="section-title">
+            <i class="fas fa-clipboard"></i> Información Adicional
+          </h4>
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label>Observaciones</label>
+              <textarea
+                formControlName="observaciones"
+                class="form-textarea"
+                rows="3"
+                placeholder="Notas adicionales sobre el usuario..."
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>Estado</label>
+              <select formControlName="status" class="form-input">
+                <option value="1">Activo</option>
+                <option value="0">Inactivo</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- Footer fijo del modal -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeModal()">
+        <i class="fas fa-times"></i> Cancelar
+      </button>
+      <button 
+        type="button"
+        class="btn-save" 
+        (click)="onSubmit()"
+        [disabled]="userForm.invalid || loading"
+      >
+        <span *ngIf="loading">
+          <i class="fas fa-spinner fa-spin"></i> Guardando...
+        </span>
+        <span *ngIf="!loading">
+          <i class="fas fa-save"></i> {{ isEditMode ? 'Actualizar' : 'Crear' }} Usuario
+        </span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+  <!-- 👁️ VISTA DETALLE -->
+  <div class="main-card" *ngIf="currentView === 'detail'">
+    <div class="detail-header">
+      <h3>Detalle del Usuario</h3>
+      <div class="detail-actions">
+        <button class="btn-edit" (click)="editUser(selectedUser!)">
+          <i class="fas fa-edit"></i> Editar
+        </button>
+        <button class="btn-back" (click)="showList()">
+          <i class="fas fa-arrow-left"></i> Volver
+        </button>
+      </div>
+    </div>
+
+    <div class="detail-grid" *ngIf="selectedUser">
+      <div class="detail-item">
+        <label>Nombre:</label>
+        <span>{{ selectedUser.nombres }}</span>
+      </div>
+      <div class="detail-item">
+        <label>Email:</label>
+        <span>{{ selectedUser.correo }}</span>
+      </div>
+      <div class="detail-item">
+        <label>No. Empleado:</label>
+        <span>{{ selectedUser.employeeNumber || 'No asignado' }}</span>
+      </div>
+      <div class="detail-item">
+        <label>No. Colegiado:</label>
+        <span>{{ selectedUser.collegiateNumber || 'No asignado' }}</span>
+      </div>
+      <div class="detail-item">
+        <label>Especialidad:</label>
+        <span>{{ selectedUser.fkrol || 'No definida' }}</span>
+      </div>
+      <div class="detail-item">
+        <label>Horario:</label>
+        <span>{{ selectedUser.schedule || 'No definido' }}</span>
+      </div>
+      <div class="detail-item">
+        <label>Estado:</label>
+      </div>
+      <!-- <div class="detail-item">
+        <label>Fecha de Creación:</label>
+        <span>{{ selectedUser.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+      </div> -->
+    </div>
+  </div>
+
+</div>

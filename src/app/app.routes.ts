@@ -7,7 +7,6 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./components/login/login.component').then(m => m.LoginComponent),
   },
-  // ✅ AGREGAR esta ruta nueva
   {
     path: 'bienvenida',
     loadComponent: () =>
@@ -19,6 +18,11 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./components/menu/menu.component').then(m => m.MenuComponent),
     canActivate: [authGuard],
+  },
+  { 
+    path: 'usuario', 
+    loadComponent: () => import('./components/usuario/usuario.component').then(c => c.UsuarioComponent), 
+    canActivate: [authGuard] 
   },
   {
     path: '',

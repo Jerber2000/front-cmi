@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AuthService } from '../../services/auth.service';
@@ -19,10 +19,10 @@ interface MenuItem {
   styleUrls: ['./menu.component.scss'],
   imports: [CommonModule, SidebarComponent]
 })
-export class MenuComponent implements OnInit, OnDestroy {
+export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
   // Estado del sidebar (visible/oculto)
   sidebarVisible = false;
-
+  sidebarExpanded = true;
   userInfo = { name: 'Usuario', avatar: '' };
 
   // ✅ Propiedad para mensaje de bienvenida
@@ -42,12 +42,13 @@ export class MenuComponent implements OnInit, OnDestroy {
   constructor(private authService: AuthService) {}
 
   ngOnInit() {
+    // this.loadUserInfo();
     const storedUser = localStorage.getItem('usuario');
     if (storedUser) {
       const user = JSON.parse(storedUser);
       this.userInfo = {
         name: `${user.nombres} ${user.apellidos}`,
-        avatar: user.rutafotoperfil
+        avatar: user.rutafotoperfil 
       };
     }
 
@@ -63,6 +64,36 @@ export class MenuComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     // ✅ Cleanup de suscripción
     this.welcomeSubscription?.unsubscribe();
+  }
+
+  ngAfterViewInit(): void {
+    this.detectSidebarState();
+  }
+
+  detectSidebarState(): void {
+    const checkSidebar = () => {
+      const sidebar = document.querySelector('.sidebar-container');
+      if (sidebar) {
+        const wasExpanded = this.sidebarExpanded;
+        this.sidebarExpanded = sidebar.classList.contains('expanded');
+        
+        if (wasExpanded !== this.sidebarExpanded) {
+          console.log('Sidebar state changed:', this.sidebarExpanded ? 'expanded' : 'collapsed');
+        }
+      }
+    };
+
+    setTimeout(checkSidebar, 100);
+
+    const observer = new MutationObserver(checkSidebar);
+    const sidebar = document.querySelector('.sidebar-container');
+    
+    if (sidebar) {
+      observer.observe(sidebar, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
+    }
   }
 
   // ✅ Método para ocultar mensaje

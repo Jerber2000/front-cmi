@@ -1,5 +1,4 @@
-  // sidebar.component.ts
-
+// sidebar.component.ts
 
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -25,19 +24,19 @@ export class SidebarComponent {
   @Input() isExpanded: boolean = true;
   @Input() userInfo: { name: string; avatar?: string } = { name: 'Usuario' };
   @Input() menuItems: MenuItem[] = [];
-  @Input() footerText: string = '© 2024 MyMedical Studio. Todos los derechos reservados.';
+  @Input() footerText: string = '© 2025 CMI - Clinicas Municipales Inclusivas. Todos los derechos reservados.';
 
   @Output() toggleSidebar = new EventEmitter<boolean>();
   @Output() menuItemClick = new EventEmitter<MenuItem>();
 
   defaultMenuItems: MenuItem[] = [
     {
-      label: 'Gestión de pacientes',
+      label: 'Gestión de usuarios',
       icon: 'fas fa-users',
       children: [
-        { label: 'Creación de pacientes', route: '/pacientes/crear' },
-        { label: 'Traslados', route: '/pacientes/traslados' },
-        { label: 'Citas', route: '/pacientes/citas' }
+        // { label: 'Creación de pacientes', route: '/pacientes/crear' },
+        // { label: 'Traslados', route: '/pacientes/traslados' },
+        { label: 'Usuarios', route: '/usuario' } 
       ]
     },
     {
@@ -91,17 +90,23 @@ export class SidebarComponent {
   onMenuItemClick(item: MenuItem) {
     if (item.children && item.children.length > 0) {
       item.expanded = !item.expanded;
-    } else {
-      this.menuItemClick.emit(item);
+    } else if (item.route) {
+      this.router.navigate([item.route]);
     }
+    this.menuItemClick.emit(item);
   }
 
   onSubMenuItemClick(item: MenuItem) {
     if (item.label === 'Cerrar Sesion') {
       this.logout();
-    } else {
-      this.menuItemClick.emit(item);
+    } else if (item.route) {
+      this.router.navigate([item.route]);
     }
+    this.menuItemClick.emit(item);
+  }
+
+  onUserNameClick() {
+    this.router.navigate(['/menu']);
   }
 
   logout() {

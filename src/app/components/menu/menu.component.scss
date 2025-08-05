@@ -1,36 +1,84 @@
-/*login.component.scss*/
-
-.menu-container {
-  padding: 20px;
-  background: #f9f9f9;
-}
-
 .header {
   background-color: #2c6662;
   color: white;
   padding: 20px;
   display: flex;
   align-items: center;
+  position: relative; /* Para posicionamiento del logo */
+  width: 100%;
+  box-sizing: border-box;
+}
 
-  .header-left {
-    display: flex;
-    align-items: center;
+.header-content {
+  width: 100%;
+  position: relative;
+}
 
-    .logo {
-      height: 60px;
-      margin-right: 20px;
-    }
+.header-left {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* Alinear título a la izquierda */
+  width: 100%;
+}
 
-    .title {
-      font-size: 24px;
-      font-weight: bold;
-      margin: 0;
-    }
-  }
+.header-text {
+  flex: 1; /* Ocupa el espacio disponible */
+}
+
+.title {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0;
+  white-space: nowrap; /* Evita que se rompa en líneas */
+}
+
+.logo {
+  position: absolute; /* Posición fija en la esquina */
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%); /* Centrar verticalmente */
+  height: 60px;
+  z-index: 10;
+}
+
+.menu-layout {
+  padding: 20px;
+  min-height: calc(100vh - 80px);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin-left: 70px; 
+  transition: margin-left 0.3s ease;
+  box-sizing: border-box;
+}
+
+/* Cuando el sidebar está expandido */
+.menu-layout.sidebar-expanded {
+  margin-left: 280px;
+}
+
+.menu-container {
+  padding: 0; 
+  background: transparent; 
+}
+
+.open-sidebar-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 15px;
+  transition: background 0.2s ease;
+}
+
+.open-sidebar-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .main-content {
   padding: 40px;
+  background: rgba(255, 255, 255, 0.1); 
+  border-radius: 15px;
 }
 
 .menu-grid {
@@ -152,52 +200,6 @@
   }
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .menu-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-  }
-  
-  .menu-item {
-    max-width: 150px;
-    height: 150px;
-    
-    .icon-wrapper {
-      width: 80px;
-      height: 80px;
-      
-      i {
-        font-size: 28px;
-      }
-    }
-  }
-}
-
-@media (max-width: 480px) {
-  .menu-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .main-content {
-    padding: 20px;
-  }
-  .menu-layout {
-  display: flex;
-  min-height: 100vh;
-  background: #fff;
-}
-
-app-sidebar {
-  width: 250px;
-  background-color: #1f5957;
-  color: white;
-  border-right: 1px solid #ccc;
-  flex-shrink: 0;
-}
-
-/* ✅ AGREGAR al final del archivo */
-
 /* Mensaje de bienvenida */
 .welcome-message {
   position: fixed;
@@ -256,8 +258,37 @@ app-sidebar {
   }
 }
 
-/* Responsive para mensaje de bienvenida */
+/* 📱 RESPONSIVE MEJORADO */
+@media (max-width: 1200px) {
+  .menu-layout.sidebar-expanded {
+    margin-left: 280px;
+  }
+}
+
 @media (max-width: 768px) {
+  .menu-layout {
+    margin-left: 0 !important; /* Sin sidebar en móviles */
+  }
+  
+  .menu-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+  
+  .menu-item {
+    max-width: 150px;
+    height: 150px;
+    
+    .icon-wrapper {
+      width: 80px;
+      height: 80px;
+      
+      i {
+        font-size: 28px;
+      }
+    }
+  }
+  
   .welcome-message {
     left: 10px;
     right: 10px;
@@ -265,4 +296,12 @@ app-sidebar {
   }
 }
 
+@media (max-width: 480px) {
+  .menu-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .main-content {
+    padding: 20px;
+  }
 }
