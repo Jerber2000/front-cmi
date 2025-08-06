@@ -1,354 +1,371 @@
-/* src/app/components/paciente/paciente-list.component.scss */
+// src/app/components/paciente/paciente-list.component.scss
 
 // Variables de colores Fraijanes
-$fraijanes-green: #4a9d7e;
-$fraijanes-dark-green: #3a7a5e;
-$fraijanes-light-green: #5fb49c;
-$fraijanes-bg: #f8f9fa;
+$color-primary: #1F595B;  // Verde principal Fraijanes
+$color-primary-dark: #3d6b4a;
+$color-primary-light: #5a8c69;
+$color-secondary: #6c757d;
+$color-success: #4a7c59;
+$color-warning: #f1c40f;
+$color-danger: #e74c3c;
+$color-info: #3498db;
+$color-light: #f8f9fa;
+$color-white: #ffffff;
+$color-dark: #2c3e50;
+$color-muted: #6c757d;
 
-.pacientes-container {
+// Variables del sidebar (deben coincidir con sidebar.component.scss)
+$sidebar-width-expanded: 280px;
+$sidebar-width-collapsed: 70px;
+
+// Layout con sidebar fijo
+.page-container {
+  display: flex;
   min-height: 100vh;
-  background: $fraijanes-bg;
+  background-color: $color-light;
+}
+
+.main-content {
+  flex: 1;
+  // Margen izquierdo para compensar el sidebar fijo
+  margin-left: $sidebar-width-expanded; 
+  padding: 0; // Sin padding para que el header ocupe todo el ancho
+  background-color: $color-light;
+  transition: margin-left 0.3s ease;
   
-  // Header estilo Fraijanes
-  .header-fraijanes {
-    background: linear-gradient(90deg, $fraijanes-green 0%, $fraijanes-light-green 100%);
-    height: 80px;
-    display: flex;
-    align-items: center;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    
-    .header-content {
-      width: 100%;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .module-title {
-      color: white;
-      font-size: 2rem;
-      font-weight: 600;
-      margin: 0;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    }
-    
-    .logo-container {
-      display: flex;
-      align-items: center;
-      
-      .logo-fraijanes {
-        height: 60px;
-        width: auto;
-        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-      }
-    }
+  // Cuando el sidebar está colapsado
+  .sidebar-container.collapsed ~ & {
+    margin-left: $sidebar-width-collapsed;
   }
+}
+
+// Contenedor principal
+.pacientes-container {
+  background: $color-white;
+  min-height: 100vh;
+  margin: 0;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+// Header con estilo Fraijanes - debe ocupar todo el ancho
+.header-fraijanes {
+  background: $color-primary;
+  color: $color-white;
+  padding: 25px 30px;
+  border-bottom: none;
+  margin: 0;
+  width: 100%;
   
-  // Alertas
-  .alerts-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1rem 2rem 0;
-    
-    .alert {
-      border-radius: 12px;
-      border: none;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      margin-bottom: 1rem;
-    }
-  }
-  
-  // Sección de búsqueda
-  .search-section {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
-    
-    .search-container {
-      display: flex;
-      gap: 1.5rem;
-      align-items: center;
-      flex-wrap: wrap;
-      
-      .search-box {
-        position: relative;
-        flex: 1;
-        min-width: 300px;
-        
-        .search-input {
-          background: white;
-          border: 2px solid #e9ecef;
-          border-radius: 25px;
-          padding: 0.75rem 3rem 0.75rem 1.5rem;
-          font-size: 1rem;
-          transition: all 0.3s ease;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-          
-          &:focus {
-            outline: none;
-            border-color: $fraijanes-green;
-            box-shadow: 0 4px 20px rgba(74, 157, 126, 0.2);
-          }
-          
-          &::placeholder {
-            color: #6c757d;
-            font-style: italic;
-          }
-        }
-        
-        .search-icon {
-          position: absolute;
-          right: 1.2rem;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #6c757d;
-          font-size: 1.1rem;
-        }
-      }
-      
-      .btn-add-patient {
-        background: $fraijanes-dark-green;
-        color: white;
-        border: none;
-        padding: 0.75rem 1.5rem;
-        border-radius: 25px;
-        font-weight: 600;
-        font-size: 1rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(58, 122, 94, 0.3);
-        white-space: nowrap;
-        
-        &:hover {
-          background: #2d5a45; // ← CAMBIAR: usar color directo en lugar de darken()
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(58, 122, 94, 0.4);
-        }
-        
-        &:active {
-          transform: translateY(0);
-        }
-      }
-    }
-  }
-  
-  // Loading
-  .loading-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 4rem;
-    
-    .spinner-border {
-      color: $fraijanes-green;
-      width: 3rem;
-      height: 3rem;
-    }
-  }
-  
-  // Tabla
-  .table-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 2rem;
-    
-    .table-responsive {
-      background: white;
-      border-radius: 15px;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-      overflow: hidden;
-    }
-    
-    .patients-table {
-      margin: 0;
-      border-collapse: separate;
-      border-spacing: 0;
-      
-      thead {
-        background: linear-gradient(90deg, $fraijanes-green 0%, $fraijanes-light-green 100%);
-        
-        th {
-          color: white;
-          font-weight: 600;
-          font-size: 0.9rem;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          padding: 1.2rem 1rem;
-          border: none;
-          text-align: center;
-          vertical-align: middle;
-          
-          &:first-child {
-            text-align: left;
-          }
-        }
-      }
-      
-      tbody {
-        tr {
-          transition: all 0.2s ease;
-          border-bottom: 1px solid #f1f3f4;
-          
-          &:hover {
-            background: rgba(74, 157, 126, 0.05);
-          }
-          
-          &:last-child {
-            border-bottom: none;
-          }
-        }
-        
-        td {
-          padding: 1rem;
-          vertical-align: middle;
-          color: #495057;
-          text-align: center;
-          border: none;
-          
-          &.patient-name {
-            text-align: left;
-            font-weight: 600;
-            color: $fraijanes-dark-green;
-          }
-          
-          &.address-cell {
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            text-align: left;
-          }
-        }
-      }
-      
-      .badge-gender {
-        display: inline-block;
-        padding: 0.4rem 0.8rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        
-        &.male {
-          background: rgba(0, 123, 255, 0.1);
-          color: #007bff;
-        }
-        
-        &.female {
-          background: rgba(255, 193, 7, 0.1);
-          color: #ffc107;
-        }
-      }
-      
-      .btn-action {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        border: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        margin: 0 0.2rem;
-        
-        &.btn-edit {
-          background: rgba(40, 167, 69, 0.1);
-          color: #28a745;
-          
-          &:hover {
-            background: #28a745;
-            color: white;
-            transform: scale(1.1);
-          }
-        }
-        
-        &.btn-delete {
-          background: rgba(220, 53, 69, 0.1);
-          color: #dc3545;
-          
-          &:hover {
-            background: #dc3545;
-            color: white;
-            transform: scale(1.1);
-          }
-        }
-      }
-      
-      .no-data {
-        text-align: center;
-        padding: 3rem !important;
-        
-        .no-data-content {
-          color: #6c757d;
-          
-          i {
-            margin-bottom: 1rem;
-            opacity: 0.5;
-          }
-          
-          p {
-            margin: 0;
-            font-size: 1.1rem;
-          }
-        }
-      }
-    }
-  }
-  
-  // Paginación
-  .pagination-container {
+  .header-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    max-width: 1200px;
-    margin: 2rem auto 0;
-    padding: 0 2rem 2rem;
     
-    .pagination-info {
-      color: #6c757d;
-      font-size: 0.9rem;
+    .module-title {
+      font-size: 2rem;
+      font-weight: 600;
+      margin: 0;
     }
     
-    .pagination-nav {
-      .pagination {
-        display: flex;
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        gap: 0.3rem;
+    .logo-fraijanes {
+      height: 60px;
+      width: auto;
+    }
+  }
+}
+
+// Alertas
+.alerts-container {
+  padding: 20px 30px 0;
+  
+  .alert {
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    
+    &.alert-success {
+      background-color: lighten($color-success, 45%);
+      color: darken($color-success, 10%);
+      border-left: 4px solid $color-success;
+    }
+    
+    &.alert-danger {
+      background-color: lighten($color-danger, 45%);
+      color: darken($color-danger, 10%);
+      border-left: 4px solid $color-danger;
+    }
+  }
+}
+
+// Sección de búsqueda
+.search-section {
+  padding: 25px 30px;
+  background-color: $color-light;
+  border-bottom: 1px solid #e9ecef;
+  
+  .search-container {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+    
+    .search-box {
+      position: relative;
+      flex: 1;
+      min-width: 300px;
+      
+      .search-input {
+        padding: 12px 15px 12px 45px;
+        border-radius: 25px;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+        width: 100%;
         
-        li {
-          &.active button {
-            background: $fraijanes-green;
-            color: white;
-            border-color: $fraijanes-green;
-          }
-          
-          &.disabled button {
-            opacity: 0.5;
-            cursor: not-allowed;
-          }
-          
-          button {
-            padding: 0.5rem 0.8rem;
-            border: 1px solid #dee2e6;
-            background: white;
-            color: #6c757d;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 0.9rem;
-            min-width: 40px;
-            
-            &:hover:not(:disabled) {
-              background: $fraijanes-green;
-              color: white;
-              border-color: $fraijanes-green;
-            }
-          }
+        &:focus {
+          border-color: $color-primary;
+          box-shadow: 0 0 0 0.2rem rgba($color-primary, 0.25);
+          outline: none;
         }
+      }
+      
+      .search-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: $color-muted;
+        font-size: 1.1rem;
+      }
+    }
+    
+    .btn-add-patient {
+      background: $color-primary;
+      border: none;
+      color: $color-white;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-weight: 500;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+      
+      &:hover {
+        background: $color-primary-dark;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba($color-primary, 0.4);
+        color: $color-white;
+      }
+      
+      i {
+        margin-right: 8px;
+      }
+    }
+  }
+}
+
+// Loading
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px;
+  
+  .spinner-border {
+    color: $color-primary;
+  }
+}
+
+// Tabla
+.table-container {
+  padding: 0 30px 30px;
+  
+  .table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .patients-table {
+    margin-bottom: 0;
+    
+    thead {
+      th {
+        background-color: $color-primary;
+        color: $color-white;
+        border: none;
+        padding: 18px 12px;
+        font-weight: 600;
+        text-align: center;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+    }
+    
+    tbody {
+      td {
+        padding: 15px 12px;
+        vertical-align: middle;
+        border-top: 1px solid #e9ecef;
+        text-align: center;
+        font-size: 0.95rem;
+        
+        &.patient-name {
+          font-weight: 600;
+          color: $color-dark;
+          text-align: left;
+        }
+        
+        &.address-cell {
+          max-width: 200px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          text-align: left;
+        }
+      }
+      
+      tr {
+        transition: background-color 0.2s ease;
+        
+        &:hover {
+          background-color: lighten($color-primary, 48%);
+        }
+      }
+    }
+  }
+}
+
+// Badges de género
+.badge-gender {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  
+  &.male {
+    background-color: $color-info;
+    color: $color-white;
+  }
+  
+  &.female {
+    background-color: #e91e63;
+    color: $color-white;
+  }
+}
+
+// Botones de acción
+.btn-action {
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin: 0 3px;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  
+  &.btn-edit {
+    background-color: $color-warning;
+    color: $color-white;
+    
+    &:hover {
+      background-color: darken($color-warning, 10%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba($color-warning, 0.4);
+    }
+  }
+  
+  &.btn-delete {
+    background-color: $color-danger;
+    color: $color-white;
+    
+    &:hover {
+      background-color: darken($color-danger, 10%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba($color-danger, 0.4);
+    }
+  }
+}
+
+// Sin datos
+.no-data {
+  text-align: center;
+  padding: 60px 20px;
+  
+  .no-data-content {
+    i {
+      color: lighten($color-muted, 20%);
+      margin-bottom: 20px;
+    }
+    
+    p {
+      color: $color-muted;
+      font-size: 1.1rem;
+      margin: 0;
+      font-weight: 500;
+    }
+  }
+}
+
+// Paginación
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 2px solid $color-light;
+  
+  .pagination-info {
+    color: $color-muted;
+    font-weight: 500;
+  }
+  
+  .pagination {
+    margin: 0;
+    display: flex;
+    list-style: none;
+    gap: 5px;
+    
+    li {
+      button {
+        border: 2px solid $color-primary;
+        color: $color-primary;
+        padding: 10px 14px;
+        background: $color-white;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        min-width: 40px;
+        
+        &:hover:not(:disabled) {
+          background-color: $color-primary;
+          color: $color-white;
+          transform: translateY(-1px);
+        }
+        
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          border-color: $color-muted;
+          color: $color-muted;
+        }
+      }
+      
+      &.active button {
+        background-color: $color-primary;
+        border-color: $color-primary;
+        color: $color-white;
+        box-shadow: 0 4px 12px rgba($color-primary, 0.3);
+      }
+      
+      &.disabled button {
+        background-color: $color-light;
+        border-color: #dee2e6;
+        color: $color-muted;
       }
     }
   }
@@ -356,121 +373,73 @@ $fraijanes-bg: #f8f9fa;
 
 // Modal
 .modal {
-  .modal-dialog {
-    margin: 1rem auto;
+  .modal-content {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
     
-    .modal-content {
-      border: none;
-      border-radius: 15px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    .modal-header {
+      background: $color-primary;
+      color: $color-white;
+      border-radius: 15px 15px 0 0;
+      border-bottom: none;
+      padding: 25px 30px;
       
-      .modal-header {
-        background: linear-gradient(90deg, $fraijanes-green 0%, $fraijanes-light-green 100%);
-        color: white;
-        border-radius: 15px 15px 0 0;
-        border-bottom: none;
-        padding: 1.5rem;
+      .modal-title {
+        font-size: 1.4rem;
+        font-weight: 600;
         
-        .modal-title {
-          font-weight: 600;
-          font-size: 1.3rem;
+        i {
+          margin-right: 10px;
+        }
+      }
+      
+      .btn-close {
+        filter: brightness(0) invert(1);
+        opacity: 0.8;
+        
+        &:hover {
+          opacity: 1;
+        }
+      }
+    }
+    
+    .modal-body {
+      padding: 30px;
+      background-color: #fafafa;
+    }
+    
+    .modal-footer {
+      padding: 20px 30px;
+      border-top: 2px solid $color-light;
+      background-color: $color-white;
+      border-radius: 0 0 15px 15px;
+      
+      .btn {
+        padding: 12px 24px;
+        font-weight: 500;
+        border-radius: 8px;
+        
+        &.btn-primary {
+          background: $color-primary;
+          border: none;
+          
+          &:hover:not(:disabled) {
+            background: $color-primary-dark;
+            transform: translateY(-1px);
+          }
+          
+          &:disabled {
+            opacity: 0.6;
+          }
         }
         
-        .btn-close {
-          filter: invert(1);
-          opacity: 0.8;
+        &.btn-secondary {
+          background-color: $color-secondary;
+          border: none;
           
           &:hover {
-            opacity: 1;
-          }
-        }
-      }
-      
-      .modal-body {
-        padding: 2rem;
-        max-height: 70vh;
-        overflow-y: auto;
-        
-        .form-section {
-          margin-bottom: 2rem;
-          
-          &:last-child {
-            margin-bottom: 0;
-          }
-          
-          .section-title {
-            color: $fraijanes-dark-green;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid rgba(74, 157, 126, 0.2);
-          }
-        }
-        
-        .form-label {
-          font-weight: 600;
-          color: #495057;
-          margin-bottom: 0.5rem;
-        }
-        
-        .form-control {
-          border: 2px solid #e9ecef;
-          border-radius: 8px;
-          padding: 0.75rem 1rem;
-          transition: all 0.3s ease;
-          
-          &:focus {
-            border-color: $fraijanes-green;
-            box-shadow: 0 0 0 0.2rem rgba(74, 157, 126, 0.15);
-          }
-          
-          &.is-invalid {
-            border-color: #dc3545;
-          }
-        }
-        
-        .invalid-feedback {
-          display: block;
-          font-size: 0.875rem;
-          color: #dc3545;
-          margin-top: 0.25rem;
-        }
-        
-        .text-muted {
-          font-size: 0.85rem;
-          color: #6c757d !important;
-        }
-      }
-      
-      .modal-footer {
-        border-top: 2px solid #f8f9fa;
-        padding: 1.5rem;
-        
-        .btn {
-          border-radius: 8px;
-          padding: 0.75rem 1.5rem;
-          font-weight: 600;
-          transition: all 0.3s ease;
-          
-          &.btn-primary {
-            background: $fraijanes-green;
-            border-color: $fraijanes-green;
-            
-            &:hover:not(:disabled) {
-              background: $fraijanes-dark-green;
-              border-color: $fraijanes-dark-green;
-              transform: translateY(-1px);
-            }
-            
-            &:disabled {
-              opacity: 0.6;
-            }
-          }
-          
-          &.btn-secondary {
-            &:hover {
-              transform: translateY(-1px);
-            }
+            background-color: darken($color-secondary, 10%);
           }
         }
       }
@@ -478,77 +447,155 @@ $fraijanes-bg: #f8f9fa;
   }
 }
 
+// Formulario
+.form-section {
+  margin-bottom: 30px;
+  padding: 25px;
+  background-color: $color-white;
+  border-radius: 12px;
+  border-left: 4px solid $color-primary;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  
+  .section-title {
+    color: $color-primary;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid $color-light;
+    
+    i {
+      color: $color-primary;
+      margin-right: 8px;
+    }
+  }
+  
+  .form-label {
+    font-weight: 600;
+    color: $color-dark;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+  }
+  
+  .form-control {
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    padding: 12px 15px;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    
+    &:focus {
+      border-color: $color-primary;
+      box-shadow: 0 0 0 0.2rem rgba($color-primary, 0.25);
+      outline: none;
+    }
+    
+    &.is-invalid {
+      border-color: $color-danger;
+      
+      &:focus {
+        border-color: $color-danger;
+        box-shadow: 0 0 0 0.2rem rgba($color-danger, 0.25);
+      }
+    }
+  }
+  
+  .invalid-feedback {
+    display: block;
+    color: $color-danger;
+    font-size: 0.875rem;
+    margin-top: 5px;
+    font-weight: 500;
+  }
+  
+  .text-muted {
+    color: $color-muted;
+    font-size: 0.85rem;
+  }
+}
+
 // Responsive
 @media (max-width: 768px) {
-  .pacientes-container {
-    .header-fraijanes {
-      height: auto;
-      padding: 1rem 0;
-      
-      .header-content {
-        padding: 0 1rem;
-        flex-direction: column;
-        gap: 1rem;
-        text-align: center;
-      }
+  .main-content {
+    margin-left: 0; // En móvil no hay margen porque el sidebar se oculta
+  }
+  
+  .header-fraijanes {
+    padding: 20px;
+    
+    .header-content {
+      flex-direction: column;
+      text-align: center;
+      gap: 15px;
       
       .module-title {
         font-size: 1.5rem;
       }
       
       .logo-fraijanes {
-        height: 45px;
+        height: 50px;
       }
-    }
-    
-    .search-section {
-      padding: 1rem;
-      
-      .search-container {
-        flex-direction: column;
-        align-items: stretch;
-        
-        .search-box {
-          min-width: 100%;
-        }
-        
-        .btn-add-patient {
-          text-align: center;
-        }
-      }
-    }
-    
-    .table-container {
-      padding: 0 1rem;
-      
-      .patients-table {
-        font-size: 0.85rem;
-        
-        th, td {
-          padding: 0.5rem 0.3rem;
-        }
-        
-        .address-cell {
-          max-width: 120px;
-        }
-      }
-    }
-    
-    .pagination-container {
-      flex-direction: column;
-      gap: 1rem;
-      text-align: center;
     }
   }
   
-  .modal {
-    .modal-dialog {
-      margin: 0.5rem;
+  .search-section {
+    padding: 20px;
+    
+    .search-container {
+      flex-direction: column;
+      align-items: stretch;
       
-      .modal-content .modal-body {
-        padding: 1rem;
-        max-height: 60vh;
+      .search-box {
+        min-width: 100%;
+        margin-bottom: 15px;
       }
+      
+      .btn-add-patient {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  }
+  
+  .table-container {
+    padding: 0 15px 20px;
+    
+    .table-responsive {
+      font-size: 0.85rem;
+    }
+  }
+  
+  .pagination-container {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .modal-dialog {
+    margin: 10px;
+    
+    .modal-content {
+      .modal-body {
+        padding: 20px;
+      }
+      
+      .form-section {
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+    }
+  }
+}
+
+// Ajuste para cuando el sidebar cambia de tamaño
+:host {
+  .sidebar-container {
+    &.expanded ~ .main-content {
+      margin-left: $sidebar-width-expanded;
+    }
+    
+    &.collapsed ~ .main-content {
+      margin-left: $sidebar-width-collapsed;
     }
   }
 }

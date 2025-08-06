@@ -6,13 +6,14 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { PacienteService, Paciente, PacienteResponse } from '../../services/paciente.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { SidebarComponent } from '../sidebar/sidebar.component';
 
 declare var bootstrap: any;
 
 @Component({
   selector: 'app-paciente-list',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SidebarComponent],
   templateUrl: './paciente-list.component.html',
   styleUrls: ['./paciente-list.component.scss']
 })

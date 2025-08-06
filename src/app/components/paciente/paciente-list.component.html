@@ -1,142 +1,150 @@
 <!-- src/app/components/paciente/paciente-list.component.html -->
-<div class="pacientes-container">
-  <!-- Header con estilo Fraijanes -->
-  <div class="header-fraijanes">
-    <div class="header-content">
-      <h1 class="module-title">Pacientes</h1>
-      <div class="logo-container">
-        <img src="assets/img/LogoFraijanes.png" alt="Municipalidad de Fraijanes" class="logo-fraijanes">
+<div class="page-container">
+  <!-- Sidebar -->
+  <app-sidebar></app-sidebar>
+  
+  <!-- Contenido principal -->
+  <div class="main-content">
+    <div class="pacientes-container">
+      <!-- Header con estilo Fraijanes -->
+      <div class="header-fraijanes">
+        <div class="header-content">
+          <h1 class="module-title">Pacientes</h1>
+          <div class="logo-container">
+            <img src="assets/img/LogoFraijanes.png" alt="Municipalidad de Fraijanes" class="logo-fraijanes">
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Alertas -->
-  <div class="alerts-container">
-    <div *ngIf="success" class="alert alert-success alert-dismissible fade show" role="alert">
-      <i class="fas fa-check-circle me-2"></i>{{ success }}
-      <button type="button" class="btn-close" (click)="success = ''" aria-label="Close"></button>
-    </div>
+      <!-- Alertas -->
+      <div class="alerts-container">
+        <div *ngIf="success" class="alert alert-success alert-dismissible fade show" role="alert">
+          <i class="fas fa-check-circle me-2"></i>{{ success }}
+          <button type="button" class="btn-close" (click)="success = ''" aria-label="Close"></button>
+        </div>
 
-    <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
-      <i class="fas fa-exclamation-circle me-2"></i>{{ error }}
-      <button type="button" class="btn-close" (click)="error = ''" aria-label="Close"></button>
-    </div>
-  </div>
-
-  <!-- Sección de búsqueda y nuevo paciente -->
-  <div class="search-section">
-    <div class="search-container">
-      <div class="search-box">
-        <input
-          type="text"
-          class="form-control search-input"
-          placeholder="Buscar por nombre, apellido o CUI..."
-          [value]="searchTerm"
-          (input)="onSearchChange($event)"
-        >
-        <i class="fas fa-search search-icon"></i>
+        <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+          <i class="fas fa-exclamation-circle me-2"></i>{{ error }}
+          <button type="button" class="btn-close" (click)="error = ''" aria-label="Close"></button>
+        </div>
       </div>
-      <button class="btn btn-add-patient" (click)="openCreateModal()">
-        <i class="fas fa-plus me-2"></i>
-        Crear nuevo paciente
-      </button>
-    </div>
-  </div>
 
-  <!-- Loading spinner -->
-  <div *ngIf="loading" class="loading-container">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Cargando...</span>
-    </div>
-  </div>
-
-  <!-- Tabla de pacientes -->
-  <div *ngIf="!loading" class="table-container">
-    <div class="table-responsive">
-      <table class="table patients-table">
-        <thead>
-          <tr>
-            <th>Nombre Paciente</th>
-            <th>Género</th>
-            <th>Edad</th>
-            <th>CUI</th>
-            <th>Dirección</th>
-            <th>Discapacidad</th>
-            <th>Teléfono</th>
-            <th>Municipio</th>
-            <th>Editar</th>
-            <th>Eliminar</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let paciente of pacientes">
-            <td class="patient-name">{{ paciente.nombres }} {{ paciente.apellidos }}</td>
-            <td>
-              <span class="badge-gender" [class]="paciente.genero === 'M' ? 'male' : 'female'">
-                {{ paciente.genero }}
-              </span>
-            </td>
-            <td>{{ calculateAge(paciente.fechanacimiento) }}</td>
-            <td>{{ paciente.cui }}</td>
-            <td class="address-cell">{{ paciente.direccion }}</td>
-            <td>{{ paciente.tipodiscapacidad || 'Ninguna' }}</td>
-            <td>{{ paciente.telefonopersonal || 'N/A' }}</td>
-            <td>{{ paciente.municipio }}</td>
-            <td>
-              <button 
-                class="btn-action btn-edit" 
-                (click)="openEditModal(paciente)"
-                title="Editar paciente">
-                <i class="fas fa-edit"></i>
-              </button>
-            </td>
-            <td>
-              <button 
-                class="btn-action btn-delete" 
-                (click)="deletePaciente(paciente)"
-                title="Eliminar paciente">
-                <i class="fas fa-trash"></i>
-              </button>
-            </td>
-          </tr>
-          <tr *ngIf="pacientes.length === 0">
-            <td colspan="10" class="no-data">
-              <div class="no-data-content">
-                <i class="fas fa-users fa-3x"></i>
-                <p>{{ searchTerm ? 'No se encontraron pacientes con los criterios de búsqueda' : 'No hay pacientes registrados' }}</p>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Paginación -->
-    <div *ngIf="totalPages > 1" class="pagination-container">
-      <div class="pagination-info">
-        <small>
-          Mostrando {{ (currentPage - 1) * pageSize + 1 }} a 
-          {{ Math.min(currentPage * pageSize, totalItems) }} de 
-          {{ totalItems }} registros
-        </small>
+      <!-- Sección de búsqueda y nuevo paciente -->
+      <div class="search-section">
+        <div class="search-container">
+          <div class="search-box">
+            <input
+              type="text"
+              class="form-control search-input"
+              placeholder="Buscar por nombre, apellido o CUI..."
+              [value]="searchTerm"
+              (input)="onSearchChange($event)"
+            >
+            <i class="fas fa-search search-icon"></i>
+          </div>
+          <button class="btn btn-add-patient" (click)="openCreateModal()">
+            <i class="fas fa-plus me-2"></i>
+            Crear nuevo paciente
+          </button>
+        </div>
       </div>
-      <nav class="pagination-nav">
-        <ul class="pagination">
-          <li [class.disabled]="currentPage === 1">
-            <button (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 1">
-              <i class="fas fa-chevron-left"></i>
-            </button>
-          </li>
-          <li *ngFor="let page of getPages()" [class.active]="page === currentPage">
-            <button (click)="onPageChange(page)">{{ page }}</button>
-          </li>
-          <li [class.disabled]="currentPage === totalPages">
-            <button (click)="onPageChange(currentPage + 1)" [disabled]="currentPage === totalPages">
-              <i class="fas fa-chevron-right"></i>
-            </button>
-          </li>
-        </ul>
-      </nav>
+
+      <!-- Loading spinner -->
+      <div *ngIf="loading" class="loading-container">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+
+      <!-- Tabla de pacientes -->
+      <div *ngIf="!loading" class="table-container">
+        <div class="table-responsive">
+          <table class="table patients-table">
+            <thead>
+              <tr>
+                <th>Nombre Paciente</th>
+                <th>Género</th>
+                <th>Edad</th>
+                <th>CUI</th>
+                <th>Dirección</th>
+                <th>Discapacidad</th>
+                <th>Teléfono</th>
+                <th>Municipio</th>
+                <th>Editar</th>
+                <th>Eliminar</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let paciente of pacientes">
+                <td class="patient-name">{{ paciente.nombres }} {{ paciente.apellidos }}</td>
+                <td>
+                  <span class="badge-gender" [class]="paciente.genero === 'M' ? 'male' : 'female'">
+                    {{ paciente.genero }}
+                  </span>
+                </td>
+                <td>{{ calculateAge(paciente.fechanacimiento) }}</td>
+                <td>{{ paciente.cui }}</td>
+                <td class="address-cell">{{ paciente.direccion }}</td>
+                <td>{{ paciente.tipodiscapacidad || 'Ninguna' }}</td>
+                <td>{{ paciente.telefonopersonal || 'N/A' }}</td>
+                <td>{{ paciente.municipio }}</td>
+                <td>
+                  <button 
+                    class="btn-action btn-edit" 
+                    (click)="openEditModal(paciente)"
+                    title="Editar paciente">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                </td>
+                <td>
+                  <button 
+                    class="btn-action btn-delete" 
+                    (click)="deletePaciente(paciente)"
+                    title="Eliminar paciente">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="pacientes.length === 0">
+                <td colspan="10" class="no-data">
+                  <div class="no-data-content">
+                    <i class="fas fa-users fa-3x"></i>
+                    <p>{{ searchTerm ? 'No se encontraron pacientes con los criterios de búsqueda' : 'No hay pacientes registrados' }}</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginación -->
+        <div *ngIf="totalPages > 1" class="pagination-container">
+          <div class="pagination-info">
+            <small>
+              Mostrando {{ (currentPage - 1) * pageSize + 1 }} a 
+              {{ Math.min(currentPage * pageSize, totalItems) }} de 
+              {{ totalItems }} registros
+            </small>
+          </div>
+          <nav class="pagination-nav">
+            <ul class="pagination">
+              <li [class.disabled]="currentPage === 1">
+                <button (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 1">
+                  <i class="fas fa-chevron-left"></i>
+                </button>
+              </li>
+              <li *ngFor="let page of getPages()" [class.active]="page === currentPage">
+                <button (click)="onPageChange(page)">{{ page }}</button>
+              </li>
+              <li [class.disabled]="currentPage === totalPages">
+                <button (click)="onPageChange(currentPage + 1)" [disabled]="currentPage === totalPages">
+                  <i class="fas fa-chevron-right"></i>
+                </button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
     </div>
   </div>
 </div>
