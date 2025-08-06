@@ -6,8 +6,8 @@ WORKDIR /app
 # Copiar archivos de dependencias
 COPY package*.json ./
 
-# Instalar dependencias
-RUN npm install --omit=dev
+# Instalar TODAS las dependencias (incluyendo devDependencies)
+RUN npm ci
 
 # Copiar código fuente
 COPY . .
@@ -18,7 +18,7 @@ RUN npm run build
 # Etapa 2: Servir con Nginx
 FROM nginx:alpine
 
-# Copiar archivos built (tu app se llama cmi-front)
+# Copiar archivos built
 COPY --from=build /app/dist/cmi-front /usr/share/nginx/html/
 
 # Configuración personalizada de Nginx
