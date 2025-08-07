@@ -71,7 +71,7 @@
             <td>{{ user.extension }}</td>
             <td>
               <span class="status-badge">
-                {{ user.estado == "1" ? 'Activo' : 'Inactivo' }}
+                {{ user.estado == 1 ? 'Activo' : 'Inactivo' }}
               </span>
             </td>
             <td>
@@ -86,7 +86,7 @@
             <td>
               <button 
                 class="action-btn delete-btn" 
-                (click)="deleteUser(user.id!)"
+                (click)="deleteUser(user.idusuario!)"
                 title="Eliminar"
               >
                 Eliminar

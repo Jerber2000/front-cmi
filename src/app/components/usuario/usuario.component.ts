@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { FormsModule } from '@angular/forms'; 
 import { UsuarioService, Usuario } from '../../services/usuario.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
+import { AlertaService } from '../../services/alerta.service';
 
 // Extender la interface User para incluir los nuevos campos
 export interface ExtendedUser extends Usuario {
@@ -37,7 +38,8 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
 
   constructor(
     private UsuarioService: UsuarioService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private alerta: AlertaService
   ) {
     this.userForm = this.fb.group({
       nombres: ['', [Validators.required]],
@@ -87,10 +89,6 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
       if (sidebar) {
         const wasExpanded = this.sidebarExpanded;
         this.sidebarExpanded = sidebar.classList.contains('expanded');
-        
-        if (wasExpanded !== this.sidebarExpanded) {
-          console.log('Sidebar state changed:', this.sidebarExpanded ? 'expanded' : 'collapsed');
-        }
       }
     };
 
@@ -190,30 +188,6 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
     });
   }
 
-  onSubmit(): void {
-    if (this.userForm.valid) {
-      this.loading = true;
-      const userData: ExtendedUser = this.userForm.value;
-
-      const operation = this.isEditMode 
-        ? this.UsuarioService.actualizarUsuario(this.selectedUser!.id!, userData)
-        : this.UsuarioService.crearUsuario(userData);
-
-      operation.subscribe({
-        next: () => {
-          this.loading = false;
-          this.loadUsers();
-          this.showList();
-        },
-        error: (error) => {
-          console.error('Error saving user:', error);
-          this.loading = false;
-          alert('Error al guardar el usuario');
-        }
-      });
-    }
-  }
-
   deleteUser(id: number): void {
     if (confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
       this.UsuarioService.eliminarUsuario(id).subscribe({
@@ -239,5 +213,69 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
     this.userForm.patchValue({ status: 'Activo' });
     this.isEditMode = false;
     this.selectedUser = null;
+  }
+
+  onSubmit(): void {
+    if (this.userForm.valid) {
+      this.loading = true;
+      
+      const formData = this.userForm.value;
+      
+      // Verificar que las contraseñas coincidan
+      if (formData.password !== formData.confirmPassword) {
+        this.alerta.alertaError('Las contraseñas no coinciden');
+        this.loading = false;
+        return;
+      }
+      
+      // Verificar que los correos coincidan
+      if (formData.correo !== formData.confirmCorreo) {
+        this.alerta.alertaError('Los correos no coinciden');
+        this.loading = false;
+        return;
+      }
+      
+      // ✅ TODOS los campos de Usuario excepto 'id'
+      const userData: Omit<Usuario, 'idusuario'> = {
+        fkrol: parseInt(formData.role),
+        usuario: formData.usuario,
+        clave: formData.password,
+        nombres: formData.nombres,
+        apellidos: formData.apellidos,
+        fechanacimiento: formData.fechaNacimiento,
+        correo: formData.correo,
+        puesto: formData.puesto,
+        profesion: formData.profesion || '',
+        telinstitucional: formData.telinstitucional || '',
+        extension: formData.extension || '',
+        telefonopersonal: formData.telPersonal || '',
+        nombrecontactoemergencia: formData.contactoEmergencia || '',
+        telefonoemergencia: formData.telEmergencia || '',
+        rutafotoperfil: '', // Por ahora vacío hasta implementar imágenes
+        observaciones: formData.observaciones || '',
+        usuariocreacion: '1', // ⚠️ CAMBIAR por el usuario actual logueado
+        estado: parseInt(formData.status)
+      };
+
+      const operation = this.isEditMode 
+        ? this.UsuarioService.actualizarUsuario(this.selectedUser!.idusuario, userData)
+        : this.UsuarioService.crearUsuario(userData);
+
+      operation.subscribe({
+        next: () => {
+          this.loading = false;
+          this.loadUsers();
+          this.showList();
+          this.alerta.alertaExito('Usuario creado correctamente');
+        },
+        error: (error) => {
+          console.error('Error al guardar usuario:', error);
+          this.loading = false;
+          this.alerta.alertaError('No se pudo crear el usuario');
+        }
+      });
+    } else {
+      this.alerta.alertaPreventiva('Completa todos los campos requeridos');
+    }
   }
 }
