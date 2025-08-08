@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { tap, catchError, map } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment.development';
 
 export interface Usuario {
-    id:                       number;
+    idusuario:                number;
     fkrol:                    number;
     usuario:                  string;
     clave:                    string;
@@ -24,7 +24,7 @@ export interface Usuario {
     rutafotoperfil:           string;
     observaciones?:           string;
     usuariocreacion:          string;
-    estado:                   string;
+    estado:                   number;
 }
 
 @Injectable({
@@ -62,12 +62,22 @@ export class UsuarioService{
         return this.http.get<Usuario>(`${this.apiUrl}/buscarPorId/${id}`);
     }
 
-    crearUsuario(usuario: Usuario): Observable<Usuario>{
-        return this.http.post<Usuario>(`${this.apiUrl}/crearUsuario`, usuario);
+    crearUsuario(usuario: Omit<Usuario, 'idusuario'>): Observable<any> {
+        return this.http.post<any>(`${this.apiUrl}/crearUsuario`, usuario).pipe(
+            tap(response => {
+                console.log('RESPUESTA EXITOSA:', response);
+            }),
+            catchError(error => {
+                console.error('❌ ERROR COMPLETO:', error);
+                console.error('📋 STATUS:', error.status);
+                console.error('💬 MENSAJE:', error.error);
+                throw error;
+            })
+        );
     }
 
-    actualizarUsuario(id: number, usuario: Usuario): Observable<Usuario>{
-        return this.http.put<Usuario>(`${this.apiUrl}/actualizarUsuario/${id}`, usuario);
+    actualizarUsuario(id: number, usuario: Omit<Usuario, 'idusuario'>): Observable<any> {
+        return this.http.put<any>(`${this.apiUrl}/usuarios/${id}`, usuario);
     }
 
     eliminarUsuario(id: number): Observable<void>{

@@ -595,10 +595,29 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
+  z-index: 1050;
   animation: fadeIn 0.3s ease-out;
   padding: 20px;
   box-sizing: border-box;
+}
+
+.swal2-container {
+  z-index: 10000 !important;
+}
+
+.swal2-popup {
+  z-index: 10001 !important;
+}
+
+/* Borde rojo para el toast */
+.toast-error-border {
+  border-left: 5px solid #f44336 !important;
+  border-radius: 8px !important;
+}
+
+/* Timer rojo */
+.toast-error-timer {
+  background-color: #f44336 !important;
 }
 
 .modal-content-large {
