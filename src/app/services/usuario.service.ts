@@ -58,14 +58,30 @@ export class UsuarioService{
         )
     }
 
-    obtenerUsuarioPorId(id: number): Observable<Usuario>{
-        return this.http.get<Usuario>(`${this.apiUrl}/buscarPorId/${id}`);
+    obtenerUsuarioPorId(id: number): Observable<Usuario> {
+        return this.http.get<Usuario>(`${this.apiUrl}/buscarPorId/${id}`).pipe(
+            tap(response => {
+            }),
+            catchError(error => {
+                console.error(`❌ ERROR AL BUSCAR USUARIO ID ${id}:`);
+                console.error('📋 STATUS:', error.status);
+                console.error('💬 MENSAJE:', error.error);
+                console.error('🔍 ERROR COMPLETO:', error);
+                
+                // Mensajes específicos según el error
+                if (error.status === 404) {
+                    console.error('🚫 Usuario no encontrado');
+                } else if (error.status === 0) {
+                    console.error('🌐 Sin conexión al servidor');
+                }
+                throw error;
+            })
+        );
     }
 
     crearUsuario(usuario: Omit<Usuario, 'idusuario'>): Observable<any> {
         return this.http.post<any>(`${this.apiUrl}/crearUsuario`, usuario).pipe(
             tap(response => {
-                console.log('RESPUESTA EXITOSA:', response);
             }),
             catchError(error => {
                 console.error('❌ ERROR COMPLETO:', error);
@@ -77,10 +93,52 @@ export class UsuarioService{
     }
 
     actualizarUsuario(id: number, usuario: Omit<Usuario, 'idusuario'>): Observable<any> {
-        return this.http.put<any>(`${this.apiUrl}/usuarios/${id}`, usuario);
+        return this.http.put<any>(`${this.apiUrl}/actualizarUsuario/${id}`, usuario).pipe(
+            tap(response => {
+            }),
+            catchError(error => {
+                console.error(`❌ ERROR AL ACTUALIZAR USUARIO ID ${id}:`);
+                console.error('📋 STATUS:', error.status);
+                console.error('💬 MENSAJE:', error.error);
+                console.error('🔍 ERROR COMPLETO:', error);
+                console.error('📝 DATOS ENVIADOS:', usuario);
+                
+                // Mensajes específicos según el error
+                if (error.status === 404) {
+                    console.error('🚫 Usuario no encontrado para actualizar');
+                } else if (error.status === 400) {
+                    console.error('📋 Datos inválidos enviados');
+                } else if (error.status === 0) {
+                    console.error('🌐 Sin conexión al servidor');
+                }
+                
+                throw error;
+            })
+        );
     }
 
-    eliminarUsuario(id: number): Observable<void>{
-        return this.http.delete<void>(`${this.apiUrl}/eliminarUsuario/${id}`);
+    eliminarUsuario(id: number): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}/eliminarUsuario/${id}`).pipe(
+            tap(() => {
+            }),
+            catchError(error => {
+                console.error(`❌ ERROR AL ELIMINAR USUARIO ID ${id}:`);
+                console.error('📋 STATUS:', error.status);
+                console.error('💬 MENSAJE:', error.error);
+                console.error('🔍 ERROR COMPLETO:', error);
+                
+                if (error.status === 404) {
+                    console.error('🚫 Usuario no encontrado para eliminar');
+                } else if (error.status === 403) {
+                    console.error('🔒 Sin permisos para eliminar este usuario');
+                } else if (error.status === 409) {
+                    console.error('⚠️ No se puede eliminar: usuario tiene dependencias');
+                } else if (error.status === 0) {
+                    console.error('🌐 Sin conexión al servidor');
+                }
+                
+                throw error;
+            })
+        );
     }
 }

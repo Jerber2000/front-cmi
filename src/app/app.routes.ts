@@ -24,7 +24,6 @@ export const routes: Routes = [
     loadComponent: () => import('./components/usuario/usuario.component').then(c => c.UsuarioComponent), 
     canActivate: [authGuard] 
   },
-  // ✅ AGREGAR esta nueva ruta
   {
     path: 'pacientes',
     loadComponent: () =>

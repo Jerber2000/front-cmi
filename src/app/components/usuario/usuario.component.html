@@ -53,7 +53,8 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let user of filteredUsers" class="table-row">
+          <!-- 🆕 Cambiar filteredUsers por paginatedUsers -->
+          <tr *ngFor="let user of paginatedUsers" class="table-row">
             <td class="user-name" (click)="viewUser(user)">
               {{ user.nombres }} {{ user.apellidos}}
             </td>
@@ -107,6 +108,83 @@
         Cargando usuarios...
       </div>
     </div>
+
+    <!-- 🆕 CONTROLES DE PAGINACIÓN -->
+    <div class="pagination-container" *ngIf="totalItems > 0">
+      <!-- Navegación de páginas (solo si hay más de 1 página) -->
+      <div class="pagination" *ngIf="totalPages > 1">
+        <!-- Botón anterior -->
+        <button 
+          class="pagination-btn" 
+          [class.disabled]="currentPage === 1"
+          (click)="previousPage()"
+          [disabled]="currentPage === 1"
+        >
+          <i class="fas fa-chevron-left"></i>
+        </button>
+
+        <!-- Primera página -->
+        <button 
+          *ngIf="getPages()[0] > 1"
+          class="pagination-btn"
+          (click)="goToPage(1)"
+        >
+          1
+        </button>
+        
+        <!-- Puntos suspensivos si hay salto -->
+        <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
+
+        <!-- Páginas visibles -->
+        <button 
+          *ngFor="let page of getPages()"
+          class="pagination-btn"
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)"
+        >
+          {{ page }}
+        </button>
+
+        <!-- Puntos suspensivos si hay salto al final -->
+        <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
+
+        <!-- Última página -->
+        <button 
+          *ngIf="getPages()[getPages().length - 1] < totalPages"
+          class="pagination-btn"
+          (click)="goToPage(totalPages)"
+        >
+          {{ totalPages }}
+        </button>
+
+        <!-- Botón siguiente -->
+        <button 
+          class="pagination-btn" 
+          [class.disabled]="currentPage === totalPages"
+          (click)="nextPage()"
+          [disabled]="currentPage === totalPages"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <!-- Mostrar mensaje si solo hay una página -->
+      <div *ngIf="totalPages <= 1" class="pagination-single">
+        Página 1 de 1
+      </div>
+
+      <!-- Selector de elementos por página -->
+      <div class="items-per-page">
+        <label>Mostrar:</label>
+        <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
+          <option [value]="5">5</option>
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+        </select>
+        <span>por página</span>
+      </div>
+    </div>
   </div>
 
 <!-- 🎯 MODAL FORMULARIO MEJORADO -->
@@ -115,7 +193,11 @@
     
     <!-- Header del modal -->
     <div class="modal-header">
-      <h3>{{ isEditMode ? 'Editar Usuario' : 'Nuevo Usuario' }}</h3>
+      <h3>
+        <span *ngIf="isViewMode">Ver Usuario</span>
+        <span *ngIf="!isViewMode && isEditMode">Editar Usuario</span>
+        <span *ngIf="!isViewMode && !isEditMode">Nuevo Usuario</span>
+      </h3>
       <button class="modal-close" (click)="closeModal()">
         <i class="fas fa-times"></i>
       </button>
@@ -141,9 +223,11 @@
             accept="image/*" 
             style="display: none;"
           >
-          <button type="button" class="photo-btn" (click)="fileInput.click()">
-            <i class="fas fa-camera"></i> Seleccionar Foto
-          </button>
+          <div *ngIf="!isViewMode" class="d-flex gap-2">
+            <button type="button" class="photo-btn" (click)="fileInput.click()">
+              <i class="fas fa-camera"></i> Seleccionar Foto
+            </button>
+          </div>
         </div>
       </div>
 
@@ -176,7 +260,7 @@
             </div>
 
             <div class="form-group">
-              <label>Profesión</label>
+              <label>Profesión *</label>
               <input 
                 type="text" 
                 formControlName="profesion"
@@ -213,26 +297,6 @@
             </div>
 
             <div class="form-group">
-              <label>Contraseña *</label>
-              <input 
-                type="password" 
-                formControlName="password"
-                class="form-input"
-                placeholder="Ingrese contraseña"
-              >
-            </div>
-
-            <div class="form-group">
-              <label>Confirmar Contraseña *</label>
-              <input 
-                type="password" 
-                formControlName="confirmPassword"
-                class="form-input"
-                placeholder="Confirme la contraseña"
-              >
-            </div>
-
-            <div class="form-group">
               <label>Rol *</label>
               <select formControlName="role" class="form-input">
                 <option value="">Seleccionar rol</option>
@@ -244,6 +308,38 @@
                 <option value="6">Nutricionista</option>
                 <option value="7">Recepcionista</option>
               </select>
+            </div>
+
+            <div *ngIf="!isViewMode">
+              <div class="form-group">
+                <label>
+                  Contraseña 
+                  <span *ngIf="!isEditMode" class="required">*</span>
+                  <span *ngIf="isEditMode" class="optional">(opcional)</span>
+                </label>
+                <input 
+                  type="password" 
+                  formControlName="password"
+                  class="form-input"
+                  [placeholder]="isEditMode ? 'Dejar vacío para mantener la actual' : 'Ingrese contraseña'"
+                >
+              </div>
+            </div>
+
+            <div *ngIf="!isViewMode">
+              <div class="form-group">
+                <label>
+                  Confirmar Contraseña 
+                  <span *ngIf="!isEditMode" class="required">*</span>
+                  <span *ngIf="isEditMode" class="optional">(opcional)</span>
+                </label>
+                <input 
+                  type="password" 
+                  formControlName="confirmPassword"
+                  class="form-input"
+                  [placeholder]="isEditMode ? 'Confirme nueva contraseña si la cambió' : 'Confirme la contraseña'"
+                >
+              </div>
             </div>
           </div>
         </div>
@@ -275,12 +371,14 @@
             </div>
 
             <div class="form-group">
-              <label>Teléfono Institucional</label>
+              <label>Teléfono Institucional *</label>
               <input 
                 type="text" 
                 formControlName="telinstitucional"
                 class="form-input"
-                placeholder="+502-2345-6789"
+                placeholder="+502 2345-6789"
+                appPhoneFormat
+                maxlength="14"
               >
             </div>
 
@@ -295,12 +393,14 @@
             </div>
 
             <div class="form-group">
-              <label>Teléfono Personal</label>
+              <label>Teléfono Personal *</label>
               <input 
                 type="text" 
                 formControlName="telPersonal"
                 class="form-input"
-                placeholder="+502-1234-5678"
+                placeholder="+502 1234-5678"
+                appPhoneFormat
+                maxlength="14"
               >
             </div>
 
@@ -333,12 +433,14 @@
             </div>
 
             <div class="form-group">
-              <label>Teléfono de Emergencia</label>
+              <label>Teléfono de Emergencia *</label>
               <input 
                 type="text" 
                 formControlName="telEmergencia"
                 class="form-input"
-                placeholder="+502-9876-5432"
+                placeholder="+502 9876-5432"
+                appPhoneFormat
+                maxlength="14"
               >
             </div>
           </div>
@@ -361,8 +463,9 @@
             </div>
 
             <div class="form-group">
-              <label>Estado</label>
+              <label>Estado *</label>
               <select formControlName="status" class="form-input">
+                <option value="">Seleccione estado</option>
                 <option value="1">Activo</option>
                 <option value="0">Inactivo</option>
               </select>
@@ -375,22 +478,29 @@
 
     <!-- Footer fijo del modal -->
     <div class="modal-footer">
-      <button type="button" class="btn-cancel" (click)="closeModal()">
-        <i class="fas fa-times"></i> Cancelar
-      </button>
-      <button 
-        type="button"
-        class="btn-save" 
-        (click)="onSubmit()"
-        [disabled]="userForm.invalid || loading"
-      >
-        <span *ngIf="loading">
-          <i class="fas fa-spinner fa-spin"></i> Guardando...
-        </span>
-        <span *ngIf="!loading">
-          <i class="fas fa-save"></i> {{ isEditMode ? 'Actualizar' : 'Crear' }} Usuario
-        </span>
-      </button>
+      <div *ngIf="isViewMode" class="d-flex gap-2">
+        <button type="button" class="btn-cancel" (click)="closeModal()">
+          <i class="fas fa-times"></i> Cerrar
+        </button>
+      </div>
+      <div *ngIf="!isViewMode" class="d-flex gap-2">
+        <button type="button" class="btn-cancel" (click)="closeModal()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button 
+          type="button"
+          class="btn-save" 
+          (click)="onSubmit()"
+          [disabled]="userForm.invalid || loading"
+        >
+          <span *ngIf="loading">
+            <i class="fas fa-spinner fa-spin"></i> Guardando...
+          </span>
+          <span *ngIf="!loading">
+            <i class="fas fa-save"></i> {{ isEditMode ? ' Actualizar' : ' Crear' }} Usuario
+          </span>
+        </button>
+      </div>
     </div>
 
   </div>
@@ -420,29 +530,3 @@
         <span>{{ selectedUser.correo }}</span>
       </div>
       <div class="detail-item">
-        <label>No. Empleado:</label>
-        <span>{{ selectedUser.employeeNumber || 'No asignado' }}</span>
-      </div>
-      <div class="detail-item">
-        <label>No. Colegiado:</label>
-        <span>{{ selectedUser.collegiateNumber || 'No asignado' }}</span>
-      </div>
-      <div class="detail-item">
-        <label>Especialidad:</label>
-        <span>{{ selectedUser.fkrol || 'No definida' }}</span>
-      </div>
-      <div class="detail-item">
-        <label>Horario:</label>
-        <span>{{ selectedUser.schedule || 'No definido' }}</span>
-      </div>
-      <div class="detail-item">
-        <label>Estado:</label>
-      </div>
-      <!-- <div class="detail-item">
-        <label>Fecha de Creación:</label>
-        <span>{{ selectedUser.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
-      </div> -->
-    </div>
-  </div>
-
-</div>

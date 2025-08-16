@@ -54,12 +54,12 @@ export class AlertaService {
     }
   }
   
-  alertaError(title: string): void {
+  alertaError(titulo: string): void {
     const Toast = Swal.mixin({
         toast: true,
         position: 'top-end',
         showConfirmButton: false,
-        timer: 5000,
+        timer: 3000,
         timerProgressBar: true,
         customClass: {
           popup: 'toast-error-border',
@@ -73,11 +73,21 @@ export class AlertaService {
 
     Toast.fire({
         icon: 'error',
-        title: title
+        title: titulo
     });
   }
   
-  alertaExito(title: string): void {
+  alertaExito(titulo: string): void {
+    Swal.fire({
+      position: 'center',
+      icon: 'success',
+      title: titulo,
+      showConfirmButton: false,
+      timer: 1000
+    });
+  }
+  
+  alertaPreventiva(titulo: string): void {
     const Toast = Swal.mixin({
         toast: true,
         position: 'top-end',
@@ -85,33 +95,36 @@ export class AlertaService {
         timer: 3000,
         timerProgressBar: true,
         customClass: {
-          popup: 'toast-success-border',
-          timerProgressBar: 'toast-success-timer'
-        }
-    });
-
-    Toast.fire({
-        icon: 'success',
-        title: title
-    });
-  }
-  
-  alertaPreventiva(title: string): void {
-    const Toast = Swal.mixin({
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 4000,
-        timerProgressBar: true,
-        customClass: {
-          popup: 'toast-warning-border', // Cambié esto
-          timerProgressBar: 'toast-warning-timer' // Y esto
+          popup: 'toast-warning-border', 
+          timerProgressBar: 'toast-warning-timer'
         }
     });
 
     Toast.fire({
         icon: 'warning',
-        title: title
+        title: titulo
+    });
+  }
+  alertaConfirmacion(titulo: string, textoIni: string, tituloBtnCon: string, tituloBtnCan: string): Promise<boolean> {
+    const swalWithBootstrapButtons = Swal.mixin({
+      customClass: {
+        confirmButton: "btn btn-success me-3",
+        cancelButton: "btn btn-danger ms-3",
+        actions: "gap-3"
+      },
+      buttonsStyling: false
+    });
+
+    return swalWithBootstrapButtons.fire({
+      title: titulo,
+      text: textoIni,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: tituloBtnCon,
+      cancelButtonText: tituloBtnCan,
+      reverseButtons: true
+    }).then((result) => {
+      return result.isConfirmed;
     });
   }
 }
