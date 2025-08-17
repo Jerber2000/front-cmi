@@ -2,9 +2,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface Paciente {
   idpaciente?: number;
+  fkexpediente?: number; // ⭐ AGREGADO PARA LA RELACIÓN
   nombres: string;
   apellidos: string;
   cui: string;
@@ -27,14 +29,17 @@ export interface Paciente {
   fechamodificacion?: string;
   estado?: number;
   
-  // Datos del expediente para crear
-  numeroexpediente?: string;
-  historiaenfermedad?: string;
-  antmedico?: string;
-  antmedicamento?: string;
-  anttraumaticos?: string;
-  antfamiliar?: string;
-  antalergico?: string;
+  // Rutas de archivos
+  rutafotoperfil?: string;
+  rutafotoencargado?: string;
+  rutacartaautorizacion?: string;
+
+  // ⭐ RELACIÓN CON EXPEDIENTE
+  expediente?: {
+    idexpediente: number;
+    numeroexpediente: string;
+    historiaenfermedad?: string;
+  };
 }
 
 export interface PacienteResponse {
@@ -54,9 +59,11 @@ export interface PacienteResponse {
   providedIn: 'root'
 })
 export class PacienteService {
-  private apiUrl = 'https://back-cmi-production.up.railway.app/api/pacientes';
+  private apiUrl = `${environment.apiUrl}/pacientes`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    console.log('🌍 API URL:', this.apiUrl);
+  }
 
   // Obtener todos los pacientes con paginación y búsqueda
   getAllPacientes(page: number = 1, limit: number = 10, search: string = ''): Observable<PacienteResponse> {
@@ -68,26 +75,33 @@ export class PacienteService {
       params = params.set('search', search);
     }
 
+    console.log('GET Request:', `${this.apiUrl}?${params.toString()}`);
     return this.http.get<PacienteResponse>(this.apiUrl, { params });
   }
 
   // Obtener un paciente por ID
   getPacienteById(id: number): Observable<PacienteResponse> {
+    console.log('GET Request:', `${this.apiUrl}/${id}`);
     return this.http.get<PacienteResponse>(`${this.apiUrl}/${id}`);
   }
 
   // Crear nuevo paciente
   createPaciente(paciente: Paciente): Observable<PacienteResponse> {
+    console.log('POST Request:', this.apiUrl);
+    console.log('POST Body:', paciente);
     return this.http.post<PacienteResponse>(this.apiUrl, paciente);
   }
 
   // Actualizar paciente
   updatePaciente(id: number, paciente: Partial<Paciente>): Observable<PacienteResponse> {
+    console.log('PUT Request:', `${this.apiUrl}/${id}`);
+    console.log('PUT Body:', paciente);
     return this.http.put<PacienteResponse>(`${this.apiUrl}/${id}`, paciente);
   }
 
   // Eliminar paciente
   deletePaciente(id: number): Observable<PacienteResponse> {
+    console.log('DELETE Request:', `${this.apiUrl}/${id}`);
     return this.http.delete<PacienteResponse>(`${this.apiUrl}/${id}`);
   }
 }

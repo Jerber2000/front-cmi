@@ -36,6 +36,7 @@ export class SidebarComponent {
       icon: 'fas fa-users',
       children: [
         { label: 'Pacientes', route: '/pacientes' },
+        { label: 'Expedientes', route: '/expedientes' }, // ⭐ NUEVO
         { label: 'Traslados', route: '/pacientes/traslados' },
         { label: 'Citas', route: '/pacientes/citas' },
         { label: 'Usuarios', route: '/usuario' } 
@@ -102,13 +103,11 @@ export class SidebarComponent {
     if (item.label === 'Cerrar Sesion') {
       this.logout();
     } else if (item.route) {
-
       // ✅ AGREGAR navegación
       this.router.navigate([item.route]);
       this.menuItemClick.emit(item);
     } else {
       this.menuItemClick.emit(item);
-
     }
     this.menuItemClick.emit(item);
   }

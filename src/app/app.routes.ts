@@ -1,3 +1,4 @@
+//app.routes.ts
 import type { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 
@@ -24,11 +25,17 @@ export const routes: Routes = [
     loadComponent: () => import('./components/usuario/usuario.component').then(c => c.UsuarioComponent), 
     canActivate: [authGuard] 
   },
-  // ✅ AGREGAR esta nueva ruta
   {
     path: 'pacientes',
     loadComponent: () =>
       import('./components/paciente/paciente-list.component').then(m => m.PacienteListComponent),
+    canActivate: [authGuard],
+  },
+  // ⭐ NUEVA RUTA DE EXPEDIENTES
+  {
+    path: 'expedientes',
+    loadComponent: () =>
+      import('./components/expediente/expediente').then(m => m.ExpedienteListComponent),
     canActivate: [authGuard],
   },
   {

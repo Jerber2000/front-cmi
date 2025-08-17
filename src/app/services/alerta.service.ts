@@ -43,6 +43,15 @@ export class AlertaService {
         .toast-warning-timer {
           background-color: #ffc107 !important;
         }
+
+        /* Toast de información */
+        .toast-info-border {
+          border-left: 5px solid #17a2b8 !important;
+          border-radius: 8px !important;
+        }
+        .toast-info-timer {
+          background-color: #17a2b8 !important;
+        }
       `;
       
       // Verificar si ya existe para evitar duplicados
@@ -104,8 +113,8 @@ export class AlertaService {
         timer: 4000,
         timerProgressBar: true,
         customClass: {
-          popup: 'toast-warning-border', // Cambié esto
-          timerProgressBar: 'toast-warning-timer' // Y esto
+          popup: 'toast-warning-border',
+          timerProgressBar: 'toast-warning-timer'
         }
     });
 
@@ -113,5 +122,27 @@ export class AlertaService {
         icon: 'warning',
         title: title
     });
+  }
+
+  // ⭐ MÉTODO ALERTAINFO CORREGIDO
+  alertaInfo(mensaje: string): void {
+    // Opción 1: Toast estilo consistente con los demás
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 4000,
+        timerProgressBar: true,
+        customClass: {
+          popup: 'toast-info-border',
+          timerProgressBar: 'toast-info-timer'
+        }
+    });
+
+    Toast.fire({
+        icon: 'info',
+        title: mensaje
+    });
+
   }
 }
