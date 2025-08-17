@@ -6,6 +6,7 @@ import { UsuarioService, Usuario } from '../../services/usuario.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AlertaService } from '../../services/alerta.service';
 import { FormatoTelefonicoDirective } from '../../directives/numeroFormato';
+import { formatoInputDirective } from '../../directives/formatoInput';
 
 // Extender la interface User para incluir los nuevos campos
 export interface ExtendedUser extends Usuario {
@@ -18,7 +19,7 @@ export interface ExtendedUser extends Usuario {
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent, FormatoTelefonicoDirective],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent, FormatoTelefonicoDirective, formatoInputDirective ],
   templateUrl: './usuario.component.html',
   styleUrls: ['./usuario.component.css']
 })
@@ -62,17 +63,71 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
       correo: ['', [Validators.required, Validators.email]],
       confirmCorreo: ['', [Validators.required, Validators.email]],
       puesto: ['', [Validators.required]],
-      telinstitucional: ['+502 ',[Validators.required]],
+      telinstitucional: ['+502 ', [Validators.required]],
       extension: [''],
-      telPersonal: ['+502 ',[Validators.required]],
+      telPersonal: ['+502 ', [Validators.required]],
       contactoEmergencia: ['', [Validators.required]],
-      telEmergencia: ['+502 ',[Validators.required]],
-      profesion: ['',[Validators.required]],
+      telEmergencia: ['+502 ', [Validators.required]],
+      profesion: ['', [Validators.required]],
       fechaNacimiento: [''],
       role: ['', [Validators.required]],
       observaciones: [''],
       status: ['', [Validators.required]]
     });
+  }
+
+  isFieldInvalid(fieldName: string): boolean {
+    const field = this.userForm.get(fieldName);
+    return !!(field && field.invalid && (field.dirty || field.touched));
+  }
+
+  getFieldError(fieldName: string): string {
+    const field = this.userForm.get(fieldName);
+    if (field && field.errors && (field.dirty || field.touched)) {
+      
+      if (field.errors['required']) {
+        return `${this.getFieldDisplayName(fieldName)} es requerido`;
+      }
+      if (field.errors['email']) {
+        return 'Ingrese un correo válido';
+      }
+      
+      // Mensajes específicos por tipo de campo
+      switch (fieldName) {
+        case 'nombres':
+        case 'apellidos':
+        case 'profesion':
+        case 'contactoEmergencia':
+          return 'Solo se permiten letras y espacios';
+        case 'extension':
+          return 'Solo números, máximo 4 dígitos';
+        default:
+          return 'Campo inválido';
+      }
+    }
+    return '';
+  }
+
+  private getFieldDisplayName(fieldName: string): string {
+    const fieldNames: { [key: string]: string } = {
+      'nombres': 'Nombres',
+      'apellidos': 'Apellidos',
+      'usuario': 'Usuario',
+      'password': 'Contraseña',
+      'confirmPassword': 'Confirmar contraseña',
+      'correo': 'Correo institucional',
+      'confirmCorreo': 'Confirmar correo',
+      'puesto': 'Puesto laboral',
+      'telinstitucional': 'Teléfono institucional',
+      'extension': 'Extensión',
+      'telPersonal': 'Teléfono personal',
+      'contactoEmergencia': 'Contacto de emergencia',
+      'telEmergencia': 'Teléfono de emergencia',
+      'profesion': 'Profesión',
+      'role': 'Rol',
+      'status': 'Estado'
+    };
+    return fieldNames[fieldName] || fieldName;
   }
 
   onPhotoSelected(event: any): void {
@@ -425,13 +480,52 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
 
     if (confirmed) {
       this.UsuarioService.eliminarUsuario(id).subscribe({
-        next: () => {
+        next: (response) => {
+          if (response && response.success === false) {
+            this.alerta.alertaError(response.message || 'Error al eliminar el usuario');
+            return;
+          }
+          
           this.loadUsers();
           this.alerta.alertaExito('Usuario eliminado correctamente');
         },
         error: (error) => {
-          console.error('Error deleting user:', error);
-          this.alerta.alertaError('Error al eliminar el usuario');
+          console.error('Error no manejado al eliminar:', error);
+          
+          let mensajeError = '';
+          
+          // Verificar si el error tiene la estructura de respuesta del backend
+          if (error.error && error.error.message) {
+            mensajeError = error.error.message;
+          } else if (error.status) {
+            // Error basado en código de estado HTTP
+            switch (error.status) {
+              case 400:
+                mensajeError = 'No se puede eliminar este usuario';
+                break;
+              case 401:
+                mensajeError = 'No tienes permisos para eliminar usuarios';
+                break;
+              case 404:
+                mensajeError = 'Usuario no encontrado';
+                break;
+              case 409:
+                mensajeError = 'No se puede eliminar el usuario porque tiene datos relacionados';
+                break;
+              case 500:
+                mensajeError = 'Error interno del servidor. Intenta más tarde';
+                break;
+              case 0:
+                mensajeError = 'Sin conexión al servidor. Verifica tu conexión a internet';
+                break;
+              default:
+                mensajeError = `Error del servidor (${error.status})`;
+            }
+          } else {
+            mensajeError = 'Error al eliminar el usuario';
+          }
+          
+          this.alerta.alertaError(mensajeError);
         }
       });
     }
@@ -507,19 +601,87 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
       const operation = this.isEditMode 
         ? this.UsuarioService.actualizarUsuario(this.selectedUser!.idusuario, userData)
         : this.UsuarioService.crearUsuario(userData);
+        
       operation.subscribe({
-        next: () => {
+        next: (response) => {
           this.loading = false;
+          
+          // Verificar si el backend devolvió success: false (error controlado)
+          if (response && response.success === false) {            
+            let mensajeError = '';
+            
+            // Si hay errores específicos en el array 'errors'
+            if (response.errors && Array.isArray(response.errors) && response.errors.length > 0) {
+              // Tomar el primer error específico
+              mensajeError = response.errors[0].msg || response.errors[0].message || response.errors[0];
+            } 
+            // Si no hay array de errores, usar el mensaje general
+            else if (response.message) {
+              mensajeError = response.message;
+            } 
+            // Fallback
+            else {
+              mensajeError = 'Error de validación';
+            }
+            
+            this.alerta.alertaError(mensajeError);
+            return;
+          }
+          
           const mensaje = this.isEditMode ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente';
           this.loadUsers();
           this.showList();
           this.alerta.alertaExito(mensaje);
         },
         error: (error) => {
-          console.error('Error al guardar usuario:', error);
+          console.error('Error no manejado:', error);
           this.loading = false;
-          const mensaje = this.isEditMode ? 'No se pudo actualizar el usuario' : 'No se pudo crear el usuario';
-          this.alerta.alertaError(mensaje);
+          
+          let mensajeError = '';
+          
+          // Verificar si el error tiene la estructura de respuesta del backend
+          if (error.error) {
+            // Si hay errores específicos en el array
+            if (error.error.errors && Array.isArray(error.error.errors) && error.error.errors.length > 0) {
+              mensajeError = error.error.errors[0].msg || error.error.errors[0].message || error.error.errors[0];
+            }
+            // Si hay mensaje general
+            else if (error.error.message) {
+              mensajeError = error.error.message;
+            }
+            // Si el error es un string directo
+            else if (typeof error.error === 'string') {
+              mensajeError = error.error;
+            }
+          } 
+          // Error basado en código de estado HTTP
+          else if (error.status) {
+            switch (error.status) {
+              case 400:
+                mensajeError = 'Datos inválidos. Revisa los campos ingresados.';
+                break;
+              case 401:
+                mensajeError = 'No tienes permisos para realizar esta acción.';
+                break;
+              case 404:
+                mensajeError = 'Usuario no encontrado.';
+                break;
+              case 500:
+                mensajeError = 'Error interno del servidor. Intenta más tarde.';
+                break;
+              default:
+                mensajeError = `Error del servidor (${error.status})`;
+            }
+          }
+          
+          // Mensaje por defecto si no se pudo determinar el error específico
+          if (!mensajeError) {
+            mensajeError = this.isEditMode 
+              ? 'No se pudo actualizar el usuario' 
+              : 'No se pudo crear el usuario';
+          }
+          
+          this.alerta.alertaError(mensajeError);
         }
       });
     } else {

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse  } from '@angular/common/http';
 import { tap, catchError, map } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { Observable } from 'rxjs';
@@ -52,7 +52,6 @@ export class UsuarioService{
                 return[];
             }),
             catchError(error => {
-                console.log('Error fetching usuario: ', error);
                 return of([]);
             })
         )
@@ -63,16 +62,8 @@ export class UsuarioService{
             tap(response => {
             }),
             catchError(error => {
-                console.error(`❌ ERROR AL BUSCAR USUARIO ID ${id}:`);
-                console.error('📋 STATUS:', error.status);
-                console.error('💬 MENSAJE:', error.error);
-                console.error('🔍 ERROR COMPLETO:', error);
-                
-                // Mensajes específicos según el error
-                if (error.status === 404) {
-                    console.error('🚫 Usuario no encontrado');
-                } else if (error.status === 0) {
-                    console.error('🌐 Sin conexión al servidor');
+                if (error.status === 0) {
+                    console.error('Sin conexión al servidor');
                 }
                 throw error;
             })
@@ -83,10 +74,13 @@ export class UsuarioService{
         return this.http.post<any>(`${this.apiUrl}/crearUsuario`, usuario).pipe(
             tap(response => {
             }),
-            catchError(error => {
-                console.error('❌ ERROR COMPLETO:', error);
-                console.error('📋 STATUS:', error.status);
-                console.error('💬 MENSAJE:', error.error);
+            catchError((error: HttpErrorResponse) => {
+                // Si es un error 400 o 422 (errores de validación), tratarlo como respuesta válida
+                if ((error.status === 400 || error.status === 422) && error.error) {
+                    return of(error.error);
+                }
+                
+                // Para otros errores (500, red, etc.), mantener como error
                 throw error;
             })
         );
@@ -97,19 +91,8 @@ export class UsuarioService{
             tap(response => {
             }),
             catchError(error => {
-                console.error(`❌ ERROR AL ACTUALIZAR USUARIO ID ${id}:`);
-                console.error('📋 STATUS:', error.status);
-                console.error('💬 MENSAJE:', error.error);
-                console.error('🔍 ERROR COMPLETO:', error);
-                console.error('📝 DATOS ENVIADOS:', usuario);
-                
-                // Mensajes específicos según el error
-                if (error.status === 404) {
-                    console.error('🚫 Usuario no encontrado para actualizar');
-                } else if (error.status === 400) {
-                    console.error('📋 Datos inválidos enviados');
-                } else if (error.status === 0) {
-                    console.error('🌐 Sin conexión al servidor');
+                if (error.status === 0) {
+                    console.error('Sin conexión al servidor');
                 }
                 
                 throw error;
@@ -117,26 +100,21 @@ export class UsuarioService{
         );
     }
 
-    eliminarUsuario(id: number): Observable<void> {
-        return this.http.delete<void>(`${this.apiUrl}/eliminarUsuario/${id}`).pipe(
-            tap(() => {
+    eliminarUsuario(id: number): Observable<any> {
+        return this.http.delete<any>(`${this.apiUrl}/eliminarUsuario/${id}`).pipe(
+            tap((response) => {
             }),
-            catchError(error => {
-                console.error(`❌ ERROR AL ELIMINAR USUARIO ID ${id}:`);
-                console.error('📋 STATUS:', error.status);
-                console.error('💬 MENSAJE:', error.error);
-                console.error('🔍 ERROR COMPLETO:', error);
-                
-                if (error.status === 404) {
-                    console.error('🚫 Usuario no encontrado para eliminar');
-                } else if (error.status === 403) {
-                    console.error('🔒 Sin permisos para eliminar este usuario');
-                } else if (error.status === 409) {
-                    console.error('⚠️ No se puede eliminar: usuario tiene dependencias');
-                } else if (error.status === 0) {
-                    console.error('🌐 Sin conexión al servidor');
+            catchError((error: HttpErrorResponse) => {                
+                // Si es un error 400 con mensaje del backend, tratarlo como respuesta válida
+                if (error.status === 400 && error.error && error.error.success === false) {
+                    return of(error.error);
                 }
                 
+                if (error.status === 0) {
+                    console.error('Sin conexión al servidor');
+                }
+                
+                // Relanzar el error para que llegue al error: del componente
                 throw error;
             })
         );
