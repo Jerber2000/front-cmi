@@ -28,14 +28,13 @@ export const routes: Routes = [
   {
     path: 'pacientes',
     loadComponent: () =>
-      import('./components/paciente/paciente-list.component').then(m => m.PacienteListComponent),
+      import('./components/paciente/paciente-list.component').then(m => m.PacienteListaComponent), // ✅ CAMBIO
     canActivate: [authGuard],
   },
-  // ⭐ NUEVA RUTA DE EXPEDIENTES
   {
     path: 'expedientes',
     loadComponent: () =>
-      import('./components/expediente/expediente').then(m => m.ExpedienteListComponent),
+      import('./components/expediente/expediente').then(m => m.ExpedienteListaComponent), 
     canActivate: [authGuard],
   },
   {

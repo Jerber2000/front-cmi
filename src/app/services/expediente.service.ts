@@ -4,8 +4,12 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+/**
+ * Interface principal del expediente médico
+ */
 export interface Expediente {
   idexpediente?: number;
+  fkpaciente?: number;
   numeroexpediente: string;
   generarAutomatico?: boolean;
   
@@ -20,7 +24,7 @@ export interface Expediente {
   antalergico?: string;
   antmedicamentos?: string;
   antsustancias?: string;
-  antintolerantelactosa?: number; // 0 o 1
+  antintolerantelactosa?: number; // 0 = No, 1 = Sí
   
   // Antecedentes fisiológicos
   antfisoinmunizacion?: string;
@@ -38,22 +42,22 @@ export interface Expediente {
   gineobscesareas?: number;
   gineobshv?: string;
   gineobsmh?: string;
-  gineobsfur?: string; // Fecha última regla
+  gineobsfur?: string; // Fecha de última regla
   gineobsciclos?: string;
   gineobsmenarquia?: string;
   
-  // Examen físico
+  // Examen físico y signos vitales
   examenfistc?: number; // Temperatura corporal
   examenfispa?: string; // Presión arterial
   examenfisfc?: number; // Frecuencia cardíaca
   examenfisfr?: number; // Frecuencia respiratoria
-  examenfissao2?: number; // Saturación oxígeno
+  examenfissao2?: number; // Saturación de oxígeno
   examenfispeso?: number; // Peso
   examenfistalla?: number; // Talla
-  examenfisimc?: number; // IMC
-  examenfisgmt?: string; // Examen general
+  examenfisimc?: number; // Índice de masa corporal
+  examenfisgmt?: string; // Examen físico general
   
-  // Campos de control
+  // Campos de auditoría
   usuariocreacion?: string;
   fechacreacion?: string;
   usuariomodificacion?: string;
@@ -78,37 +82,49 @@ export interface Expediente {
   }>;
 }
 
-export interface ExpedienteCreateResponse {
-  success: boolean;
-  data: Expediente; // Para CREATE debe ser un objeto, no array
-  message?: string;
+/**
+ * Respuesta para creación de expedientes
+ */
+export interface RespuestaCreacionExpediente {
+  exito: boolean;
+  datos: Expediente;
+  mensaje?: string;
 }
 
-export interface ExpedienteListResponse {
-  success: boolean;
-  data: Expediente[]; // Para LIST debe ser array
-  message?: string;
-  pagination?: {
-    page: number;
-    limit: number;
+/**
+ * Respuesta para listado de expedientes
+ */
+export interface RespuestaListaExpedientes {
+  exito: boolean;
+  datos: Expediente[];
+  mensaje?: string;
+  paginacion?: {
+    pagina: number;
+    limite: number;
     total: number;
-    totalPages: number;
+    totalPaginas: number;
   };
 }
 
-export interface ExpedienteResponse {
-  success: boolean;
-  data: Expediente | Expediente[];
-  message?: string;
-  pagination?: {
-    page: number;
-    limit: number;
+/**
+ * Respuesta genérica para expedientes
+ */
+export interface RespuestaExpediente {
+  exito: boolean;
+  datos: Expediente | Expediente[];
+  mensaje?: string;
+  paginacion?: {
+    pagina: number;
+    limite: number;
     total: number;
-    totalPages: number;
+    totalPaginas: number;
   };
   error?: string;
 }
 
+/**
+ * Estadísticas de expedientes médicos
+ */
 export interface EstadisticasExpediente {
   totalExpedientes: number;
   expedientesRecientes: number;
@@ -116,152 +132,195 @@ export interface EstadisticasExpediente {
   expedientesSinPacientes: number;
 }
 
-export interface NumeroExpedienteResponse {
-  success: boolean;
-  data: {
+/**
+ * Respuesta para generación de número de expediente
+ */
+export interface RespuestaNumeroExpediente {
+  exito: boolean;
+  datos: {
     numeroexpediente: string;
   };
-  message?: string;
+  mensaje?: string;
 }
 
+/**
+ * Servicio para gestión de expedientes médicos
+ */
 @Injectable({
   providedIn: 'root'
 })
-export class ExpedienteService {
-  private apiUrl = `${environment.apiUrl}/expedientes`;
+export class ServicioExpediente {
+  private urlApi = `${environment.apiUrl}/expedientes`;
 
-  constructor(private http: HttpClient) {
-    console.log('🌍 Expedientes API URL:', this.apiUrl);
-  }
+  constructor(private http: HttpClient) {}
 
   // ==========================================
-  // CRUD BÁSICO
+  // OPERACIONES CRUD BÁSICAS
   // ==========================================
 
-  // Obtener todos los expedientes con paginación y búsqueda
-  getAllExpedientes(page: number = 1, limit: number = 10, search: string = ''): Observable<ExpedienteListResponse> {
-    let params = new HttpParams()
-      .set('page', page.toString())
-      .set('limit', limit.toString());
+  /**
+   * Obtiene todos los expedientes con paginación y búsqueda
+   * @param pagina - Número de página (por defecto 1)
+   * @param limite - Elementos por página (por defecto 10)
+   * @param busqueda - Término de búsqueda opcional
+   */
+  obtenerTodosLosExpedientes(pagina: number = 1, limite: number = 10, busqueda: string = ''): Observable<RespuestaListaExpedientes> {
+    let parametros = new HttpParams()
+      .set('pagina', pagina.toString())
+      .set('limite', limite.toString());
     
-    if (search.trim()) {
-      params = params.set('search', search);
+    if (busqueda.trim()) {
+      parametros = parametros.set('busqueda', busqueda);
     }
 
-    console.log('GET Request:', `${this.apiUrl}?${params.toString()}`);
-    return this.http.get<ExpedienteListResponse>(this.apiUrl, { params });
+    return this.http.get<RespuestaListaExpedientes>(this.urlApi, { params: parametros });
   }
 
-  // Obtener un expediente por ID
-  getExpedienteById(id: number): Observable<ExpedienteResponse> {
-    console.log('GET Request:', `${this.apiUrl}/${id}`);
-    return this.http.get<ExpedienteResponse>(`${this.apiUrl}/${id}`);
-  }
-  
-
-  // Crear nuevo expediente
-  createExpediente(expediente: Expediente): Observable<ExpedienteCreateResponse> {
-    console.log('POST Request:', this.apiUrl);
-    console.log('POST Body:', expediente);
-    return this.http.post<ExpedienteCreateResponse>(this.apiUrl, expediente);
+  /**
+   * Obtiene un expediente específico por su ID
+   * @param id - ID del expediente
+   */
+  obtenerExpedientePorId(id: number): Observable<RespuestaExpediente> {
+    return this.http.get<RespuestaExpediente>(`${this.urlApi}/${id}`);
   }
 
-  // Actualizar expediente
-  updateExpediente(id: number, expediente: Partial<Expediente>): Observable<ExpedienteResponse> {
-    console.log('PUT Request:', `${this.apiUrl}/${id}`);
-    console.log('PUT Body:', expediente);
-    return this.http.put<ExpedienteResponse>(`${this.apiUrl}/${id}`, expediente);
+  /**
+   * Crea un nuevo expediente médico
+   * @param expediente - Datos del expediente a crear
+   */
+  crearExpediente(expediente: Expediente): Observable<RespuestaCreacionExpediente> {
+    const datosFormateados = this.formatearParaBackend(expediente);
+    return this.http.post<RespuestaCreacionExpediente>(this.urlApi, datosFormateados);
   }
 
-  // Eliminar expediente
-  deleteExpediente(id: number): Observable<ExpedienteResponse> {
-    console.log('DELETE Request:', `${this.apiUrl}/${id}`);
-    return this.http.delete<ExpedienteResponse>(`${this.apiUrl}/${id}`);
+  /**
+   * Actualiza un expediente existente
+   * @param id - ID del expediente a actualizar
+   * @param expediente - Datos actualizados del expediente
+   */
+  actualizarExpediente(id: number, expediente: Partial<Expediente>): Observable<RespuestaExpediente> {
+    const datosFormateados = this.formatearParaBackend(expediente);
+    return this.http.put<RespuestaExpediente>(`${this.urlApi}/${id}`, datosFormateados);
   }
 
-  // ==========================================
-  // FUNCIONES ESPECIALES
-  // ==========================================
-
-  // Obtener expedientes disponibles (sin pacientes asignados)
-  getExpedientesDisponibles(): Observable<ExpedienteResponse> {
-    console.log('GET Request:', `${this.apiUrl}/disponibles`);
-    return this.http.get<ExpedienteResponse>(`${this.apiUrl}/disponibles`);
-  }
-
-  // Generar número de expediente automático
-  generarNumeroExpediente(): Observable<NumeroExpedienteResponse> {
-    console.log('GET Request:', `${this.apiUrl}/generar-numero`);
-    return this.http.get<NumeroExpedienteResponse>(`${this.apiUrl}/generar-numero`);
-  }
-
-  // Obtener estadísticas de expedientes
-  getEstadisticas(): Observable<{ success: boolean; data: EstadisticasExpediente }> {
-    console.log('GET Request:', `${this.apiUrl}/estadisticas`);
-    return this.http.get<{ success: boolean; data: EstadisticasExpediente }>(`${this.apiUrl}/estadisticas`);
+  /**
+   * Elimina un expediente (eliminación lógica)
+   * @param id - ID del expediente a eliminar
+   */
+  eliminarExpediente(id: number): Observable<RespuestaExpediente> {
+    return this.http.delete<RespuestaExpediente>(`${this.urlApi}/${id}`);
   }
 
   // ==========================================
-  // UTILIDADES
+  // FUNCIONES ESPECIALIZADAS
   // ==========================================
 
-  // Validar datos de expediente antes de enviar
-  validateExpediente(expediente: Expediente): { valid: boolean; errors: string[] } {
-    const errors: string[] = [];
+  /**
+   * Obtiene expedientes disponibles (sin pacientes asignados)
+   */
+  obtenerExpedientesDisponibles(): Observable<RespuestaExpediente> {
+    return this.http.get<RespuestaExpediente>(`${this.urlApi}/disponibles`);
+  }
 
-    // Si no es automático, necesita número de expediente
+  /**
+   * Genera automáticamente un número de expediente único
+   */
+  generarNumeroExpediente(): Observable<RespuestaNumeroExpediente> {
+    return this.http.get<RespuestaNumeroExpediente>(`${this.urlApi}/generar-numero`);
+  }
+
+  /**
+   * Obtiene estadísticas generales de expedientes
+   */
+  obtenerEstadisticas(): Observable<{ exito: boolean; datos: EstadisticasExpediente }> {
+    return this.http.get<{ exito: boolean; datos: EstadisticasExpediente }>(`${this.urlApi}/estadisticas`);
+  }
+
+  // ==========================================
+  // UTILIDADES Y VALIDACIONES
+  // ==========================================
+
+  /**
+   * Valida los datos del expediente antes del envío
+   * @param expediente - Datos del expediente a validar
+   */
+  validarExpediente(expediente: Expediente): { valido: boolean; errores: string[] } {
+    const errores: string[] = [];
+
+    // Validar número de expediente en modo manual
     if (!expediente.generarAutomatico && (!expediente.numeroexpediente || expediente.numeroexpediente.trim() === '')) {
-      errors.push('El número de expediente es requerido cuando no se genera automáticamente');
+      errores.push('El número de expediente es requerido cuando no se genera automáticamente');
     }
 
-    // Validar rangos numéricos si están presentes
+    // Validar rangos de signos vitales
     if (expediente.examenfistc !== undefined && expediente.examenfistc !== null) {
       if (expediente.examenfistc < 0 || expediente.examenfistc > 999.99) {
-        errors.push('La temperatura corporal debe estar entre 0 y 999.99');
+        errores.push('La temperatura corporal debe estar entre 0 y 999.99°C');
       }
     }
 
     if (expediente.examenfissao2 !== undefined && expediente.examenfissao2 !== null) {
       if (expediente.examenfissao2 < 0 || expediente.examenfissao2 > 100) {
-        errors.push('La saturación de oxígeno debe estar entre 0 y 100');
+        errores.push('La saturación de oxígeno debe estar entre 0 y 100%');
       }
     }
 
     if (expediente.examenfispeso !== undefined && expediente.examenfispeso !== null) {
       if (expediente.examenfispeso < 0 || expediente.examenfispeso > 9999.99) {
-        errors.push('El peso debe estar entre 0 y 9999.99 kg');
+        errores.push('El peso debe estar entre 0 y 9999.99 kg');
       }
     }
 
     if (expediente.examenfistalla !== undefined && expediente.examenfistalla !== null) {
       if (expediente.examenfistalla < 0 || expediente.examenfistalla > 999.99) {
-        errors.push('La talla debe estar entre 0 y 999.99 m');
+        errores.push('La talla debe estar entre 0 y 999.99 metros');
       }
     }
 
-    // Validar valores enteros positivos
-    const camposEnteros = ['gineobsgestas', 'gineobspartos', 'gineobsabortos', 'gineobscesareas', 'examenfisfc', 'examenfisfr'];
-    camposEnteros.forEach(campo => {
+    // Validar frecuencias (deben ser enteros positivos)
+    if (expediente.examenfisfc !== undefined && expediente.examenfisfc !== null) {
+      if (expediente.examenfisfc < 0 || expediente.examenfisfc > 999 || !Number.isInteger(Number(expediente.examenfisfc))) {
+        errores.push('La frecuencia cardíaca debe ser un número entero entre 0 y 999');
+      }
+    }
+
+    if (expediente.examenfisfr !== undefined && expediente.examenfisfr !== null) {
+      if (expediente.examenfisfr < 0 || expediente.examenfisfr > 999 || !Number.isInteger(Number(expediente.examenfisfr))) {
+        errores.push('La frecuencia respiratoria debe ser un número entero entre 0 y 999');
+      }
+    }
+
+    // Validar datos gineco-obstétricos (números enteros positivos)
+    const camposGinecoObstetricos = ['gineobsgestas', 'gineobspartos', 'gineobsabortos', 'gineobscesareas'];
+    camposGinecoObstetricos.forEach(campo => {
       const valor = (expediente as any)[campo];
       if (valor !== undefined && valor !== null && (valor < 0 || !Number.isInteger(Number(valor)))) {
-        errors.push(`${campo} debe ser un número entero positivo`);
+        errores.push(`${campo} debe ser un número entero positivo`);
       }
     });
 
+    // Validar presión arterial si está presente
+    if (expediente.examenfispa && !this.validarPresionArterial(expediente.examenfispa)) {
+      errores.push('La presión arterial debe tener el formato XXX/XXX (ej: 120/80)');
+    }
+
     return {
-      valid: errors.length === 0,
-      errors
+      valido: errores.length === 0,
+      errores
     };
   }
 
-  // Formatear datos para envío al backend
-  formatForBackend(expediente: Expediente): Expediente {
-    const formatted = { ...expediente };
+  /**
+   * Formatea los datos para envío al backend
+   * @param expediente - Datos del expediente a formatear
+   */
+  formatearParaBackend(expediente: Partial<Expediente>): Partial<Expediente> {
+    const formateado = { ...expediente };
 
     // Convertir strings vacíos a null
-    Object.keys(formatted).forEach(key => {
-      if (typeof (formatted as any)[key] === 'string' && (formatted as any)[key].trim() === '') {
-        (formatted as any)[key] = null;
+    Object.keys(formateado).forEach(clave => {
+      if (typeof (formateado as any)[clave] === 'string' && (formateado as any)[clave].trim() === '') {
+        (formateado as any)[clave] = null;
       }
     });
 
@@ -272,23 +331,20 @@ export class ExpedienteService {
     ];
 
     camposNumericos.forEach(campo => {
-      const valor = (formatted as any)[campo];
+      const valor = (formateado as any)[campo];
       if (valor !== undefined && valor !== null && valor !== '') {
-        (formatted as any)[campo] = Number(valor);
+        (formateado as any)[campo] = Number(valor);
       }
     });
 
-    return formatted;
+    return formateado;
   }
 
-  // Obtener texto descriptivo para campos específicos
-  getIntolerancieLactosaText(value: number | undefined): string {
-    if (value === 1) return 'Sí';
-    if (value === 0) return 'No';
-    return 'No especificado';
-  }
-
-  // Calcular IMC automáticamente
+  /**
+   * Calcula el Índice de Masa Corporal (IMC)
+   * @param peso - Peso en kilogramos
+   * @param talla - Talla en metros
+   */
   calcularIMC(peso?: number, talla?: number): number | null {
     if (!peso || !talla || peso <= 0 || talla <= 0) {
       return null;
@@ -296,10 +352,109 @@ export class ExpedienteService {
     return Number((peso / (talla * talla)).toFixed(2));
   }
 
-  // Validar presión arterial
-  validarPresionArterial(presion: string): boolean {
-    if (!presion) return true; // Es opcional
-    const regex = /^\d{2,3}\/\d{2,3}$/;
-    return regex.test(presion);
+  /**
+   * Obtiene la categoría del IMC según los estándares médicos
+   * @param imc - Valor del IMC
+   */
+  obtenerCategoriaIMC(imc: number): string {
+    if (imc < 18.5) return 'Bajo peso';
+    if (imc >= 18.5 && imc < 25) return 'Peso normal';
+    if (imc >= 25 && imc < 30) return 'Sobrepeso';
+    if (imc >= 30 && imc < 35) return 'Obesidad grado I';
+    if (imc >= 35 && imc < 40) return 'Obesidad grado II';
+    if (imc >= 40) return 'Obesidad grado III (mórbida)';
+    return 'No clasificado';
   }
+
+  /**
+   * Valida el formato de presión arterial
+   * @param presion - Cadena de presión arterial (ej: "120/80")
+   */
+  validarPresionArterial(presion: string): boolean {
+    if (!presion) return true; // Campo opcional
+    const regex = /^\d{2,3}\/\d{2,3}$/;
+    return regex.test(presion.trim());
+  }
+
+  /**
+   * Obtiene texto descriptivo para intolerancia a lactosa
+   * @param valor - 0 = No, 1 = Sí, undefined = No especificado
+   */
+  obtenerTextoIntoleranciaLactosa(valor: number | undefined): string {
+    if (valor === 1) return 'Sí';
+    if (valor === 0) return 'No';
+    return 'No especificado';
+  }
+
+  /**
+   * Valida rangos de signos vitales según estándares médicos
+   * @param tipo - Tipo de signo vital
+   * @param valor - Valor a validar
+   */
+  validarSignoVital(tipo: string, valor: number): { valido: boolean; mensaje?: string } {
+    switch (tipo) {
+      case 'temperatura':
+        if (valor < 35 || valor > 42) {
+          return { valido: false, mensaje: 'Temperatura fuera del rango normal (35-42°C)' };
+        }
+        break;
+      case 'frecuenciaCardiaca':
+        if (valor < 40 || valor > 200) {
+          return { valido: false, mensaje: 'Frecuencia cardíaca fuera del rango normal (40-200 lpm)' };
+        }
+        break;
+      case 'frecuenciaRespiratoria':
+        if (valor < 8 || valor > 40) {
+          return { valido: false, mensaje: 'Frecuencia respiratoria fuera del rango normal (8-40 rpm)' };
+        }
+        break;
+      case 'saturacionOxigeno':
+        if (valor < 70 || valor > 100) {
+          return { valido: false, mensaje: 'Saturación de oxígeno fuera del rango normal (70-100%)' };
+        }
+        break;
+    }
+    return { valido: true };
+  }
+
+  /**
+   * Genera un resumen del expediente para vista rápida
+   * @param expediente - Expediente a resumir
+   */
+  generarResumenExpediente(expediente: Expediente): string {
+    const resumen: string[] = [];
+    
+    if (expediente.historiaenfermedad) {
+      resumen.push(`Historia: ${expediente.historiaenfermedad.substring(0, 100)}...`);
+    }
+    
+    if (expediente.antmedico) {
+      resumen.push(`Antecedentes: ${expediente.antmedico.substring(0, 50)}...`);
+    }
+    
+    if (expediente.examenfispeso && expediente.examenfistalla) {
+      const imc = this.calcularIMC(expediente.examenfispeso, expediente.examenfistalla);
+      if (imc) {
+        resumen.push(`IMC: ${imc} (${this.obtenerCategoriaIMC(imc)})`);
+      }
+    }
+    
+    return resumen.join(' | ') || 'Sin información adicional';
+  }
+
+  // ==========================================
+  // MÉTODOS DE COMPATIBILIDAD
+  // ==========================================
+
+  /**
+   * Métodos con nombres originales para mantener compatibilidad
+   */
+  getAllExpedientes = this.obtenerTodosLosExpedientes;
+  getExpedienteById = this.obtenerExpedientePorId;
+  createExpediente = this.crearExpediente;
+  updateExpediente = this.actualizarExpediente;
+  deleteExpediente = this.eliminarExpediente;
+  getExpedientesDisponibles = this.obtenerExpedientesDisponibles;
+  getEstadisticas = this.obtenerEstadisticas;
+  getIntolerancieLactosaText = this.obtenerTextoIntoleranciaLactosa;
 }

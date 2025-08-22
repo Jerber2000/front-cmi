@@ -3,508 +3,544 @@ import { Component, OnInit, AfterViewInit, OnDestroy, Input, Output, EventEmitte
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
-import { ExpedienteService, Expediente, ExpedienteResponse, EstadisticasExpediente } from '../../services/expediente.service';
+import { ServicioExpediente, Expediente, RespuestaCreacionExpediente, RespuestaListaExpedientes, EstadisticasExpediente } from '../../services/expediente.service';
 import { AlertaService } from '../../services/alerta.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 
+
 @Component({
-  selector: 'app-expediente-list',
+  selector: 'app-expediente-lista',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent],
   templateUrl: './expediente.html',
   styleUrls: ['./expediente.scss']
 })
-export class ExpedienteListComponent implements OnInit, AfterViewInit, OnDestroy {
+export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestroy {
   
   @Input() mostrarComoModal: boolean = false;
-  @Input() pacienteData: any = null;
+  @Input() datosPaciente: any = null;
   @Output() cerrarModal = new EventEmitter<void>();
   @Output() expedienteCreado = new EventEmitter<any>();
   
-  private destroy$ = new Subject<void>();
+  private destruir$ = new Subject<void>();
   
-  // Estados
-  currentView: 'list' | 'form' | 'detail' = 'list';
-  isEditMode = false;
-  loading = false;
+  // Estados de la aplicación
+  vistaActual: 'lista' | 'formulario' | 'detalle' = 'lista';
+  modoEdicion = false;
+  cargando = false;
   
-  // Datos
+  // Datos principales
   expedientes: Expediente[] = [];
-  filteredExpedientes: Expediente[] = [];
-  selectedExpediente: Expediente | null = null;
+  expedientesFiltrados: Expediente[] = [];
+  expedienteSeleccionado: Expediente | null = null;
   estadisticas: EstadisticasExpediente | null = null;
   
   // Formulario
-  expedienteForm: FormGroup;
+  formularioExpediente: FormGroup;
   
-  // Búsqueda
-  searchTerm = '';
-  private searchSubject = new Subject<string>();
-  currentPage = 1;
-  pageSize = 10;
-  totalItems = 0;
-  totalPages = 0;
+  // Búsqueda y paginación
+  terminoBusqueda = '';
+  private sujetoBusqueda = new Subject<string>();
+  paginaActual = 1;
+  tamanoPagina = 10;
+  totalElementos = 0;
+  totalPaginas = 0;
   
-  // UI
-  currentDate = new Date();
-  sidebarExpanded = true;
-  userInfo: any = {};
+  // Interfaz de usuario
+  fechaActual = new Date();
+  barraLateralExpandida = true;
+  informacionUsuario: any = { name: 'Usuario', avatar: null };
   error = '';
 
   constructor(
-    private expedienteService: ExpedienteService,
+    private servicioExpediente: ServicioExpediente,
     private fb: FormBuilder,
-    private alertaService: AlertaService
+    private servicioAlerta: AlertaService
   ) {
-    this.expedienteForm = this.createForm();
-    this.setupSearch();
+    this.formularioExpediente = this.crearFormulario();
+    this.configurarBusqueda();
   }
 
   ngOnInit(): void {
-    this.loadUserInfo();
-    this.loadExpedientes();
-    this.loadEstadisticas();
+    this.cargarInformacionUsuario();
+    this.cargarExpedientes();
+    this.cargarEstadisticas();
   }
 
   ngAfterViewInit(): void {
-    this.detectSidebarState();
+    this.detectarEstadoBarraLateral();
   }
 
   ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
+    this.destruir$.next();
+    this.destruir$.complete();
   }
 
   // ==========================================
-  // CONFIGURACIÓN
+  // CONFIGURACIÓN INICIAL
   // ==========================================
-createForm(): FormGroup {
-  return this.fb.group({
-    // ✅ Inicializar correctamente
-    numeroexpediente: [''], 
-    generarAutomatico: [true], // Por defecto automático
-    historiaenfermedad: [''],
+
+  /**
+   * Crea el formulario reactivo para expedientes médicos
+   */
+  crearFormulario(): FormGroup {
+    return this.fb.group({
+      numeroexpediente: [''], 
+      generarAutomatico: [true],
+      historiaenfermedad: [''],
+      
+      // Antecedentes médicos
+      antmedico: [''],
+      antmedicamento: [''],
+      anttraumaticos: [''],
+      antfamiliar: [''],
+      antalergico: [''],
+      antmedicamentos: [''],
+      antsustancias: [''],
+      antintolerantelactosa: [''],
+      
+      // Antecedentes fisiológicos
+      antfisoinmunizacion: [''],
+      antfisocrecimiento: [''],
+      antfisohabitos: [''],
+      antfisoalimentos: [''],
+      
+      // Antecedentes gineco-obstétricos
+      gineobsprenatales: [''],
+      gineobsnatales: [''],
+      gineobspostnatales: [''],
+      gineobsgestas: [''],
+      gineobspartos: [''],
+      gineobsabortos: [''],
+      gineobscesareas: [''],
+      gineobshv: [''],
+      gineobsmh: [''],
+      gineobsfur: [''],
+      gineobsciclos: [''],
+      gineobsmenarquia: [''],
+      
+      // Examen físico
+      examenfistc: [''],
+      examenfispa: [''],
+      examenfisfc: [''],
+      examenfisfr: [''],
+      examenfissao2: [''],
+      examenfispeso: [''],
+      examenfistalla: [''],
+      examenfisimc: [''],
+      examenfisgmt: ['']
+    });
+  }
+
+  /**
+   * Abre el modal desde el componente de pacientes
+   */
+  abrirModalDesdePacientes(datosPaciente: any): void {
+    if (!datosPaciente || !datosPaciente.idpaciente) {
+      this.servicioAlerta.alertaError('Error: No se puede crear expediente sin ID de paciente');
+      return;
+    }
     
-    // Antecedentes médicos
-    antmedico: [''],
-    antmedicamento: [''],
-    anttraumaticos: [''],
-    antfamiliar: [''],
-    antalergico: [''],
-    antmedicamentos: [''],
-    antsustancias: [''],
-    antintolerantelactosa: [''],
-    
-    // Antecedentes fisiológicos
-    antfisoinmunizacion: [''],
-    antfisocrecimiento: [''],
-    antfisohabitos: [''],
-    antfisoalimentos: [''],
-    
-    // Antecedentes gineco-obstétricos
-    gineobsprenatales: [''],
-    gineobsnatales: [''],
-    gineobspostnatales: [''],
-    gineobsgestas: [''],
-    gineobspartos: [''],
-    gineobsabortos: [''],
-    gineobscesareas: [''],
-    gineobshv: [''],
-    gineobsmh: [''],
-    gineobsfur: [''],
-    gineobsciclos: [''],
-    gineobsmenarquia: [''],
-    
-    // Examen físico
-    examenfistc: [''],
-    examenfispa: [''],
-    examenfisfc: [''],
-    examenfisfr: [''],
-    examenfissao2: [''],
-    examenfispeso: [''],
-    examenfistalla: [''],
-    examenfisimc: [''],
-    examenfisgmt: ['']
-  });
-}
-  abrirModalDesdePacientes(pacienteData: any): void {
-    this.pacienteData = pacienteData;
+    this.datosPaciente = datosPaciente;
     
     // Pre-llenar el formulario
-    this.expedienteForm.patchValue({
+    this.formularioExpediente.patchValue({
       generarAutomatico: true,
-      historiaenfermedad: `Expediente médico para ${pacienteData.pacienteInfo.nombres} ${pacienteData.pacienteInfo.apellidos}`
+      historiaenfermedad: `Expediente médico para ${datosPaciente.pacienteInfo.nombres} ${datosPaciente.pacienteInfo.apellidos}`
     });
     
-    // Mostrar el formulario directamente
-    this.showForm();
+    this.mostrarFormulario();
   }
 
-  setupSearch(): void {
-    this.searchSubject
-      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
-      .subscribe(() => this.filterExpedientes());
+  onToggleSidebar(expandido: boolean): void {
+    this.barraLateralExpandida = expandido;
+    // Opcional: guardar la preferencia
+    localStorage.setItem('sidebarExpanded', expandido.toString());
+  }
+  
+  /**
+   * Configura la búsqueda con debounce
+   */
+  configurarBusqueda(): void {
+    this.sujetoBusqueda
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destruir$))
+      .subscribe(() => this.filtrarExpedientes());
   }
 
-  loadUserInfo(): void {
+  /**
+   * Carga la información del usuario desde localStorage
+   */
+  cargarInformacionUsuario(): void {
     try {
-      const usuarioData = localStorage.getItem('usuario');
-      if (usuarioData) {
-        const usuario = JSON.parse(usuarioData);
-        this.userInfo = {
-          name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim(),
+      const datosUsuario = localStorage.getItem('usuario');
+      if (datosUsuario) {
+        const usuario = JSON.parse(datosUsuario);
+        this.informacionUsuario = {
+          name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim() || 'Usuario',
           avatar: usuario.avatar || null
         };
       }
     } catch (error) {
-      console.error('❌ Error al cargar usuario:', error);
+      console.error('Error al cargar información del usuario:', error);
+      this.informacionUsuario = { name: 'Usuario', avatar: null }; // ✅ Fallback
+    }
+    
+    // ✅ AGREGAR: Restaurar estado del sidebar
+    const sidebarState = localStorage.getItem('sidebarExpanded');
+    if (sidebarState !== null) {
+      this.barraLateralExpandida = sidebarState === 'true';
     }
   }
 
-  detectSidebarState(): void {
-    const checkSidebar = () => {
-      const sidebar = document.querySelector('.sidebar-container');
-      if (sidebar) {
-        this.sidebarExpanded = sidebar.classList.contains('expanded');
+  /**
+   * Detecta el estado de la barra lateral
+   */
+  detectarEstadoBarraLateral(): void {
+    const verificarBarraLateral = () => {
+      const barraLateral = document.querySelector('.sidebar-container');
+      if (barraLateral) {
+        this.barraLateralExpandida = barraLateral.classList.contains('expanded');
       }
     };
-    setTimeout(checkSidebar, 100);
-  }
 
-  // ==========================================
-  // NAVEGACIÓN
-  // ==========================================
+    setTimeout(verificarBarraLateral, 100);
 
-  showList(): void {
-    this.currentView = 'list';
-    this.resetForm();
-  }
-
-  showForm(): void {
-    this.currentView = 'form';
-    this.isEditMode = false;
-    this.resetForm();
-  }
-
-  viewExpediente(expediente: Expediente): void {
-    this.selectedExpediente = expediente;
-    this.currentView = 'detail';
-  }
-
-  editExpediente(expediente: Expediente): void {
-    console.log('=== EDITANDO EXPEDIENTE ===');
-    console.log('ID:', expediente.idexpediente);
+    // Observar cambios en el sidebar
+    const observer = new MutationObserver(verificarBarraLateral);
+    const sidebar = document.querySelector('.sidebar-container');
     
-    this.selectedExpediente = expediente;
-    this.isEditMode = true;
-    this.currentView = 'form';
-    this.fillForm(expediente);
+    if (sidebar) {
+      observer.observe(sidebar, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
+    }
   }
 
-  closeModal(): void {
+  // ==========================================
+  // NAVEGACIÓN ENTRE VISTAS
+  // ==========================================
+
+  /**
+   * Muestra la vista de lista
+   */
+  mostrarLista(): void {
+    this.vistaActual = 'lista';
+    this.reiniciarFormulario();
+  }
+
+  /**
+   * Muestra el formulario para crear nuevo expediente
+   */
+  mostrarFormulario(): void {
+    this.vistaActual = 'formulario';
+    this.modoEdicion = false;
+    this.reiniciarFormulario();
+  }
+
+  /**
+   * Muestra los detalles de un expediente
+   */
+  verExpediente(expediente: Expediente): void {
+    this.expedienteSeleccionado = expediente;
+    this.vistaActual = 'detalle';
+  }
+
+  /**
+   * Abre el formulario para editar un expediente
+   */
+  editarExpediente(expediente: Expediente): void {
+    this.expedienteSeleccionado = expediente;
+    this.modoEdicion = true;
+    this.vistaActual = 'formulario';
+    this.llenarFormulario(expediente);
+  }
+
+  /**
+   * Cierra el modal o regresa a la lista
+   */
+  cerrarModalInterno(): void {
     if (this.mostrarComoModal) {
       this.cerrarModal.emit();
     } else {
-      this.currentView = 'list';
-      this.resetForm();
+      this.mostrarLista();
     }
   }
 
-resetForm(): void {
-  console.log('🔄 Reseteando formulario...');
-  
-  this.expedienteForm.reset();
-  
-  // ✅ Establecer valores por defecto correctos
-  this.expedienteForm.patchValue({ 
-    generarAutomatico: true,
-    numeroexpediente: '',
-    antintolerantelactosa: ''
-  });
-  
-  // ✅ Limpiar validadores del número de expediente
-  const numeroControl = this.expedienteForm.get('numeroexpediente');
-  numeroControl?.clearValidators();
-  numeroControl?.updateValueAndValidity();
-  
-  this.isEditMode = false;
-  this.selectedExpediente = null;
-  this.error = '';
-  
-  console.log('✅ Formulario reseteado');
-}
+  /**
+   * Reinicia el formulario a su estado inicial
+   */
+  reiniciarFormulario(): void {
+    this.formularioExpediente.reset();
+    
+    this.formularioExpediente.patchValue({ 
+      generarAutomatico: true,
+      numeroexpediente: '',
+      antintolerantelactosa: ''
+    });
+    
+    const controlNumero = this.formularioExpediente.get('numeroexpediente');
+    controlNumero?.clearValidators();
+    controlNumero?.updateValueAndValidity();
+    
+    this.modoEdicion = false;
+    this.expedienteSeleccionado = null;
+    this.error = '';
+  }
 
   // ==========================================
-  // DATOS
+  // GESTIÓN DE DATOS
   // ==========================================
 
-  loadExpedientes(): void {
-    this.loading = true;
+  /**
+   * Carga la lista de expedientes desde el servidor
+   */
+  cargarExpedientes(): void {
+    this.cargando = true;
     this.error = '';
 
-    this.expedienteService.getAllExpedientes(this.currentPage, this.pageSize, this.searchTerm)
-      .pipe(takeUntil(this.destroy$))
+    this.servicioExpediente.obtenerTodosLosExpedientes(this.paginaActual, this.tamanoPagina, this.terminoBusqueda)
+      .pipe(takeUntil(this.destruir$))
       .subscribe({
-        next: (response: ExpedienteResponse) => {
-          console.log('Respuesta del servidor:', response);
-          if (response.success && Array.isArray(response.data)) {
-            this.expedientes = response.data;
-            this.filteredExpedientes = [...this.expedientes];
-            if (response.pagination) {
-              this.totalItems = response.pagination.total;
-              this.totalPages = response.pagination.totalPages;
-              this.currentPage = response.pagination.page;
+        next: (respuesta: RespuestaListaExpedientes) => {
+          if (respuesta.exito && Array.isArray(respuesta.datos)) {
+            this.expedientes = respuesta.datos;
+            this.expedientesFiltrados = [...this.expedientes];
+            if (respuesta.paginacion) {
+              this.totalElementos = respuesta.paginacion.total;
+              this.totalPaginas = respuesta.paginacion.totalPaginas;
+              this.paginaActual = respuesta.paginacion.pagina;
             }
           } else {
             this.error = 'Error al cargar expedientes';
             this.expedientes = [];
-            this.filteredExpedientes = [];
-            this.alertaService.alertaError('Error al cargar expedientes');
+            this.expedientesFiltrados = [];
+            this.servicioAlerta.alertaError('Error al cargar expedientes');
           }
-          this.loading = false;
+          this.cargando = false;
         },
-        error: (error) => {
-          console.error('Error:', error);
+        error: (error: any) => {
+          console.error('Error al cargar expedientes:', error);
           this.error = 'Error de conexión';
-          this.loading = false;
+          this.cargando = false;
           this.expedientes = [];
-          this.filteredExpedientes = [];
-          this.alertaService.alertaError('Error de conexión');
+          this.expedientesFiltrados = [];
+          this.servicioAlerta.alertaError('Error de conexión');
         }
       });
   }
 
-  loadEstadisticas(): void {
-    this.expedienteService.getEstadisticas()
-      .pipe(takeUntil(this.destroy$))
+  /**
+   * Carga las estadísticas de expedientes
+   */
+  cargarEstadisticas(): void {
+    this.servicioExpediente.obtenerEstadisticas()
+      .pipe(takeUntil(this.destruir$))
       .subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.estadisticas = response.data;
+        next: (respuesta: any) => {
+          if (respuesta.exito) {
+            this.estadisticas = respuesta.datos;
           }
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('Error al cargar estadísticas:', error);
         }
       });
   }
 
-  filterExpedientes(): void {
-    if (!this.searchTerm.trim()) {
-      this.filteredExpedientes = [...this.expedientes];
+  /**
+   * Filtra los expedientes según el término de búsqueda
+   */
+  filtrarExpedientes(): void {
+    if (!this.terminoBusqueda.trim()) {
+      this.expedientesFiltrados = [...this.expedientes];
       return;
     }
 
-    const term = this.searchTerm.toLowerCase();
-    this.filteredExpedientes = this.expedientes.filter(expediente =>
-      expediente.numeroexpediente.toLowerCase().includes(term) ||
-      (expediente.historiaenfermedad && expediente.historiaenfermedad.toLowerCase().includes(term)) ||
+    const termino = this.terminoBusqueda.toLowerCase();
+    this.expedientesFiltrados = this.expedientes.filter(expediente =>
+      expediente.numeroexpediente.toLowerCase().includes(termino) ||
+      (expediente.historiaenfermedad && expediente.historiaenfermedad.toLowerCase().includes(termino)) ||
       (expediente.paciente && expediente.paciente.length > 0 && 
-       (expediente.paciente[0].nombres.toLowerCase().includes(term) ||
-        expediente.paciente[0].apellidos.toLowerCase().includes(term) ||
-        expediente.paciente[0].cui.toLowerCase().includes(term)))
+       (expediente.paciente[0].nombres.toLowerCase().includes(termino) ||
+        expediente.paciente[0].apellidos.toLowerCase().includes(termino) ||
+        expediente.paciente[0].cui.toLowerCase().includes(termino)))
     );
   }
 
   // ==========================================
-  // CRUD
+  // OPERACIONES CRUD
   // ==========================================
 
-// En expediente.ts, reemplaza la función onSubmit con esta versión con más logging:
-
-async onSubmit(): Promise<void> {
-  console.log('=== SUBMIT EXPEDIENTE ===');
-  
-  // ✅ Obtener valores actuales del formulario
-  const formValues = this.expedienteForm.value;
-  console.log('📋 Valores RAW del formulario:', formValues);
-  console.log('🔍 Formulario Angular válido:', this.expedienteForm.valid);
-  console.log('🔍 Formulario custom válido:', this.isFormValid());
-  console.log('🔍 Modo edición:', this.isEditMode);
-  
-  // ✅ Validación más robusta
-  if (!this.isFormValid()) {
-    console.log('❌ Formulario inválido - deteniendo submit');
-    this.markFormGroupTouched(this.expedienteForm);
-    this.alertaService.alertaPreventiva('Complete todos los campos requeridos');
-    return;
-  }
-
-  this.loading = true;
-  this.error = '';
-
-  try {
-    // ✅ Preparar datos para envío
-    const expedienteData = this.prepararDatosParaEnvio(formValues);
-    console.log('📤 Datos preparados para envío:', expedienteData);
+  /**
+   * Procesa el envío del formulario
+   */
+  async alEnviarConDepuracion(): Promise<void> {
+    const valoresFormulario = this.formularioExpediente.value;
     
-    // ✅ Enviar al backend
-    if (this.isEditMode && this.selectedExpediente?.idexpediente) {
-      await this.updateExpediente(this.selectedExpediente.idexpediente, expedienteData);
-    } else {
-      await this.createExpediente(expedienteData);
+    if (!this.esFormularioValido()) {
+      this.marcarFormularioComoTocado(this.formularioExpediente);
+      this.servicioAlerta.alertaPreventiva('Complete todos los campos requeridos');
+      return;
     }
-  } catch (error) {
-    console.error('❌ Error en submit:', error);
-    this.error = error instanceof Error ? error.message : 'Error desconocido';
-    this.alertaService.alertaError(this.error);
-    this.loading = false;
-  }
-}
 
-private prepararDatosParaEnvio(formValues: any): any {
-  console.log('🔄 Preparando datos para envío...');
-  
-  // ✅ Clonar los valores del formulario
-  const datos = { ...formValues };
-  
-  // ✅ Si es modo automático, asegurar que numeroexpediente esté vacío o sea null
-  if (datos.generarAutomatico === true) {
-    datos.numeroexpediente = null; // o ''
-    console.log('🤖 Modo automático: numeroexpediente establecido a null');
-  }
-  
-  // ✅ Agregar ID del paciente si está disponible
-  if (this.pacienteData?.idpaciente) {
-    datos.idpaciente = this.pacienteData.idpaciente;
-    console.log('👤 ID del paciente agregado:', datos.idpaciente);
-  }
-  
-  // ✅ Limpiar campos vacíos (convertir strings vacíos a null)
-  Object.keys(datos).forEach(key => {
-    if (typeof datos[key] === 'string' && datos[key].trim() === '') {
-      datos[key] = null;
-    }
-  });
-  
-  // ✅ Convertir números
-  const camposNumericos = [
-    'antintolerantelactosa', 'gineobsgestas', 'gineobspartos', 
-    'gineobsabortos', 'gineobscesareas', 'examenfistc', 
-    'examenfisfc', 'examenfisfr', 'examenfissao2', 
-    'examenfispeso', 'examenfistalla', 'examenfisimc'
-  ];
-  
-  camposNumericos.forEach(campo => {
-    if (datos[campo] !== null && datos[campo] !== undefined && datos[campo] !== '') {
-      datos[campo] = Number(datos[campo]);
-    }
-  });
-  
-  console.log('✅ Datos preparados:', datos);
-  return datos;
-}
+    this.cargando = true;
+    this.error = '';
 
-private async createExpediente(expedienteData: Expediente): Promise<void> {
-  try {
-    // Agregar ID del paciente si está disponible
-    if (this.pacienteData?.idpaciente) {
-      (expedienteData as any).idpaciente = this.pacienteData.idpaciente;
-    }
-    
-    const response = await this.expedienteService.createExpediente(expedienteData)
-      .toPromise()
-      .then(resp => {
-        if (!resp) {
-          throw new Error('No se recibió respuesta del servidor');
-        }
-        return resp;
-      });
-    
-    if (response.success) {
-      console.log('📤 Respuesta completa del backend:', response);
-      console.log('📤 Tipo de response.data:', typeof response.data);
-      console.log('📤 Es array?:', Array.isArray(response.data));
+    try {
+      const datosExpediente = this.prepararDatosParaEnvio(valoresFormulario);
       
-      this.alertaService.alertaExito('Expediente creado exitosamente');
-      
-      // 🎯 VERIFICAR EL TIPO DE DATOS antes de acceder a las propiedades
-      if (this.mostrarComoModal) {
-        let expedienteCreado: any = null;
-        
-        // Verificar si es un array o un objeto
-        if (Array.isArray(response.data)) {
-          // Si es array, tomar el primer elemento
-          expedienteCreado = response.data[0];
-          console.log('📦 Datos como array, tomando primer elemento:', expedienteCreado);
-        } else {
-          // Si es objeto, usar directamente
-          expedienteCreado = response.data;
-          console.log('📦 Datos como objeto:', expedienteCreado);
-        }
-        
-        // Verificar que tenemos los datos necesarios
-        if (expedienteCreado && expedienteCreado.numeroexpediente) {
-          const expedienteCompleto = {
-            expediente: expedienteCreado,
-            numeroExpediente: expedienteCreado.numeroexpediente,
-            idExpediente: expedienteCreado.idexpediente,
-            pacienteId: this.pacienteData?.idpaciente
-          };
-          
-          console.log('📤 Emitiendo expediente creado:', expedienteCompleto);
-          this.expedienteCreado.emit(expedienteCompleto);
-        } else {
-          console.error('❌ No se encontró numeroexpediente en la respuesta');
-          console.error('❌ Estructura recibida:', expedienteCreado);
-          
-          // Emitir lo que tenemos aunque no sea ideal
-          this.expedienteCreado.emit({
-            expediente: expedienteCreado,
-            numeroExpediente: 'ERROR-NO-NUMERO',
-            idExpediente: expedienteCreado?.idexpediente || null,
-            pacienteId: this.pacienteData?.idpaciente
-          });
-        }
-        
-        // Cerrar modal automáticamente
-        setTimeout(() => {
-          this.cerrarModal.emit();
-        }, 1500);
+      if (this.modoEdicion && this.expedienteSeleccionado?.idexpediente) {
+        await this.actualizarExpediente(this.expedienteSeleccionado.idexpediente, datosExpediente);
       } else {
-        this.loadExpedientes();
-        this.loadEstadisticas();
-        this.showList();
+        await this.crearExpediente(datosExpediente);
       }
-    } else {
-      throw new Error(response.message || 'Error al crear expediente');
+    } catch (error) {
+      console.error('Error en envío:', error);
+      this.error = error instanceof Error ? error.message : 'Error desconocido';
+      this.servicioAlerta.alertaError(this.error);
+      this.cargando = false;
     }
-  } catch (error) {
-    console.error('❌ Error completo en createExpediente:', error);
-    throw error;
-  } finally {
-    this.loading = false;
   }
-}
-private async updateExpediente(expedienteId: number, expedienteData: Expediente): Promise<void> {
-  try {
-    const response = await this.expedienteService.updateExpediente(expedienteId, expedienteData)
-      .toPromise()
-      .then(resp => {
-        if (!resp) {
-          throw new Error('No se recibió respuesta del servidor');
-        }
-        return resp;
-      });
-    
-    if (response.success) {
-      this.alertaService.alertaExito('Expediente actualizado exitosamente');
-      this.loadExpedientes();
-      this.loadEstadisticas();
-      this.showList();
-    } else {
-      throw new Error(response.message || 'Error al actualizar expediente');
-    }
-  } catch (error) {
-    throw error;
-  } finally {
-    this.loading = false;
-  }
-}
 
-deleteExpediente(id: number): void {
+  /**
+   * Prepara los datos del formulario para envío al servidor
+   */
+  private prepararDatosParaEnvio(valoresFormulario: any): any {
+    const datos = { ...valoresFormulario };
+    
+    // Configurar número de expediente según modo
+    if (datos.generarAutomatico === true) {
+      datos.numeroexpediente = null;
+    }
+    
+    // Agregar FK del paciente si está disponible
+    if (this.datosPaciente?.idpaciente) {
+      datos.fkpaciente = this.datosPaciente.idpaciente;
+      datos.idpaciente = this.datosPaciente.idpaciente;
+    }
+    
+    // Limpiar campos vacíos
+    Object.keys(datos).forEach(clave => {
+      if (typeof datos[clave] === 'string' && datos[clave].trim() === '') {
+        datos[clave] = null;
+      }
+    });
+    
+    // Convertir campos numéricos
+    const camposNumericos = [
+      'antintolerantelactosa', 'gineobsgestas', 'gineobspartos', 
+      'gineobsabortos', 'gineobscesareas', 'examenfistc', 
+      'examenfisfc', 'examenfisfr', 'examenfissao2', 
+      'examenfispeso', 'examenfistalla', 'examenfisimc'
+    ];
+    
+    camposNumericos.forEach(campo => {
+      if (datos[campo] !== null && datos[campo] !== undefined && datos[campo] !== '') {
+        datos[campo] = Number(datos[campo]);
+      }
+    });
+    
+    return datos;
+  }
+
+  /**
+   * Crea un nuevo expediente
+   */
+  private async crearExpediente(datosExpediente: Expediente): Promise<void> {
+    try {
+      // Verificar que tenemos el ID del paciente
+      if (this.datosPaciente?.idpaciente) {
+        (datosExpediente as any).fkpaciente = this.datosPaciente.idpaciente;
+      } else {
+        throw new Error('No se puede crear expediente sin ID de paciente');
+      }
+      
+      const respuesta = await this.servicioExpediente.crearExpediente(datosExpediente)
+        .toPromise()
+        .then((resp: any) => {
+          if (!resp) {
+            throw new Error('No se recibió respuesta del servidor');
+          }
+          return resp;
+        });
+      
+      if (respuesta.exito) {
+        this.servicioAlerta.alertaExito('Expediente creado exitosamente');
+        
+        if (this.mostrarComoModal) {
+          let expedienteCreado: any = null;
+          
+          if (Array.isArray(respuesta.datos)) {
+            expedienteCreado = respuesta.datos[0];
+          } else {
+            expedienteCreado = respuesta.datos;
+          }
+          
+          if (expedienteCreado && expedienteCreado.numeroexpediente) {
+            const expedienteCompleto = {
+              expediente: expedienteCreado,
+              numeroExpediente: expedienteCreado.numeroexpediente,
+              idExpediente: expedienteCreado.idexpediente,
+              pacienteId: this.datosPaciente?.idpaciente
+            };
+            
+            this.expedienteCreado.emit(expedienteCompleto);
+          }
+          
+          setTimeout(() => {
+            this.cerrarModal.emit();
+          }, 1500);
+        } else {
+          this.cargarExpedientes();
+          this.cargarEstadisticas();
+          this.mostrarLista();
+        }
+      } else {
+        throw new Error(respuesta.mensaje || 'Error al crear expediente');
+      }
+    } catch (error) {
+      throw error;
+    } finally {
+      this.cargando = false;
+    }
+  }
+
+  /**
+   * Actualiza un expediente existente
+   */
+  private async actualizarExpediente(idExpediente: number, datosExpediente: Expediente): Promise<void> {
+    try {
+      const respuesta = await this.servicioExpediente.actualizarExpediente(idExpediente, datosExpediente)
+        .toPromise()
+        .then((resp: any) => {
+          if (!resp) {
+            throw new Error('No se recibió respuesta del servidor');
+          }
+          return resp;
+        });
+      
+      if (respuesta.exito) {
+        this.servicioAlerta.alertaExito('Expediente actualizado exitosamente');
+        this.cargarExpedientes();
+        this.cargarEstadisticas();
+        this.mostrarLista();
+      } else {
+        throw new Error(respuesta.mensaje || 'Error al actualizar expediente');
+      }
+    } catch (error) {
+      throw error;
+    } finally {
+      this.cargando = false;
+    }
+  }
+
+  /**
+   * Elimina un expediente con confirmación
+   */
+  eliminarExpediente(id: number): void {
     const Swal = (window as any).Swal;
     Swal.fire({
       title: '¿Eliminar expediente?',
@@ -515,109 +551,116 @@ deleteExpediente(id: number): void {
       cancelButtonColor: '#3085d6',
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar'
-    }).then((result: any) => {
-      if (result.isConfirmed) {
-        this.loading = true;
+    }).then((resultado: any) => {
+      if (resultado.isConfirmed) {
+        this.cargando = true;
         
-        this.expedienteService.deleteExpediente(id)
-          .pipe(takeUntil(this.destroy$))
+        this.servicioExpediente.eliminarExpediente(id)
+          .pipe(takeUntil(this.destruir$))
           .subscribe({
-            next: (response) => {
-              if (response.success) {
-                this.alertaService.alertaExito('Expediente eliminado');
-                this.loadExpedientes();
-                this.loadEstadisticas();
+            next: (respuesta: any) => {
+              if (respuesta.exito) {
+                this.servicioAlerta.alertaExito('Expediente eliminado');
+                this.cargarExpedientes();
+                this.cargarEstadisticas();
               } else {
-                this.alertaService.alertaError(response.message || 'Error al eliminar');
+                this.servicioAlerta.alertaError(respuesta.mensaje || 'Error al eliminar');
               }
-              this.loading = false;
+              this.cargando = false;
             },
-            error: (error) => {
+            error: (error: any) => {
               console.error('Error al eliminar:', error);
               if (error.error && error.error.message) {
-                this.alertaService.alertaError(error.error.message);
+                this.servicioAlerta.alertaError(error.error.message);
               } else {
-                this.alertaService.alertaError('Error al eliminar expediente');
+                this.servicioAlerta.alertaError('Error al eliminar expediente');
               }
-              this.loading = false;
+              this.cargando = false;
             }
           });
       }
     });
   }
 
-  
   // ==========================================
-  // FUNCIONES ESPECIALES
+  // FUNCIONES ESPECIALES DEL FORMULARIO
   // ==========================================
 
-onGenerarAutomaticoChange(): void {
-  const generarAutomatico = this.expedienteForm.get('generarAutomatico')?.value;
-  const numeroExpedienteControl = this.expedienteForm.get('numeroexpediente');
-  
-  console.log('🔄 Cambio en generarAutomatico:', generarAutomatico);
-  
-  if (generarAutomatico) {
-    // ✅ Modo automático: limpiar y deshabilitar validaciones
-    numeroExpedienteControl?.clearValidators();
-    numeroExpedienteControl?.setValue('');
-    numeroExpedienteControl?.markAsUntouched();
-    console.log('✅ Modo automático activado - número se generará automáticamente');
-  } else {
-    // ✅ Modo manual: activar validaciones
-    numeroExpedienteControl?.setValidators([
-      Validators.required,
-      Validators.minLength(1),
-      Validators.pattern(/^[a-zA-Z0-9\-_]+$/)
-    ]);
-    console.log('✅ Modo manual activado - se requiere número manual');
+  /**
+   * Maneja el cambio del checkbox de generación automática
+   */
+  alCambiarGeneracionAutomatica(): void {
+    const generarAutomatico = this.formularioExpediente.get('generarAutomatico')?.value;
+    const controlNumeroExpediente = this.formularioExpediente.get('numeroexpediente');
+    
+    if (generarAutomatico) {
+      controlNumeroExpediente?.clearValidators();
+      controlNumeroExpediente?.setValue('');
+      controlNumeroExpediente?.markAsUntouched();
+    } else {
+      controlNumeroExpediente?.setValidators([
+        Validators.required,
+        Validators.minLength(1),
+        Validators.pattern(/^[a-zA-Z0-9\-_]+$/)
+      ]);
+    }
+    
+    controlNumeroExpediente?.updateValueAndValidity();
   }
-  
-  // ✅ Importante: actualizar el estado del control
-  numeroExpedienteControl?.updateValueAndValidity();
-}
 
+  /**
+   * Sugiere un número de expediente automático
+   */
   async sugerirNumero(): Promise<void> {
     try {
-      const response = await this.expedienteService.generarNumeroExpediente()
+      const respuesta = await this.servicioExpediente.generarNumeroExpediente()
         .toPromise()
-        .then(resp => {
+        .then((resp: any) => {
           if (!resp) {
             throw new Error('No se recibió respuesta del servidor');
           }
           return resp;
         });
       
-      if (response && response.success) {
-        this.expedienteForm.patchValue({
-          numeroexpediente: response.data.numeroexpediente
+      if (respuesta && respuesta.exito) {
+        this.formularioExpediente.patchValue({
+          numeroexpediente: respuesta.datos.numeroexpediente
         });
-        this.alertaService.alertaInfo(`Número sugerido: ${response.data.numeroexpediente}`);
+        this.servicioAlerta.alertaInfo(`Número sugerido: ${respuesta.datos.numeroexpediente}`);
       }
     } catch (error) {
       console.error('Error al sugerir número:', error);
-      this.alertaService.alertaError('Error al generar número de expediente');
+      this.servicioAlerta.alertaError('Error al generar número de expediente');
     }
   }
 
+  /**
+   * Calcula el IMC automáticamente basado en peso y talla
+   */
   calcularIMC(): void {
-    const peso = this.expedienteForm.get('examenfispeso')?.value;
-    const talla = this.expedienteForm.get('examenfistalla')?.value;
+    const peso = this.formularioExpediente.get('examenfispeso')?.value;
+    const talla = this.formularioExpediente.get('examenfistalla')?.value;
     
-    const imc = this.expedienteService.calcularIMC(peso, talla);
+    const imc = this.servicioExpediente.calcularIMC(peso, talla);
     if (imc !== null) {
-      this.expedienteForm.patchValue({ examenfisimc: imc });
+      this.formularioExpediente.patchValue({ examenfisimc: imc });
     } else {
-      this.expedienteForm.patchValue({ examenfisimc: '' });
+      this.formularioExpediente.patchValue({ examenfisimc: '' });
     }
   }
 
-  getIMCCategory(): string {
-    const imc = this.expedienteForm.get('examenfisimc')?.value;
-    return this.getIMCCategoryFromValue(imc);
+  /**
+   * Obtiene la categoría del IMC actual del formulario
+   */
+  obtenerCategoriaIMC(): string {
+    const imc = this.formularioExpediente.get('examenfisimc')?.value;
+    return this.obtenerCategoriaIMCDesdeValor(imc);
   }
 
-  getIMCCategoryFromValue(imc: number | undefined): string {
+  /**
+   * Obtiene la categoría del IMC desde un valor específico
+   */
+  obtenerCategoriaIMCDesdeValor(imc: number | undefined): string {
     if (!imc) return '';
     
     if (imc < 18.5) return 'Bajo peso';
@@ -628,177 +671,72 @@ onGenerarAutomaticoChange(): void {
   }
 
   // ==========================================
-  // UTILIDADES
+  // FUNCIONES DE UTILIDAD
   // ==========================================
 
-fillForm(expediente: Expediente): void {
-  console.log('📝 Llenando formulario para edición:', expediente);
-  
-  // ✅ Al editar, siempre usar modo manual
-  this.expedienteForm.patchValue({
-    numeroexpediente: expediente.numeroexpediente || '',
-    generarAutomatico: false, // ✅ Siempre manual al editar
-    historiaenfermedad: expediente.historiaenfermedad || '',
-    antmedico: expediente.antmedico || '',
-    antmedicamento: expediente.antmedicamento || '',
-    anttraumaticos: expediente.anttraumaticos || '',
-    antfamiliar: expediente.antfamiliar || '',
-    antalergico: expediente.antalergico || '',
-    antmedicamentos: expediente.antmedicamentos || '',
-    antsustancias: expediente.antsustancias || '',
-    antintolerantelactosa: expediente.antintolerantelactosa !== undefined ? expediente.antintolerantelactosa.toString() : '',
-    antfisoinmunizacion: expediente.antfisoinmunizacion || '',
-    antfisocrecimiento: expediente.antfisocrecimiento || '',
-    antfisohabitos: expediente.antfisohabitos || '',
-    antfisoalimentos: expediente.antfisoalimentos || '',
-    gineobsprenatales: expediente.gineobsprenatales || '',
-    gineobsnatales: expediente.gineobsnatales || '',
-    gineobspostnatales: expediente.gineobspostnatales || '',
-    gineobsgestas: expediente.gineobsgestas || '',
-    gineobspartos: expediente.gineobspartos || '',
-    gineobsabortos: expediente.gineobsabortos || '',
-    gineobscesareas: expediente.gineobscesareas || '',
-    gineobshv: expediente.gineobshv || '',
-    gineobsmh: expediente.gineobsmh || '',
-    gineobsfur: expediente.gineobsfur ? new Date(expediente.gineobsfur).toISOString().split('T')[0] : '',
-    gineobsciclos: expediente.gineobsciclos || '',
-    gineobsmenarquia: expediente.gineobsmenarquia || '',
-    examenfistc: expediente.examenfistc || '',
-    examenfispa: expediente.examenfispa || '',
-    examenfisfc: expediente.examenfisfc || '',
-    examenfisfr: expediente.examenfisfr || '',
-    examenfissao2: expediente.examenfissao2 || '',
-    examenfispeso: expediente.examenfispeso || '',
-    examenfistalla: expediente.examenfistalla || '',
-    examenfisimc: expediente.examenfisimc || '',
-    examenfisgmt: expediente.examenfisgmt || ''
-  });
-  
-  // ✅ Configurar validadores para modo manual
-  this.onGenerarAutomaticoChange();
-  
-  console.log('✅ Formulario llenado para edición');
-}
+  /**
+   * Llena el formulario con datos de un expediente existente
+   */
+  llenarFormulario(expediente: Expediente): void {
+    this.formularioExpediente.patchValue({
+      numeroexpediente: expediente.numeroexpediente || '',
+      generarAutomatico: false,
+      historiaenfermedad: expediente.historiaenfermedad || '',
+      antmedico: expediente.antmedico || '',
+      antmedicamento: expediente.antmedicamento || '',
+      anttraumaticos: expediente.anttraumaticos || '',
+      antfamiliar: expediente.antfamiliar || '',
+      antalergico: expediente.antalergico || '',
+      antmedicamentos: expediente.antmedicamentos || '',
+      antsustancias: expediente.antsustancias || '',
+      antintolerantelactosa: expediente.antintolerantelactosa !== undefined ? expediente.antintolerantelactosa.toString() : '',
+      antfisoinmunizacion: expediente.antfisoinmunizacion || '',
+      antfisocrecimiento: expediente.antfisocrecimiento || '',
+      antfisohabitos: expediente.antfisohabitos || '',
+      antfisoalimentos: expediente.antfisoalimentos || '',
+      gineobsprenatales: expediente.gineobsprenatales || '',
+      gineobsnatales: expediente.gineobsnatales || '',
+      gineobspostnatales: expediente.gineobspostnatales || '',
+      gineobsgestas: expediente.gineobsgestas || '',
+      gineobspartos: expediente.gineobspartos || '',
+      gineobsabortos: expediente.gineobsabortos || '',
+      gineobscesareas: expediente.gineobscesareas || '',
+      gineobshv: expediente.gineobshv || '',
+      gineobsmh: expediente.gineobsmh || '',
+      gineobsfur: expediente.gineobsfur ? new Date(expediente.gineobsfur).toISOString().split('T')[0] : '',
+      gineobsciclos: expediente.gineobsciclos || '',
+      gineobsmenarquia: expediente.gineobsmenarquia || '',
+      examenfistc: expediente.examenfistc || '',
+      examenfispa: expediente.examenfispa || '',
+      examenfisfc: expediente.examenfisfc || '',
+      examenfisfr: expediente.examenfisfr || '',
+      examenfissao2: expediente.examenfissao2 || '',
+      examenfispeso: expediente.examenfispeso || '',
+      examenfistalla: expediente.examenfistalla || '',
+      examenfisimc: expediente.examenfisimc || '',
+      examenfisgmt: expediente.examenfisgmt || ''
+    });
+    
+    this.alCambiarGeneracionAutomatica();
+  }
 
-
-
-// AÑADIR ESTA FUNCIÓN A expediente.ts PARA DEBUG INTENSIVO
-
-debugFormulario(): void {
-  console.log('='.repeat(50));
-  console.log('🐛 DEBUG COMPLETO DEL FORMULARIO');
-  console.log('='.repeat(50));
-  
-  // 1. Estado del formulario
-  console.log('📋 ESTADO DEL FORMULARIO:');
-  console.log('- Valid:', this.expedienteForm.valid);
-  console.log('- Invalid:', this.expedienteForm.invalid);
-  console.log('- Dirty:', this.expedienteForm.dirty);
-  console.log('- Touched:', this.expedienteForm.touched);
-  console.log('- Pristine:', this.expedienteForm.pristine);
-  
-  // 2. Valores actuales
-  console.log('\n📋 VALORES ACTUALES:');
-  const valores = this.expedienteForm.value;
-  Object.keys(valores).forEach(key => {
-    console.log(`- ${key}:`, valores[key]);
-  });
-  
-  // 3. Errores de validación
-  console.log('\n❌ ERRORES DE VALIDACIÓN:');
-  Object.keys(this.expedienteForm.controls).forEach(key => {
-    const control = this.expedienteForm.get(key);
-    if (control && control.errors) {
-      console.log(`- ${key}:`, control.errors);
-    }
-  });
-  
-  // 4. Validación específica del número de expediente
-  console.log('\n🔍 VALIDACIÓN NÚMERO EXPEDIENTE:');
-  const numeroControl = this.expedienteForm.get('numeroexpediente');
-  console.log('- Valor:', numeroControl?.value);
-  console.log('- Valid:', numeroControl?.valid);
-  console.log('- Invalid:', numeroControl?.invalid);
-  console.log('- Errors:', numeroControl?.errors);
-  console.log('- Validators:', numeroControl?.validator);
-  
-  // 5. Validación custom
-  console.log('\n🔍 VALIDACIÓN CUSTOM:');
-  console.log('- isFormValid():', this.isFormValid());
-  
-  // 6. Datos que se enviarían
-  console.log('\n📤 DATOS QUE SE ENVIARÍAN:');
-  const datosParaEnvio = this.prepararDatosParaEnvio(valores);
-  console.log(datosParaEnvio);
-  
-  console.log('='.repeat(50));
-}
-
-// LLAMAR ESTA FUNCIÓN ANTES DE onSubmit()
-async onSubmitConDebug(): Promise<void> {
-  // 🐛 ACTIVAR DEBUG
-  this.debugFormulario();
-  
-  // Proceder con el submit normal
-  await this.onSubmit();
-}
-
-// TAMBIÉN PUEDES AGREGAR ESTA FUNCIÓN PARA COMPARAR CON POSTMAN
-generarDataPostman(): void {
-  console.log('📮 DATOS PARA POSTMAN:');
-  
-  const datosPostman = {
-    "numeroexpediente": "",
-    "generarAutomatico": true,
-    "historiaenfermedad": "Prueba desde frontend",
-    "antmedico": null,
-    "antmedicamento": null,
-    "anttraumaticos": null,
-    "antfamiliar": null,
-    "antalergico": null,
-    "antmedicamentos": null,
-    "antsustancias": null,
-    "antintolerantelactosa": 0,
-    "antfisoinmunizacion": null,
-    "antfisocrecimiento": null,
-    "antfisohabitos": null,
-    "antfisoalimentos": null,
-    "gineobsprenatales": null,
-    "gineobsnatales": null,
-    "gineobspostnatales": null,
-    "gineobsgestas": null,
-    "gineobspartos": null,
-    "gineobsabortos": null,
-    "gineobscesareas": null,
-    "gineobshv": null,
-    "gineobsmh": null,
-    "gineobsfur": null,
-    "gineobsciclos": null,
-    "gineobsmenarquia": null,
-    "examenfistc": null,
-    "examenfispa": null,
-    "examenfisfc": null,
-    "examenfisfr": null,
-    "examenfissao2": null,
-    "examenfispeso": null,
-    "examenfistalla": null,
-    "examenfisimc": null,
-    "examenfisgmt": null
-  };
-  
-  console.log('Copia esto en Postman:', JSON.stringify(datosPostman, null, 2));
-}
-  getIntolerancieLactosaText(value: number | undefined): string {
-    return this.expedienteService.getIntolerancieLactosaText(value);
+  /**
+   * Obtiene el texto legible para intolerancia a lactosa
+   */
+  obtenerTextoIntoleranciaLactosa(valor: number | undefined): string {
+    return this.servicioExpediente.obtenerTextoIntoleranciaLactosa(valor);
   }
 
   // ==========================================
-  // FUNCIONES PARA LA VISTA DETALLE
+  // FUNCIONES PARA LA VISTA DE DETALLES
   // ==========================================
 
-  hasAntecedentes(): boolean {
-    if (!this.selectedExpediente) return false;
-    const exp = this.selectedExpediente;
+  /**
+   * Verifica si el expediente tiene antecedentes médicos
+   */
+  tieneAntecedentes(): boolean {
+    if (!this.expedienteSeleccionado) return false;
+    const exp = this.expedienteSeleccionado;
     return !!(
       exp.antmedico || 
       exp.antmedicamento || 
@@ -809,9 +747,12 @@ generarDataPostman(): void {
     );
   }
 
-  hasGineObsteticos(): boolean {
-    if (!this.selectedExpediente) return false;
-    const exp = this.selectedExpediente;
+  /**
+   * Verifica si el expediente tiene antecedentes gineco-obstétricos
+   */
+  tieneAntecedentesGineObstetricos(): boolean {
+    if (!this.expedienteSeleccionado) return false;
+    const exp = this.expedienteSeleccionado;
     return !!(
       exp.gineobsprenatales ||
       exp.gineobsnatales ||
@@ -825,9 +766,12 @@ generarDataPostman(): void {
     );
   }
 
-  hasExamenFisico(): boolean {
-    if (!this.selectedExpediente) return false;
-    const exp = this.selectedExpediente;
+  /**
+   * Verifica si el expediente tiene datos de examen físico
+   */
+  tieneExamenFisico(): boolean {
+    if (!this.expedienteSeleccionado) return false;
+    const exp = this.expedienteSeleccionado;
     return !!(
       exp.examenfistc ||
       exp.examenfispa ||
@@ -845,47 +789,49 @@ generarDataPostman(): void {
   // VALIDACIONES
   // ==========================================
 
-isFormValid(): boolean {
-  console.log('🔍 Validando formulario...');
-  
-  const formValue = this.expedienteForm.value;
-  console.log('📋 Valores del formulario:', formValue);
-  
-  const generarAutomatico = formValue.generarAutomatico;
-  const numeroExpediente = formValue.numeroexpediente;
-  
-  // ✅ Validación simplificada y clara
-  if (generarAutomatico === true) {
-    // Si es automático, siempre es válido (el backend genera el número)
-    console.log('✅ Formulario válido - modo automático');
-    return true;
-  } else {
-    // Si es manual, debe tener número de expediente
-    const esValido = numeroExpediente && numeroExpediente.trim().length > 0;
-    console.log(`${esValido ? '✅' : '❌'} Formulario ${esValido ? 'válido' : 'inválido'} - modo manual`);
-    return esValido;
-  }
-}
-
-  isFieldInvalid(fieldName: string): boolean {
-    const field = this.expedienteForm.get(fieldName);
-    return !!(field && field.invalid && (field.dirty || field.touched));
-  }
-
-  getFieldError(fieldName: string): string {
-    const field = this.expedienteForm.get(fieldName);
+  /**
+   * Valida si el formulario es válido para envío
+   */
+  esFormularioValido(): boolean {
+    const valoresFormulario = this.formularioExpediente.value;
+    const generarAutomatico = valoresFormulario.generarAutomatico;
+    const numeroExpediente = valoresFormulario.numeroexpediente;
     
-    if (field && field.errors) {
-      if (field.errors['required']) return 'Campo requerido';
-      if (field.errors['minlength']) return 'Muy corto';
-      if (field.errors['pattern']) return 'Formato inválido';
+    if (generarAutomatico === true) {
+      return true;
+    } else {
+      return numeroExpediente && numeroExpediente.trim().length > 0;
+    }
+  }
+
+  /**
+   * Verifica si un campo específico es inválido
+   */
+  esCampoInvalido(nombreCampo: string): boolean {
+    const campo = this.formularioExpediente.get(nombreCampo);
+    return !!(campo && campo.invalid && (campo.dirty || campo.touched));
+  }
+
+  /**
+   * Obtiene el mensaje de error para un campo específico
+   */
+  obtenerErrorCampo(nombreCampo: string): string {
+    const campo = this.formularioExpediente.get(nombreCampo);
+    
+    if (campo && campo.errors) {
+      if (campo.errors['required']) return 'Campo requerido';
+      if (campo.errors['minlength']) return 'Muy corto';
+      if (campo.errors['pattern']) return 'Formato inválido';
     }
     return '';
   }
 
-  private markFormGroupTouched(formGroup: FormGroup): void {
-    Object.keys(formGroup.controls).forEach(key => {
-      const control = formGroup.get(key);
+  /**
+   * Marca todos los campos del formulario como tocados
+   */
+  private marcarFormularioComoTocado(grupoFormulario: FormGroup): void {
+    Object.keys(grupoFormulario.controls).forEach(clave => {
+      const control = grupoFormulario.get(clave);
       control?.markAsTouched();
     });
   }

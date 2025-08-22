@@ -1,110 +1,127 @@
 import Swal from 'sweetalert2';
 import { Router } from '@angular/router';
-import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
-import { PacienteService, Paciente, PacienteResponse } from '../../services/paciente.service';
-import { ExpedienteService } from '../../services/expediente.service'; 
+import { ServicioPaciente, Paciente, RespuestaPaciente } from '../../services/paciente.service';
+import { ServicioExpediente } from '../../services/expediente.service'; 
 import { FileService, FileUploadResponse } from '../../services/file.service';
 import { AlertaService } from '../../services/alerta.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
-import { ExpedienteListComponent } from '../expediente/expediente'; 
+import { ExpedienteListaComponent } from '../expediente/expediente';
+
+// Interfaz para la información del usuario
+export interface InformacionUsuario {
+  name?: string;
+  nombres?: string;
+  apellidos?: string;
+  avatar?: string;
+  rol?: string;
+}
 
 @Component({
-  selector: 'app-paciente-list',
+  selector: 'app-paciente-lista',
   standalone: true,
   imports: [
     CommonModule, 
     ReactiveFormsModule, 
     FormsModule, 
     SidebarComponent,
-    ExpedienteListComponent 
+    ExpedienteListaComponent 
   ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './paciente-list.component.html',
   styleUrls: ['./paciente-list.component.scss']
 })
-export class PacienteListComponent implements OnInit, AfterViewInit, OnDestroy {
+export class PacienteListaComponent implements OnInit, AfterViewInit, OnDestroy {
   
-  @ViewChild(ExpedienteListComponent) expedienteComponent!: ExpedienteListComponent;
-  private destroy$ = new Subject<void>();
+  @ViewChild(ExpedienteListaComponent) componenteExpediente!: ExpedienteListaComponent;
+  private destruir$ = new Subject<void>();
   
-  // Estados
-  currentView: 'list' | 'form' | 'detail' | 'expediente-modal' = 'list';
-  expedientePacienteData: any = null;
-  expedienteForm: FormGroup | null = null;
-  isEditMode = false;
-  loading = false;
-  uploadingFiles = false;
+  // Estados de la aplicación
+  vistaActual: 'lista' | 'formulario' | 'detalle' | 'modal-expediente' = 'lista';
+  datosExpedientePaciente: any = null;
+  formularioExpediente: FormGroup | null = null;
+  modoEdicion = false;
+  cargando = false;
+  subiendoArchivos = false;
   
-  // Datos
+  // Datos principales
   pacientes: Paciente[] = [];
-  filteredPacientes: Paciente[] = [];
-  selectedPaciente: Paciente | null = null;
+  pacientesFiltrados: Paciente[] = [];
+  pacienteSeleccionado: Paciente | null = null;
   
   // Formulario
-  pacienteForm: FormGroup;
+  formularioPaciente: FormGroup;
   
-  // Archivos - Variables legacy para mantener compatibilidad con el HTML existente
-  selectedPhoto: string | null = null;
-  selectedEncargadoPhoto: string | null = null;
-  selectedCartaPhoto: string | null = null;
-  isCartaPDF = false;
+  // Variables de archivos (mantener compatibilidad con HTML)
+  fotoSeleccionada: string | null = null;
+  fotoEncargadoSeleccionada: string | null = null;
+  cartaSeleccionada: string | null = null;
+  esCartaPDF = false;
   
-  // Archivos seleccionados para upload
-  private selectedFiles: {
+  // Archivos seleccionados para subida
+  private archivosSeleccionados: {
     perfil?: File;
     encargado?: File;
     carta?: File;
   } = {};
   
-  // Búsqueda
-  searchTerm = '';
-  private searchSubject = new Subject<string>();
-  currentPage = 1;
-  pageSize = 10;
-  totalItems = 0;
-  totalPages = 0;
+  // Búsqueda y paginación
+  terminoBusqueda = '';
+  private sujetoBusqueda = new Subject<string>();
+  paginaActual = 1;
+  tamanoPagina = 10;
+  totalElementos = 0;
+  totalPaginas = 0;
   
-  // UI
-  currentDate = new Date();
-  sidebarExpanded = true;
-  userInfo: any = {};
+  // Interfaz de usuario
+  fechaActual = new Date();
+  barraLateralExpandida = true;
+  informacionUsuario: InformacionUsuario = {
+    name: 'Usuario',
+    rol: 'Administrador',
+    avatar: 'assets/img/avatar-default.png'
+  };
   error = '';
 
   constructor(
-    private pacienteService: PacienteService,
-    private expedienteService: ExpedienteService,
+    private servicioUsuario: ServicioPaciente,
+    private servicioExpediente: ServicioExpediente,
     private fb: FormBuilder,
-    private alertaService: AlertaService,
-    private fileService: FileService,
+    private servicioAlerta: AlertaService,
+    private servicioArchivo: FileService,
     private router: Router
   ) {
-    this.pacienteForm = this.createForm();
-    this.setupSearch();
+    this.formularioPaciente = this.crearFormulario();
+    this.configurarBusqueda();
   }
 
   ngOnInit(): void {
-    this.loadUserInfo();
-    this.loadPacientes();
+    this.cargarInformacionUsuario();
+    this.cargarPacientes();
   }
 
   ngAfterViewInit(): void {
-    this.detectSidebarState();
+    this.detectarEstadoBarraLateral();
   }
 
   ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
+    this.destruir$.next();
+    this.destruir$.complete();
   }
 
   // ==========================================
-  // CONFIGURACIÓN
+  // CONFIGURACIÓN INICIAL
   // ==========================================
 
-  createForm(): FormGroup {
+  /**
+   * Crea el formulario reactivo para pacientes
+   */
+  crearFormulario(): FormGroup {
     return this.fb.group({
       nombres: ['', [Validators.required, Validators.minLength(2)]],
       apellidos: ['', [Validators.required, Validators.minLength(2)]],
@@ -125,182 +142,233 @@ export class PacienteListComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  setupSearch(): void {
-    this.searchSubject
-      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
-      .subscribe(() => this.filterPacientes());
+  /**
+   * Configura la búsqueda con debounce
+   */
+  configurarBusqueda(): void {
+    this.sujetoBusqueda
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destruir$))
+      .subscribe(() => this.filtrarPacientes());
   }
 
-  loadUserInfo(): void {
+  /**
+   * Carga la información del usuario desde localStorage
+   */
+  cargarInformacionUsuario(): void {
     try {
-      const usuarioData = localStorage.getItem('usuario');
-      if (usuarioData) {
-        const usuario = JSON.parse(usuarioData);
-        this.userInfo = {
-          name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim(),
-          avatar: usuario.avatar || null
+      const datosUsuario = localStorage.getItem('usuario');
+      if (datosUsuario) {
+        const usuario = JSON.parse(datosUsuario);
+        this.informacionUsuario = {
+          name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim() || 'Usuario',
+          nombres: usuario.nombres,
+          apellidos: usuario.apellidos,
+          avatar: usuario.avatar || usuario.foto || 'assets/img/avatar-default.png',
+          rol: usuario.rol || 'Usuario'
         };
       }
     } catch (error) {
-      console.error('❌ Error al cargar usuario:', error);
+      console.error('Error al cargar información del usuario:', error);
+      this.informacionUsuario = {
+        name: 'Usuario',
+        rol: 'Usuario',
+        avatar: 'assets/img/avatar-default.png'
+      };
     }
   }
 
-  detectSidebarState(): void {
-    const checkSidebar = () => {
-      const sidebar = document.querySelector('.sidebar-container');
-      if (sidebar) {
-        this.sidebarExpanded = sidebar.classList.contains('expanded');
+  /**
+   * Detecta el estado de la barra lateral
+   */
+  detectarEstadoBarraLateral(): void {
+    const verificarBarraLateral = () => {
+      const barraLateral = document.querySelector('.sidebar-container');
+      if (barraLateral) {
+        this.barraLateralExpandida = barraLateral.classList.contains('expanded');
       }
     };
-    setTimeout(checkSidebar, 100);
-  }
 
-  // ==========================================
-  // NAVEGACIÓN
-  // ==========================================
+    setTimeout(verificarBarraLateral, 100);
 
-  showList(): void {
-    this.currentView = 'list';
-    this.resetForm();
-  }
-
-  showForm(): void {
-    this.currentView = 'form';
-    this.isEditMode = false;
-    this.resetForm();
-  }
-
-  viewPaciente(paciente: Paciente): void {
-    this.selectedPaciente = paciente;
-    this.currentView = 'detail';
-  }
-
-  editPaciente(paciente: Paciente): void {
-    console.log('=== EDITANDO PACIENTE ===');
-    console.log('ID:', paciente.idpaciente);
+    // Observar cambios en el sidebar
+    const observer = new MutationObserver(verificarBarraLateral);
+    const sidebar = document.querySelector('.sidebar-container');
     
-    this.selectedPaciente = paciente;
-    this.isEditMode = true;
-    this.currentView = 'form';
-    this.fillForm(paciente);
-    this.loadExistingPhotos(paciente);
+    if (sidebar) {
+      observer.observe(sidebar, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
+    }
   }
 
-  closeModal(): void {
-    this.currentView = 'list';
-    this.resetForm();
+  // ==========================================
+  // NAVEGACIÓN ENTRE VISTAS
+  // ==========================================
+
+  /**
+   * Muestra la vista de lista
+   */
+  mostrarLista(): void {
+    this.vistaActual = 'lista';
+    this.reiniciarFormulario();
   }
 
-  resetForm(): void {
-    this.pacienteForm.reset();
-    this.pacienteForm.patchValue({ tipodiscapacidad: 'Ninguna' });
-    this.isEditMode = false;
-    this.selectedPaciente = null;
+  /**
+   * Muestra el formulario para crear nuevo paciente
+   */
+  mostrarFormulario(): void {
+    this.vistaActual = 'formulario';
+    this.modoEdicion = false;
+    this.reiniciarFormulario();
+  }
+
+  /**
+   * Muestra los detalles de un paciente
+   */
+  verPaciente(paciente: Paciente): void {
+    this.pacienteSeleccionado = paciente;
+    this.vistaActual = 'detalle';
+  }
+
+  /**
+   * Abre el formulario para editar un paciente
+   */
+  editarPaciente(paciente: Paciente): void {
+    this.pacienteSeleccionado = paciente;
+    this.modoEdicion = true;
+    this.vistaActual = 'formulario';
+    this.llenarFormulario(paciente);
+    this.cargarFotosExistentes(paciente);
+  }
+
+  /**
+   * Cierra el modal
+   */
+  cerrarModal(): void {
+    this.vistaActual = 'lista';
+    this.reiniciarFormulario();
+  }
+
+  /**
+   * Reinicia el formulario a su estado inicial
+   */
+  reiniciarFormulario(): void {
+    this.formularioPaciente.reset();
+    this.formularioPaciente.patchValue({ tipodiscapacidad: 'Ninguna' });
+    this.modoEdicion = false;
+    this.pacienteSeleccionado = null;
     
     // Limpiar archivos
-    this.selectedFiles = {};
-    this.selectedPhoto = null;
-    this.selectedEncargadoPhoto = null;
-    this.selectedCartaPhoto = null;
-    this.isCartaPDF = false;
-    this.uploadingFiles = false;
+    this.archivosSeleccionados = {};
+    this.fotoSeleccionada = null;
+    this.fotoEncargadoSeleccionada = null;
+    this.cartaSeleccionada = null;
+    this.esCartaPDF = false;
+    this.subiendoArchivos = false;
     this.error = '';
   }
 
   // ==========================================
-  // DATOS
+  // GESTIÓN DE DATOS
   // ==========================================
 
-  loadPacientes(): void {
-    this.loading = true;
+  /**
+   * Carga la lista de pacientes desde el servidor
+   */
+  cargarPacientes(): void {
+    this.cargando = true;
     this.error = '';
 
-    this.pacienteService.getAllPacientes(this.currentPage, this.pageSize, this.searchTerm)
-      .pipe(takeUntil(this.destroy$))
+    this.servicioUsuario.obtenerTodosLosPacientes(this.paginaActual, this.tamanoPagina, this.terminoBusqueda)
+      .pipe(takeUntil(this.destruir$))
       .subscribe({
-        next: (response: PacienteResponse) => {
-          console.log('Respuesta del servidor:', response);
-          if (response.success && Array.isArray(response.data)) {
-            this.pacientes = response.data;
-            this.filteredPacientes = [...this.pacientes];
-            if (response.pagination) {
-              this.totalItems = response.pagination.total;
-              this.totalPages = response.pagination.totalPages;
-              this.currentPage = response.pagination.page;
+        next: (respuesta: RespuestaPaciente) => {
+          if (respuesta.exito && Array.isArray(respuesta.datos)) {
+            this.pacientes = respuesta.datos;
+            this.pacientesFiltrados = [...this.pacientes];
+            
+            if (respuesta.paginacion) {
+              this.totalElementos = respuesta.paginacion.total;
+              this.totalPaginas = respuesta.paginacion.totalPaginas;
+              this.paginaActual = respuesta.paginacion.pagina;
             }
           } else {
             this.error = 'Error al cargar pacientes';
             this.pacientes = [];
-            this.filteredPacientes = [];
-            this.alertaService.alertaError('Error al cargar pacientes');
+            this.pacientesFiltrados = [];
+            this.servicioAlerta.alertaError('Error al cargar pacientes');
           }
-          this.loading = false;
+          this.cargando = false;
         },
         error: (error) => {
-          console.error('Error:', error);
+          console.error('Error cargando pacientes:', error);
           this.error = 'Error de conexión';
-          this.loading = false;
+          this.cargando = false;
           this.pacientes = [];
-          this.filteredPacientes = [];
-          this.alertaService.alertaError('Error de conexión');
+          this.pacientesFiltrados = [];
+          this.servicioAlerta.alertaError('Error de conexión');
         }
       });
   }
 
-  filterPacientes(): void {
-    if (!this.searchTerm.trim()) {
-      this.filteredPacientes = [...this.pacientes];
+  /**
+   * Filtra los pacientes según el término de búsqueda
+   */
+  filtrarPacientes(): void {
+    if (!this.terminoBusqueda.trim()) {
+      this.pacientesFiltrados = [...this.pacientes];
       return;
     }
 
-    const term = this.searchTerm.toLowerCase();
-    this.filteredPacientes = this.pacientes.filter(paciente =>
-      paciente.nombres.toLowerCase().includes(term) ||
-      paciente.apellidos.toLowerCase().includes(term) ||
-      paciente.cui.toLowerCase().includes(term) ||
-      (paciente.telefonopersonal && paciente.telefonopersonal.toLowerCase().includes(term))
+    const termino = this.terminoBusqueda.toLowerCase();
+    this.pacientesFiltrados = this.pacientes.filter(paciente =>
+      paciente.nombres.toLowerCase().includes(termino) ||
+      paciente.apellidos.toLowerCase().includes(termino) ||
+      paciente.cui.toLowerCase().includes(termino) ||
+      (paciente.telefonopersonal && paciente.telefonopersonal.toLowerCase().includes(termino))
     );
   }
 
   // ==========================================
-  // CRUD
+  // OPERACIONES CRUD
   // ==========================================
 
-  async onSubmit(): Promise<void> {
-    console.log('=== SUBMIT ===');
-    console.log('Válido:', this.pacienteForm.valid);
-    console.log('Modo edición:', this.isEditMode);
-    console.log('Archivos:', this.selectedFiles);
-    
-    if (!this.pacienteForm.valid) {
-      this.markFormGroupTouched(this.pacienteForm);
-      this.alertaService.alertaPreventiva('Complete todos los campos requeridos');
+  /**
+   * Procesa el envío del formulario
+   */
+  async alEnviar(): Promise<void> {
+    if (!this.formularioPaciente.valid) {
+      this.marcarFormularioComoTocado(this.formularioPaciente);
+      this.servicioAlerta.alertaPreventiva('Complete todos los campos requeridos');
       return;
     }
 
-    this.loading = true;
+    this.cargando = true;
     this.error = '';
 
     try {
-      const pacienteData: Paciente = this.pacienteForm.value;
+      const datosPaciente: Paciente = this.formularioPaciente.value;
 
-      if (this.isEditMode && this.selectedPaciente?.idpaciente) {
-        await this.updatePacienteWithFiles(this.selectedPaciente.idpaciente, pacienteData);
+      if (this.modoEdicion && this.pacienteSeleccionado?.idpaciente) {
+        await this.actualizarPacienteConArchivos(this.pacienteSeleccionado.idpaciente, datosPaciente);
       } else {
-        await this.createPacienteWithFiles(pacienteData);
+        await this.crearPacienteConArchivos(datosPaciente);
       }
     } catch (error) {
-      console.error('❌ Error en submit:', error);
+      console.error('Error en envío:', error);
       this.error = error instanceof Error ? error.message : 'Error desconocido';
-      this.alertaService.alertaError(this.error);
-      this.loading = false;
+      this.servicioAlerta.alertaError(this.error);
+      this.cargando = false;
     }
   }
 
-  private async createPacienteWithFiles(pacienteData: Paciente): Promise<void> {
+  /**
+   * Crea un nuevo paciente con archivos
+   */
+  private async crearPacienteConArchivos(datosPaciente: Paciente): Promise<void> {
     try {
-      const response = await this.pacienteService.createPaciente(pacienteData)
+      const respuesta = await this.servicioUsuario.crearPaciente(datosPaciente)
         .toPromise()
         .then(resp => {
           if (!resp) {
@@ -309,33 +377,36 @@ export class PacienteListComponent implements OnInit, AfterViewInit, OnDestroy {
           return resp;
         });
       
-      if (response.success) {
-        const newPaciente = response.data as Paciente;
-        const pacienteId = newPaciente.idpaciente;
+      if (respuesta.exito) {
+        const nuevoPaciente = respuesta.datos as Paciente;
+        const pacienteId = nuevoPaciente.idpaciente;
         
-        if (pacienteId && this.hasFilesToUpload()) {
-          await this.uploadAllFiles(pacienteId);
-          this.alertaService.alertaExito('Paciente creado con archivos');
+        if (pacienteId && this.tieneArchivosParaSubir()) {
+          await this.subirTodosLosArchivos(pacienteId);
+          this.servicioAlerta.alertaExito('Paciente creado con archivos');
         } else {
-          this.alertaService.alertaExito('Paciente creado exitosamente');
+          this.servicioAlerta.alertaExito('Paciente creado exitosamente');
         }
         
-        this.loadPacientes();
-        this.showList();
+        this.cargarPacientes();
+        this.mostrarLista();
       } else {
-        throw new Error(response.message || 'Error al crear paciente');
+        throw new Error(respuesta.mensaje || 'Error al crear paciente');
       }
     } catch (error) {
       throw error;
     } finally {
-      this.loading = false;
-      this.uploadingFiles = false;
+      this.cargando = false;
+      this.subiendoArchivos = false;
     }
   }
 
-  private async updatePacienteWithFiles(pacienteId: number, pacienteData: Paciente): Promise<void> {
+  /**
+   * Actualiza un paciente existente con archivos
+   */
+  private async actualizarPacienteConArchivos(pacienteId: number, datosPaciente: Paciente): Promise<void> {
     try {
-      const response = await this.pacienteService.updatePaciente(pacienteId, pacienteData)
+      const respuesta = await this.servicioUsuario.actualizarPaciente(pacienteId, datosPaciente)
         .toPromise()
         .then(resp => {
           if (!resp) {
@@ -344,49 +415,48 @@ export class PacienteListComponent implements OnInit, AfterViewInit, OnDestroy {
           return resp;
         });
       
-      if (response.success) {
-        if (this.hasFilesToUpload()) {
-          await this.uploadAllFiles(pacienteId);
-          this.alertaService.alertaExito('Paciente actualizado con archivos');
+      if (respuesta.exito) {
+        if (this.tieneArchivosParaSubir()) {
+          await this.subirTodosLosArchivos(pacienteId);
+          this.servicioAlerta.alertaExito('Paciente actualizado con archivos');
         } else {
-          this.alertaService.alertaExito('Paciente actualizado exitosamente');
+          this.servicioAlerta.alertaExito('Paciente actualizado exitosamente');
         }
         
-        this.loadPacientes();
-        this.showList();
+        this.cargarPacientes();
+        this.mostrarLista();
       } else {
-        throw new Error(response.message || 'Error al actualizar paciente');
+        throw new Error(respuesta.mensaje || 'Error al actualizar paciente');
       }
     } catch (error) {
       throw error;
     } finally {
-      this.loading = false;
-      this.uploadingFiles = false;
+      this.cargando = false;
+      this.subiendoArchivos = false;
     }
   }
 
-  private hasFilesToUpload(): boolean {
-    return !!(this.selectedFiles.perfil || this.selectedFiles.encargado || this.selectedFiles.carta);
+  /**
+   * Verifica si hay archivos para subir
+   */
+  private tieneArchivosParaSubir(): boolean {
+    return !!(this.archivosSeleccionados.perfil || this.archivosSeleccionados.encargado || this.archivosSeleccionados.carta);
   }
 
-  private async uploadAllFiles(pacienteId: number): Promise<void> {
-    console.log('🔍 === UPLOAD FILES ===');
-    console.log('Paciente ID:', pacienteId);
-    console.log('Archivos:', this.selectedFiles);
-
-    if (!this.hasFilesToUpload()) {
-      console.log('No hay archivos para subir');
+  /**
+   * Sube todos los archivos seleccionados
+   */
+  private async subirTodosLosArchivos(pacienteId: number): Promise<void> {
+    if (!this.tieneArchivosParaSubir()) {
       return;
     }
 
-    this.uploadingFiles = true;
-    const uploadPromises: Promise<FileUploadResponse>[] = [];
+    this.subiendoArchivos = true;
+    const promesasSubida: Promise<FileUploadResponse>[] = [];
 
     try {
-      // Upload de cada archivo
-      if (this.selectedFiles.perfil) {
-        console.log('📤 Subiendo foto perfil...');
-        const promise = this.fileService.uploadFile(this.selectedFiles.perfil, pacienteId, 'perfil')
+      if (this.archivosSeleccionados.perfil) {
+        const promesa = this.servicioArchivo.uploadFile(this.archivosSeleccionados.perfil, pacienteId, 'perfil')
           .toPromise()
           .then(response => {
             if (!response) {
@@ -394,12 +464,11 @@ export class PacienteListComponent implements OnInit, AfterViewInit, OnDestroy {
             }
             return response;
           });
-        uploadPromises.push(promise);
+        promesasSubida.push(promesa);
       }
 
-      if (this.selectedFiles.encargado) {
-        console.log('📤 Subiendo foto encargado...');
-        const promise = this.fileService.uploadFile(this.selectedFiles.encargado, pacienteId, 'encargado')
+      if (this.archivosSeleccionados.encargado) {
+        const promesa = this.servicioArchivo.uploadFile(this.archivosSeleccionados.encargado, pacienteId, 'encargado')
           .toPromise()
           .then(response => {
             if (!response) {
@@ -407,12 +476,11 @@ export class PacienteListComponent implements OnInit, AfterViewInit, OnDestroy {
             }
             return response;
           });
-        uploadPromises.push(promise);
+        promesasSubida.push(promesa);
       }
 
-      if (this.selectedFiles.carta) {
-        console.log('📤 Subiendo carta...');
-        const promise = this.fileService.uploadFile(this.selectedFiles.carta, pacienteId, 'carta')
+      if (this.archivosSeleccionados.carta) {
+        const promesa = this.servicioArchivo.uploadFile(this.archivosSeleccionados.carta, pacienteId, 'carta')
           .toPromise()
           .then(response => {
             if (!response) {
@@ -420,26 +488,24 @@ export class PacienteListComponent implements OnInit, AfterViewInit, OnDestroy {
             }
             return response;
           });
-        uploadPromises.push(promise);
+        promesasSubida.push(promesa);
       }
 
-      console.log(`📤 Subiendo ${uploadPromises.length} archivo(s)...`);
-      const results = await Promise.all(uploadPromises);
-      console.log('✅ Todos los archivos subidos:', results);
-      
-      // Limpiar archivos
-      this.selectedFiles = {};
+      await Promise.all(promesasSubida);
+      this.archivosSeleccionados = {};
       
     } catch (error) {
-      console.error('❌ Error subiendo archivos:', error);
+      console.error('Error subiendo archivos:', error);
       throw error;
     } finally {
-      this.uploadingFiles = false;
+      this.subiendoArchivos = false;
     }
   }
 
-  deletePaciente(id: number): void {
-    const Swal = (window as any).Swal;
+  /**
+   * Elimina un paciente con confirmación
+   */
+  eliminarPaciente(id: number): void {
     Swal.fire({
       title: '¿Eliminar paciente?',
       text: "Esta acción no se puede deshacer",
@@ -449,25 +515,25 @@ export class PacienteListComponent implements OnInit, AfterViewInit, OnDestroy {
       cancelButtonColor: '#3085d6',
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar'
-    }).then((result: any) => {
-      if (result.isConfirmed) {
-        this.loading = true;
+    }).then((resultado: any) => {
+      if (resultado.isConfirmed) {
+        this.cargando = true;
         
-        this.pacienteService.deletePaciente(id)
-          .pipe(takeUntil(this.destroy$))
+        this.servicioUsuario.eliminarPaciente(id)
+          .pipe(takeUntil(this.destruir$))
           .subscribe({
-            next: (response) => {
-              if (response.success) {
-                this.alertaService.alertaExito('Paciente eliminado');
-                this.loadPacientes();
+            next: (respuesta) => {
+              if (respuesta.exito) {
+                this.servicioAlerta.alertaExito('Paciente eliminado');
+                this.cargarPacientes();
               } else {
-                this.alertaService.alertaError('Error al eliminar');
+                this.servicioAlerta.alertaError('Error al eliminar');
               }
-              this.loading = false;
+              this.cargando = false;
             },
             error: () => {
-              this.alertaService.alertaError('Error al eliminar');
-              this.loading = false;
+              this.servicioAlerta.alertaError('Error al eliminar');
+              this.cargando = false;
             }
           });
       }
@@ -475,17 +541,49 @@ export class PacienteListComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // ==========================================
-  // MANEJO DE EXPEDIENTES
+  // GESTIÓN DE EXPEDIENTES MÉDICOS
   // ==========================================
+
+  /**
+   * Verifica si un paciente tiene expedientes
+   */
+  pacienteTieneExpedientes(paciente: Paciente): boolean {
+    return !!(paciente.expedientes && paciente.expedientes.length > 0);
+  }
+
+  /**
+   * Obtiene el primer expediente de un paciente
+   */
+  obtenerPrimerExpediente(paciente: Paciente): any | null {
+    if (this.pacienteTieneExpedientes(paciente)) {
+      return paciente.expedientes![0];
+    }
+    return null;
+  }
+
+  /**
+   * Obtiene información del expediente para el template
+   */
+  obtenerInformacionExpedientePaciente(paciente: Paciente): { 
+    tieneExpediente: boolean, 
+    numeroExpediente?: string, 
+    idExpediente?: number 
+  } {
+    const primerExpediente = this.obtenerPrimerExpediente(paciente);
+    
+    return {
+      tieneExpediente: !!primerExpediente,
+      numeroExpediente: primerExpediente?.numeroexpediente,
+      idExpediente: primerExpediente?.idexpediente
+    };
+  }
 
   /**
    * Crear expediente para un paciente específico
    */
   crearExpedientePaciente(paciente: Paciente): void {
-    console.log('🏥 Creando expediente para paciente:', paciente.nombres, paciente.apellidos);
-    
     Swal.fire({
-      title: 'Crear Expediente',
+      title: 'Crear Expediente Médico',
       html: `
         <p>¿Desea crear un expediente médico para:</p>
         <strong>${paciente.nombres} ${paciente.apellidos}</strong>
@@ -498,8 +596,8 @@ export class PacienteListComponent implements OnInit, AfterViewInit, OnDestroy {
       confirmButtonText: '<i class="fas fa-plus"></i> Crear Expediente',
       cancelButtonText: 'Cancelar',
       reverseButtons: true
-    }).then((result: any) => {
-      if (result.isConfirmed) {
+    }).then((resultado: any) => {
+      if (resultado.isConfirmed) {
         this.abrirModalExpediente(paciente);
       }
     });
@@ -509,201 +607,180 @@ export class PacienteListComponent implements OnInit, AfterViewInit, OnDestroy {
    * Ver expediente existente de un paciente
    */
   verExpedientePaciente(paciente: Paciente): void {
-    console.log('👁️ Viendo expediente del paciente:', paciente.nombres, paciente.apellidos);
+    const informacionExpediente = this.obtenerInformacionExpedientePaciente(paciente);
     
-    if (!paciente.fkexpediente) {
-      this.alertaService.alertaPreventiva('Este paciente no tiene expediente asignado');
+    if (!informacionExpediente.tieneExpediente) {
+      this.servicioAlerta.alertaPreventiva('Este paciente no tiene expediente asignado');
       return;
     }
 
-    this.alertaService.alertaInfo(`Expediente ID: ${paciente.fkexpediente} - Esta funcionalidad se implementará próximamente`);
-  }
-
-  /**
-   * Abrir modal de expediente con datos del paciente
-   */
-private abrirModalExpediente(paciente: Paciente): void {
-  console.log('📝 Abriendo modal de expediente para:', paciente.idpaciente);
-  console.log('📝 Datos del paciente:', paciente);
-  
-  // Preparar datos para el componente de expedientes
-  this.expedientePacienteData = {
-    idpaciente: paciente.idpaciente,
-    pacienteInfo: {
-      nombres: paciente.nombres,
-      apellidos: paciente.apellidos,
-      cui: paciente.cui,
-      fechanacimiento: paciente.fechanacimiento,
-      genero: paciente.genero
-    }
-  };
-
-  console.log('📝 Datos preparados:', this.expedientePacienteData);
-  console.log('📝 Cambiando vista a expediente-modal');
-  
-  // Cambiar la vista para mostrar el componente de expedientes
-  this.currentView = 'expediente-modal';
-  
-  console.log('📝 CurrentView después del cambio:', this.currentView);
-  
-  // Esperar a que el componente se renderice y luego configurarlo
-  setTimeout(() => {
-    console.log('📝 Intentando acceder al componente de expedientes...');
-    console.log('📝 Componente disponible:', !!this.expedienteComponent);
-    
-    if (this.expedienteComponent) {
-      console.log('📝 Llamando a abrirModalDesdePacientes...');
-      this.expedienteComponent.abrirModalDesdePacientes(this.expedientePacienteData);
-    } else {
-      console.warn('⚠️ El componente de expedientes no está disponible');
-    }
-  }, 100);
-}
-
-  /**
-   * Cerrar modal de expediente y volver a lista
-   */
-cerrarModalExpediente(expedienteData?: any): void {
-  console.log('🏥 Cerrando modal expediente con datos:', expedienteData);
-  
-  // Si se recibieron datos del expediente creado
-  if (expedienteData) {
-    console.log('✅ Expediente creado exitosamente:', expedienteData);
-    
-    // Mostrar mensaje de éxito con el número real
-    this.alertaService.alertaExito(
-      `Expediente creado exitosamente. Número: ${expedienteData.numeroExpediente}`
+    this.servicioAlerta.alertaInfo(
+      `Expediente: ${informacionExpediente.numeroExpediente} - Esta funcionalidad se implementará próximamente`
     );
-    
-    // Actualizar el paciente en la lista local
-    this.actualizarPacienteConExpediente(expedienteData);
   }
-  
-  this.currentView = 'list';
-  this.expedientePacienteData = null;
-  
-  // Recargar pacientes para mostrar cambios
-  this.loadPacientes();
-}
 
-
-
-private actualizarPacienteConExpediente(expedienteData: any): void {
-  if (!expedienteData.pacienteId) return;
-  
-  // Buscar el paciente en la lista local y actualizar su expediente
-  const pacienteIndex = this.pacientes.findIndex(p => p.idpaciente === expedienteData.pacienteId);
-  if (pacienteIndex !== -1) {
-    // Actualizar el fkexpediente y la relación expediente
-    this.pacientes[pacienteIndex].fkexpediente = expedienteData.idExpediente;
-    this.pacientes[pacienteIndex].expediente = {
-      idexpediente: expedienteData.idExpediente,
-      numeroexpediente: expedienteData.numeroExpediente,
-      historiaenfermedad: expedienteData.expediente?.historiaenfermedad || ''
+  /**
+   * Abre el modal para crear expediente
+   */
+  private abrirModalExpediente(paciente: Paciente): void {
+    this.datosExpedientePaciente = {
+      idpaciente: paciente.idpaciente,
+      pacienteInfo: {
+        nombres: paciente.nombres,
+        apellidos: paciente.apellidos,
+        cui: paciente.cui,
+        fechanacimiento: paciente.fechanacimiento,
+        genero: paciente.genero
+      }
     };
+
+    this.vistaActual = 'modal-expediente';
     
-    // También actualizar en filteredPacientes
-    const filteredIndex = this.filteredPacientes.findIndex(p => p.idpaciente === expedienteData.pacienteId);
-    if (filteredIndex !== -1) {
-      this.filteredPacientes[filteredIndex].fkexpediente = expedienteData.idExpediente;
-      this.filteredPacientes[filteredIndex].expediente = {
-        idexpediente: expedienteData.idExpediente,
-        numeroexpediente: expedienteData.numeroExpediente,
-        historiaenfermedad: expedienteData.expediente?.historiaenfermedad || ''
-      };
+    setTimeout(() => {
+      if (this.componenteExpediente) {
+        this.componenteExpediente.abrirModalDesdePacientes(this.datosExpedientePaciente);
+      }
+    }, 100);
+  }
+
+  /**
+   * Cierra el modal de expediente
+   */
+  cerrarModalExpediente(datosExpediente?: any): void {
+    if (datosExpediente) {
+      this.servicioAlerta.alertaExito(
+        `Expediente creado exitosamente. Número: ${datosExpediente.numeroExpediente}`
+      );
+      this.actualizarPacienteConExpediente(datosExpediente);
     }
     
-    console.log('✅ Paciente actualizado localmente con expediente:', expedienteData.numeroExpediente);
+    this.vistaActual = 'lista';
+    this.datosExpedientePaciente = null;
+    this.cargarPacientes();
   }
-}
+
+  /**
+   * Actualiza la información local del paciente con nuevo expediente
+   */
+  private actualizarPacienteConExpediente(datosExpediente: any): void {
+    if (!datosExpediente.pacienteId) {
+      return;
+    }
+    
+    const indicePaciente = this.pacientes.findIndex(p => p.idpaciente === datosExpediente.pacienteId);
+    
+    if (indicePaciente !== -1) {
+      if (!this.pacientes[indicePaciente].expedientes) {
+        this.pacientes[indicePaciente].expedientes = [];
+      }
+      
+      const nuevoExpediente = {
+        idexpediente: datosExpediente.idExpediente,
+        numeroexpediente: datosExpediente.numeroExpediente,
+        historiaenfermedad: datosExpediente.expediente?.historiaenfermedad || ''
+      };
+      
+      this.pacientes[indicePaciente].expedientes!.push(nuevoExpediente);
+      
+      const indiceFiltrado = this.pacientesFiltrados.findIndex(p => p.idpaciente === datosExpediente.pacienteId);
+      if (indiceFiltrado !== -1) {
+        if (!this.pacientesFiltrados[indiceFiltrado].expedientes) {
+          this.pacientesFiltrados[indiceFiltrado].expedientes = [];
+        }
+        
+        this.pacientesFiltrados[indiceFiltrado].expedientes!.push(nuevoExpediente);
+      }
+      
+      this.pacientesFiltrados = [...this.pacientesFiltrados];
+    }
+  }
 
   // ==========================================
-  // MANEJO DE ARCHIVOS
+  // GESTIÓN DE ARCHIVOS
   // ==========================================
 
-  async onPhotoSelected(event: any, tipo: 'perfil' | 'encargado' | 'carta'): Promise<void> {
-    const file = event.target.files[0];
-    if (!file) return;
+  /**
+   * Maneja la selección de fotos y documentos
+   */
+  async alSeleccionarFoto(evento: any, tipo: 'perfil' | 'encargado' | 'carta'): Promise<void> {
+    const archivo = evento.target.files[0];
+    if (!archivo) return;
 
     try {
-      console.log('🔍 Archivo seleccionado:', file.name, tipo);
-
-      // Validar archivo
-      const validation = this.fileService.validateFile(file, tipo);
-      if (!validation.valid) {
-        this.alertaService.alertaPreventiva(validation.message || 'Archivo no válido');
-        event.target.value = '';
+      const validacion = this.servicioArchivo.validateFile(archivo, tipo);
+      if (!validacion.valid) {
+        this.servicioAlerta.alertaPreventiva(validacion.message || 'Archivo no válido');
+        evento.target.value = '';
         return;
       }
 
-      // Generar vista previa
-      const preview = await this.fileService.getFilePreview(file);
-      
-      // Guardar archivo para upload posterior
-      this.selectedFiles[tipo] = file;
+      const vistaPrevia = await this.servicioArchivo.getFilePreview(archivo);
+      this.archivosSeleccionados[tipo] = archivo;
 
-      // Actualizar variables para el template existente
       switch (tipo) {
         case 'perfil':
-          this.selectedPhoto = preview;
+          this.fotoSeleccionada = vistaPrevia;
           break;
         case 'encargado':
-          this.selectedEncargadoPhoto = preview;
+          this.fotoEncargadoSeleccionada = vistaPrevia;
           break;
         case 'carta':
-          this.selectedCartaPhoto = preview;
-          this.isCartaPDF = file.type === 'application/pdf';
+          this.cartaSeleccionada = vistaPrevia;
+          this.esCartaPDF = archivo.type === 'application/pdf';
           break;
       }
 
-      console.log('✅ Archivo procesado:', tipo);
-
     } catch (error) {
-      console.error('❌ Error procesando archivo:', error);
-      this.alertaService.alertaError('Error al procesar archivo');
-      event.target.value = '';
+      console.error('Error procesando archivo:', error);
+      this.servicioAlerta.alertaError('Error al procesar archivo');
+      evento.target.value = '';
     }
   }
 
-  removePhoto(tipo: 'perfil' | 'encargado' | 'carta'): void {
-    console.log('🗑️ Removiendo:', tipo);
+  /**
+   * Elimina una foto o documento seleccionado
+   */
+  eliminarFoto(tipo: 'perfil' | 'encargado' | 'carta'): void {
+    delete this.archivosSeleccionados[tipo];
     
-    // Limpiar archivo seleccionado
-    delete this.selectedFiles[tipo];
-    
-    // Limpiar variables del template
     switch (tipo) {
       case 'perfil':
-        this.selectedPhoto = null;
+        this.fotoSeleccionada = null;
         break;
       case 'encargado':
-        this.selectedEncargadoPhoto = null;
+        this.fotoEncargadoSeleccionada = null;
         break;
       case 'carta':
-        this.selectedCartaPhoto = null;
-        this.isCartaPDF = false;
+        this.cartaSeleccionada = null;
+        this.esCartaPDF = false;
         break;
     }
   }
 
   // ==========================================
-  // UTILIDADES
+  // FUNCIONES DE UTILIDAD
   // ==========================================
 
-  calculateAge(fechaNacimiento: string): number {
+  /**
+   * Calcula la edad basada en la fecha de nacimiento
+   */
+  calcularEdad(fechaNacimiento: string): number {
     if (!fechaNacimiento) return 0;
-    const today = new Date();
-    const birthDate = new Date(fechaNacimiento);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
+    const hoy = new Date();
+    const fechaNac = new Date(fechaNacimiento);
+    let edad = hoy.getFullYear() - fechaNac.getFullYear();
+    const diferenciaM = hoy.getMonth() - fechaNac.getMonth();
+    if (diferenciaM < 0 || (diferenciaM === 0 && hoy.getDate() < fechaNac.getDate())) {
+      edad--;
     }
-    return age;
+    return edad;
   }
 
-  fillForm(paciente: Paciente): void {
-    this.pacienteForm.patchValue({
+  /**
+   * Llena el formulario con datos de un paciente existente
+   */
+  llenarFormulario(paciente: Paciente): void {
+    this.formularioPaciente.patchValue({
       nombres: paciente.nombres,
       apellidos: paciente.apellidos,
       cui: paciente.cui,
@@ -724,49 +801,60 @@ private actualizarPacienteConExpediente(expedienteData: any): void {
     });
   }
 
-  loadExistingPhotos(paciente: Paciente): void {
-    // Cargar fotos existentes del paciente
+  /**
+   * Carga las fotos existentes de un paciente
+   */
+  cargarFotosExistentes(paciente: Paciente): void {
     if (paciente.rutafotoperfil) {
-      this.selectedPhoto = this.fileService.getFileUrlFromPath(paciente.rutafotoperfil);
+      this.fotoSeleccionada = this.servicioArchivo.getFileUrlFromPath(paciente.rutafotoperfil);
     }
     
     if (paciente.rutafotoencargado) {
-      this.selectedEncargadoPhoto = this.fileService.getFileUrlFromPath(paciente.rutafotoencargado);
+      this.fotoEncargadoSeleccionada = this.servicioArchivo.getFileUrlFromPath(paciente.rutafotoencargado);
     }
     
     if (paciente.rutacartaautorizacion) {
-      this.selectedCartaPhoto = this.fileService.getFileUrlFromPath(paciente.rutacartaautorizacion);
+      this.cartaSeleccionada = this.servicioArchivo.getFileUrlFromPath(paciente.rutacartaautorizacion);
       const extension = paciente.rutacartaautorizacion.toLowerCase().split('.').pop();
-      this.isCartaPDF = extension === 'pdf';
+      this.esCartaPDF = extension === 'pdf';
     }
   }
 
   // ==========================================
-  // VALIDACIONES
+  // VALIDACIONES DE FORMULARIO
   // ==========================================
 
-  isFieldInvalid(fieldName: string): boolean {
-    const field = this.pacienteForm.get(fieldName);
-    return !!(field && field.invalid && (field.dirty || field.touched));
+  /**
+   * Verifica si un campo específico es inválido
+   */
+  esCampoInvalido(nombreCampo: string): boolean {
+    const campo = this.formularioPaciente.get(nombreCampo);
+    return !!(campo && campo.invalid && (campo.dirty || campo.touched));
   }
 
-  getFieldError(fieldName: string): string {
-    const field = this.pacienteForm.get(fieldName);
+  /**
+   * Obtiene el mensaje de error para un campo específico
+   */
+  obtenerErrorCampo(nombreCampo: string): string {
+    const campo = this.formularioPaciente.get(nombreCampo);
     
-    if (field && field.errors) {
-      if (field.errors['required']) return 'Campo requerido';
-      if (field.errors['minlength']) return 'Muy corto';
-      if (field.errors['pattern']) {
-        if (fieldName === 'cui') return 'CUI debe tener 13 dígitos';
+    if (campo && campo.errors) {
+      if (campo.errors['required']) return 'Campo requerido';
+      if (campo.errors['minlength']) return 'Muy corto';
+      if (campo.errors['pattern']) {
+        if (nombreCampo === 'cui') return 'CUI debe tener 13 dígitos';
         return 'Formato inválido';
       }
     }
     return '';
   }
 
-  private markFormGroupTouched(formGroup: FormGroup): void {
-    Object.keys(formGroup.controls).forEach(key => {
-      const control = formGroup.get(key);
+  /**
+   * Marca todos los campos del formulario como tocados
+   */
+  private marcarFormularioComoTocado(grupoFormulario: FormGroup): void {
+    Object.keys(grupoFormulario.controls).forEach(clave => {
+      const control = grupoFormulario.get(clave);
       control?.markAsTouched();
     });
   }
