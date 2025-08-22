@@ -80,10 +80,6 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
       if (sidebar) {
         const wasExpanded = this.sidebarExpanded;
         this.sidebarExpanded = sidebar.classList.contains('expanded');
-        
-        if (wasExpanded !== this.sidebarExpanded) {
-          console.log('Sidebar state changed:', this.sidebarExpanded ? 'expanded' : 'collapsed');
-        }
       }
     };
 
@@ -159,7 +155,6 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
   // ✅ NUEVO: Manejar clicks del sidebar
   onSidebarMenuItemClick(item: SidebarMenuItem): void {
     if (item.route) {
-      console.log('Navegando a:', item.route); // Para debug
       this.router.navigate([item.route]);
       
       // Opcional: cerrar sidebar en móviles después de navegar

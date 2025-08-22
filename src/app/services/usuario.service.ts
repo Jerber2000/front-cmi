@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse  } from '@angular/common/http';
 import { tap, catchError, map } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { Observable } from 'rxjs';
@@ -52,35 +52,71 @@ export class UsuarioService{
                 return[];
             }),
             catchError(error => {
-                console.log('Error fetching usuario: ', error);
                 return of([]);
             })
         )
     }
 
-    obtenerUsuarioPorId(id: number): Observable<Usuario>{
-        return this.http.get<Usuario>(`${this.apiUrl}/buscarPorId/${id}`);
+    obtenerUsuarioPorId(id: number): Observable<Usuario> {
+        return this.http.get<Usuario>(`${this.apiUrl}/buscarPorId/${id}`).pipe(
+            tap(response => {
+            }),
+            catchError(error => {
+                if (error.status === 0) {
+                    console.error('Sin conexión al servidor');
+                }
+                throw error;
+            })
+        );
     }
 
     crearUsuario(usuario: Omit<Usuario, 'idusuario'>): Observable<any> {
         return this.http.post<any>(`${this.apiUrl}/crearUsuario`, usuario).pipe(
             tap(response => {
-                console.log('RESPUESTA EXITOSA:', response);
             }),
-            catchError(error => {
-                console.error('❌ ERROR COMPLETO:', error);
-                console.error('📋 STATUS:', error.status);
-                console.error('💬 MENSAJE:', error.error);
+            catchError((error: HttpErrorResponse) => {
+                // Si es un error 400 o 422 (errores de validación), tratarlo como respuesta válida
+                if ((error.status === 400 || error.status === 422) && error.error) {
+                    return of(error.error);
+                }
+                
+                // Para otros errores (500, red, etc.), mantener como error
                 throw error;
             })
         );
     }
 
     actualizarUsuario(id: number, usuario: Omit<Usuario, 'idusuario'>): Observable<any> {
-        return this.http.put<any>(`${this.apiUrl}/usuarios/${id}`, usuario);
+        return this.http.put<any>(`${this.apiUrl}/actualizarUsuario/${id}`, usuario).pipe(
+            tap(response => {
+            }),
+            catchError(error => {
+                if (error.status === 0) {
+                    console.error('Sin conexión al servidor');
+                }
+                
+                throw error;
+            })
+        );
     }
 
-    eliminarUsuario(id: number): Observable<void>{
-        return this.http.delete<void>(`${this.apiUrl}/eliminarUsuario/${id}`);
+    eliminarUsuario(id: number): Observable<any> {
+        return this.http.delete<any>(`${this.apiUrl}/eliminarUsuario/${id}`).pipe(
+            tap((response) => {
+            }),
+            catchError((error: HttpErrorResponse) => {                
+                // Si es un error 400 con mensaje del backend, tratarlo como respuesta válida
+                if (error.status === 400 && error.error && error.error.success === false) {
+                    return of(error.error);
+                }
+                
+                if (error.status === 0) {
+                    console.error('Sin conexión al servidor');
+                }
+                
+                // Relanzar el error para que llegue al error: del componente
+                throw error;
+            })
+        );
     }
 }
