@@ -104,30 +104,6 @@ export class AlertaService {
         timer: 3000,
         timerProgressBar: true,
         customClass: {
-<<<<<<< HEAD
-          popup: 'toast-success-border',
-          timerProgressBar: 'toast-success-timer'
-        }
-    });
-
-    Toast.fire({
-        icon: 'success',
-        title: title
-    });
-  }
-  
-  alertaPreventiva(title: string): void {
-    const Toast = Swal.mixin({
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 4000,
-        timerProgressBar: true,
-        customClass: {
-          popup: 'toast-warning-border',
-=======
-          popup: 'toast-warning-border', 
->>>>>>> 7cc03249833279f249ec15f27a863fb645586106
           timerProgressBar: 'toast-warning-timer'
         }
     });
