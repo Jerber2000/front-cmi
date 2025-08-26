@@ -26,7 +26,6 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       }
     });
     
-    // ← INTERCEPTAR RESPUESTAS para detectar cambio de contraseña
     return next(authReq).pipe(
       tap({
         next: (event) => {
