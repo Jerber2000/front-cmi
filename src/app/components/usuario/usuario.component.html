@@ -328,13 +328,7 @@
               <label>Rol *</label>
               <select formControlName="role" class="form-input" [class.invalid]="isFieldInvalid('role')" appInputValidator>
                 <option value="">Seleccionar rol</option>
-                <option value="1">Administrador</option>
-                <option value="2">Doctor</option>
-                <option value="3">Enfermero</option>
-                <option value="4">Psicólogo</option>
-                <option value="5">Fisioterapeuta</option>
-                <option value="6">Nutricionista</option>
-                <option value="7">Recepcionista</option>
+                <option *ngFor="let rol of roles" [value]="rol.idrol">{{ rol.nombre }}</option>
               </select>
               <div class="error-message" *ngIf="isFieldInvalid('role')">
                 {{ getFieldError('role') }}

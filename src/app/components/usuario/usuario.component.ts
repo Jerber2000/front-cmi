@@ -2,7 +2,7 @@ import { Component, OnInit, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms'; 
-import { UsuarioService, Usuario } from '../../services/usuario.service';
+import { UsuarioService, Usuario, Rol } from '../../services/usuario.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AlertaService } from '../../services/alerta.service';
 import { FormatoTelefonicoDirective } from '../../directives/numeroFormato';
@@ -39,6 +39,7 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
   sidebarExpanded = true;
   userInfo: any = {};
   selectedPhoto: string | null = null;
+  roles: Rol[] = [];
 
   // Variables de paginación
   currentPage = 1;
@@ -144,6 +145,7 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.loadUserInfo();
     this.loadUsers();
+    this.loadRoles();
   }
 
   ngAfterViewInit(): void {
@@ -188,6 +190,18 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
     } catch (error) {
       console.error('Error al cargar información del usuario:', error);
     }
+  }
+
+  loadRoles(): void {
+    this.UsuarioService.obtenerRoles().subscribe({
+      next: (roles) => {
+        this.roles = roles; // ✅ Tu service ya maneja la extracción de .data
+      },
+      error: (error) => {
+        console.error('Error loading roles:', error);
+        this.alerta.alertaError('Error al cargar los roles');
+      }
+    });
   }
 
   // MÉTODOS DE PAGINACIÓN

@@ -72,15 +72,14 @@ export class LoginComponent {
     }
 
     this.authService.login(this.usuario, this.clave).subscribe({
-      next: (res) => {
+      next: (res) => {        
         if (res.success) {
           this.showNotification('success', '¡Inicio de sesión exitoso!');
-          this.authService.saveAuthData(res.data.token, res.data.usuario);
           
           setTimeout(() => {
-            // ✅ NAVEGAR A BIENVENIDA
-            this.router.navigate(['/bienvenida']);
+            this.authService.handleLoginResponse(res);
           }, 1500);
+          
         } else {
           this.showNotification('error', res.message || 'Error desconocido');
         }

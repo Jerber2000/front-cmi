@@ -4,6 +4,13 @@ import { Observable, Subject } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment.development';
 
+export interface CambiarClaveRequest {
+  usuario: string;
+  claveActual: string;
+  claveNueva: string;
+  confirmarClave: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -13,6 +20,10 @@ export class AuthService {
   // ✅ AGREGAR para mensaje de bienvenida
   private showWelcomeSubject = new Subject<boolean>();
   public showWelcome$ = this.showWelcomeSubject.asObservable();
+
+  // ← NUEVO: Subject para controlar cambio de contraseña
+  private cambiarClaveSubject = new Subject<boolean>();
+  public cambiarClave$ = this.cambiarClaveSubject.asObservable();
 
   constructor(
     private http: HttpClient,
@@ -35,6 +46,14 @@ export class AuthService {
     return this.http.post<any>(`${this.apiUrl}/resetearPass`, resetData);
   }
 
+  // ← NUEVA FUNCIÓN: Cambiar contraseña temporal
+  /**
+   * Cambiar contraseña temporal
+   */
+  cambiarClaveTemporary(data: CambiarClaveRequest): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/cambiarClave`, data);
+  }
+
   /**
    * Guardar datos de autenticación
    */
@@ -43,11 +62,65 @@ export class AuthService {
     localStorage.setItem('usuario', JSON.stringify(usuario));
   }
 
+  // ← NUEVA FUNCIÓN: Manejar respuesta de login con cambio de contraseña
+  /**
+   * Procesar respuesta de login y manejar cambio de contraseña
+   */
+  handleLoginResponse(response: any): void {    
+    if (response.success && response.data) {
+      // Guardar datos de autenticación
+      this.saveAuthData(response.data.token, response.data.usuario);
+      
+      // ← VERIFICAR SI DEBE CAMBIAR CONTRASEÑA
+      if (response.data.cambiarclave || response.cambiarclave) {
+        this.cambiarClaveSubject.next(true);
+        this.router.navigate(['/cambiar-clave-temporal']);
+      } else {
+        this.navigateToMenu();
+      }
+    }
+  }
+
+  // ← NUEVA FUNCIÓN: Después de cambiar contraseña exitosamente
+  /**
+   * Manejar cambio exitoso de contraseña
+   */
+  handlePasswordChangeSuccess(): void {
+    this.cambiarClaveSubject.next(false);
+    this.navigateToMenu();
+  }
+
+  // ← NUEVA FUNCIÓN: Manejar respuesta de cambio obligatorio desde interceptor
+  /**
+   * Manejar cuando el backend responde que debe cambiar contraseña
+   */
+  manejarCambioObligatorio(): void {
+    this.cambiarClaveSubject.next(true);
+    this.router.navigate(['/cambiar-clave-temporal']);
+  }
+
   /**
    * Obtener token
    */
   getToken(): string | null {
     return localStorage.getItem('token');
+  }
+
+  // ← NUEVA FUNCIÓN: Obtener usuario actual
+  /**
+   * Obtener usuario actual del localStorage
+   */
+  getCurrentUser(): any {
+    const usuario = localStorage.getItem('usuario');
+    return usuario ? JSON.parse(usuario) : null;
+  }
+
+  // ← NUEVA FUNCIÓN: Verificar si debe cambiar contraseña
+  /**
+   * Verificar si el usuario debe cambiar su contraseña
+   */
+  debeCambiarClave(): boolean {
+    return false; // Por defecto false, se maneja desde el backend
   }
 
   /**
@@ -72,6 +145,18 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
+    // ← LIMPIAR subjects al hacer logout
+    this.cambiarClaveSubject.next(false);
     this.router.navigate(['/login']);
+  }
+
+  // En tu auth.service.ts
+  actualizarEstadoCambioClave(): void {
+    const currentUser = this.getCurrentUser();
+    if (currentUser) {
+      currentUser.cambiarclave = false;
+      // Actualizar en localStorage o donde manejes el estado
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    }
   }
 }

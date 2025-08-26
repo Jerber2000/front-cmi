@@ -27,6 +27,11 @@ export interface Usuario {
     estado:                   number;
 }
 
+export interface Rol {
+  idrol: number;
+  nombre: string;
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -43,6 +48,22 @@ export class UsuarioService{
 
     obtenerUsuarios(): Observable<Usuario[]>{
         const ruta = `${this.apiUrl}/buscarUsuarios`;
+        return this.http.get<any>(ruta).pipe(
+            tap(response => {}),
+            map(response => {
+                if(response && response.success && response.data && Array.isArray(response.data)){
+                    return response.data;
+                }
+                return[];
+            }),
+            catchError(error => {
+                return of([]);
+            })
+        )
+    }
+
+    obtenerRoles(): Observable<Rol[]>{
+        const ruta = `${this.apiUrl}/roles`;
         return this.http.get<any>(ruta).pipe(
             tap(response => {}),
             map(response => {
