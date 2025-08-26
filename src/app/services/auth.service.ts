@@ -76,7 +76,7 @@ export class AuthService {
         this.cambiarClaveSubject.next(true);
         this.router.navigate(['/cambiar-clave-temporal']);
       } else {
-        this.navigateToMenu();
+        this.router.navigate(['/bienvenida']);
       }
     }
   }
