@@ -13,7 +13,6 @@ interface BackendResponse {
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   
-  // ← INYECTAR AuthService usando inject()
   const authService = inject(AuthService);
   
   const token = localStorage.getItem('token');
