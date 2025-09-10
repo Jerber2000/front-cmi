@@ -1,9 +1,10 @@
 import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router'; // ← AGREGAR IMPORT
-import { SidebarComponent, MenuItem as SidebarMenuItem } from '../sidebar/sidebar.component'; // ← IMPORTAR TIPO
+import { Router } from '@angular/router'; 
+import { SidebarComponent, MenuItem as SidebarMenuItem } from '../sidebar/sidebar.component'; 
 import { AuthService } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
+import { ArchivoService } from '../../services/archivo.service';
 
 interface MenuItem {
   id: string;
@@ -24,7 +25,7 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
   // Estado del sidebar (visible/oculto)
   sidebarVisible = false;
   sidebarExpanded = true;
-  userInfo = { name: 'Usuario', avatar: '' };
+  userInfo: any = {};
 
   // ✅ Propiedad para mensaje de bienvenida
   showWelcomeMessage = false;
@@ -42,21 +43,18 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
 
   constructor(
     private authService: AuthService,
-    private router: Router // ← AGREGAR ROUTER
+    private archivoService: ArchivoService,
+    private router: Router 
   ) {}
 
   ngOnInit() {
-    // this.loadUserInfo();
+    this.loadUserInfo();
     const storedUser = localStorage.getItem('usuario');
     if (storedUser) {
       const user = JSON.parse(storedUser);
-      this.userInfo = {
-        name: `${user.nombres} ${user.apellidos}`,
-        avatar: user.rutafotoperfil 
-      };
     }
 
-    // ✅ ESCUCHAR cuando debe mostrar bienvenida
+    // ESCUCHAR cuando debe mostrar bienvenida
     this.welcomeSubscription = this.authService.showWelcome$.subscribe(() => {
       this.showWelcomeMessage = true;
       setTimeout(() => {
@@ -66,7 +64,7 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnDestroy() {
-    // ✅ Cleanup de suscripción
+    // Cleanup de suscripción
     this.welcomeSubscription?.unsubscribe();
   }
 
@@ -96,7 +94,7 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
-  // ✅ Método para ocultar mensaje
+  // Método para ocultar mensaje
   hideWelcomeMessage(): void {
     this.showWelcomeMessage = false;
   }
@@ -205,5 +203,23 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
       x: event.clientX + 10,
       y: event.clientY - 10
     };
+  }
+
+  loadUserInfo(): void {
+    try {
+      const usuarioData = localStorage.getItem('usuario');
+      
+      if (usuarioData) {
+        const usuario = JSON.parse(usuarioData);        
+        
+        this.userInfo = {
+          name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim(),
+          avatar: usuario.rutafotoperfil ? this.archivoService.obtenerUrlPublica(usuario.rutafotoperfil) : null
+          // role: usuario.fkrol || usuario.role || ''
+        };
+      } 
+    } catch (error) {
+      console.error('Error al cargar información del usuario:', error);
+    }
   }
 }

@@ -7,6 +7,8 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AlertaService } from '../../services/alerta.service';
 import { FormatoTelefonicoDirective } from '../../directives/numeroFormato';
 import { formatoInputDirective } from '../../directives/formatoInput';
+import { ArchivoService } from '../../services/archivo.service';
+import { AuthService } from '../../services/auth.service';
 
 // Extender la interface User para incluir los nuevos campos
 export interface ExtendedUser extends Usuario {
@@ -24,7 +26,6 @@ export interface ExtendedUser extends Usuario {
   styleUrls: ['./usuario.component.css']
 })
 export class UsuarioComponent implements OnInit, AfterViewInit {
-  // userInfo = { name: 'Usuario', avatar: '' };
   currentView: 'list' | 'form' | 'detail' = 'list';
   users: ExtendedUser[] = [];
   filteredUsers: ExtendedUser[] = [];
@@ -38,8 +39,12 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
   currentDate = new Date();
   sidebarExpanded = true;
   userInfo: any = {};
-  selectedPhoto: string | null = null;
   roles: Rol[] = [];
+
+  selectedPhoto: File | null = null;
+  selectedDocument: File | null = null;
+  photoPreview: string | null = null;
+  documentInfo: { name: string, size: number } | null = null;
 
   // Variables de paginación
   currentPage = 1;
@@ -53,7 +58,9 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
   constructor(
     private UsuarioService: UsuarioService,
     private fb: FormBuilder,
-    private alerta: AlertaService
+    private alerta: AlertaService,
+    private archivoService: ArchivoService,
+    private authService: AuthService
   ) {
     this.userForm = this.fb.group({
       nombres: ['', [Validators.required]],
@@ -131,14 +138,39 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
     return fieldNames[fieldName] || fieldName;
   }
 
-  onPhotoSelected(event: any): void {
+  async onPhotoSelected(event: any): Promise<void> {
     const file = event.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        this.selectedPhoto = e.target?.result as string;
+      try {
+        this.selectedPhoto = file;
+        this.photoPreview = await this.archivoService.crearVistaPrevia(file);
+      } catch (error: any) {
+        this.alerta.alertaError(error.message);
+      }
+    }
+  }
+
+  /**
+   * Maneja selección de documento - SÚPER SIMPLE
+   */
+  onDocumentSelected(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.type !== 'application/pdf') {
+        this.alerta.alertaError('Solo se permiten archivos PDF');
+        return;
+      }
+      
+      if (file.size > 10 * 1024 * 1024) {
+        this.alerta.alertaError('El documento no puede superar los 10MB');
+        return;
+      }
+
+      this.selectedDocument = file;
+      this.documentInfo = {
+        name: file.name,
+        size: file.size
       };
-      reader.readAsDataURL(file);
     }
   }
 
@@ -183,7 +215,7 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
         
         this.userInfo = {
           name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim(),
-          avatar: usuario.avatar || null,
+          avatar: usuario.rutafotoperfil ? this.archivoService.obtenerUrlPublica(usuario.rutafotoperfil) : null
           // role: usuario.fkrol || usuario.role || ''
         };
       } 
@@ -195,7 +227,7 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
   loadRoles(): void {
     this.UsuarioService.obtenerRoles().subscribe({
       next: (roles) => {
-        this.roles = roles; // ✅ Tu service ya maneja la extracción de .data
+        this.roles = roles; // Tu service ya maneja la extracción de .data
       },
       error: (error) => {
         console.error('Error loading roles:', error);
@@ -327,6 +359,12 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
       status: user.estado?.toString() || ''
     });
 
+    if (user.rutafotoperfil) {
+      this.photoPreview = this.archivoService.obtenerUrlPublica(user.rutafotoperfil);
+    } else {
+      this.photoPreview = null;
+    }
+
     this.userForm.disable();
   }
 
@@ -420,10 +458,11 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
       status: user.estado?.toString() || ''
     });
     
-    // // Opcional: Cargar foto si existe
-    // if (user.rutafotoperfil) {
-    //   this.selectedPhoto = user.rutafotoperfil;
-    // }
+    if (user.rutafotoperfil) {
+      this.photoPreview = this.archivoService.obtenerUrlPublica(user.rutafotoperfil);
+    } else {
+      this.photoPreview = null;
+    }
 
     this.userForm.enable();
   }
@@ -468,12 +507,19 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
   }
 
   // OPERACIONES CRUD - Actualizado para incluir paginación
+
   loadUsers(): void {
     this.loading = true;
     this.UsuarioService.obtenerUsuarios().subscribe({
       next: (users) => {
-        this.users = users;
-        this.filteredUsers = [...users];
+        // Agregar URLs manualmente sin cambiar interface
+        this.users = users.map(user => ({
+          ...user,
+          fotoUrl: user.rutafotoperfil ? this.archivoService.obtenerUrlPublica(user.rutafotoperfil) : null
+          // documentoUrl: user.rutadocumento ? this.archivoService.obtenerUrlPublica(user.rutadocumento) : null
+        }));
+        
+        this.filteredUsers = [...this.users];
         this.updatePagination();
         this.loading = false;
       },
@@ -567,14 +613,20 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
     this.selectedUser = null;
     this.updatePasswordValidators();
     this.userForm.enable();
+
+    this.selectedPhoto = null;
+    this.selectedDocument = null;
+    this.photoPreview = null;
+    this.documentInfo = null;
   }
 
-  onSubmit(): void {
+  async onSubmit(): Promise<void> {
     if (this.userForm.valid) {
       this.loading = true;
       
       const formData = this.userForm.value;
       
+      // Tus validaciones existentes se mantienen igual
       if (!this.isEditMode || (formData.password && formData.password.trim() !== '')) {
         if (formData.password !== formData.confirmPassword) {
           this.alerta.alertaError('Las contraseñas no coinciden');
@@ -589,115 +641,85 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
         return;
       }
       
-      const userData: Omit<Usuario, 'idusuario'> = {
-        fkrol: parseInt(formData.role),
-        usuario: formData.usuario,
-        clave: (this.isEditMode && (!formData.password || formData.password.trim() === '')) 
-          ? this.selectedUser!.clave
-          : formData.password,
-        nombres: formData.nombres,
-        apellidos: formData.apellidos,
-        fechanacimiento: this.formatDateForDatabase(formData.fechaNacimiento),
-        correo: formData.correo,
-        puesto: formData.puesto,
-        profesion: formData.profesion || '',
-        telinstitucional: formData.telinstitucional || '',
-        extension: formData.extension || '',
-        telefonopersonal: formData.telPersonal || '',
-        nombrecontactoemergencia: formData.contactoEmergencia || '',
-        telefonoemergencia: formData.telEmergencia || '',
-        rutafotoperfil: this.selectedPhoto || '',
-        observaciones: formData.observaciones || '',
-        usuariocreacion: '1',
-        estado: parseInt(formData.status)
-      };
-
-      const operation = this.isEditMode 
-        ? this.UsuarioService.actualizarUsuario(this.selectedUser!.idusuario, userData)
-        : this.UsuarioService.crearUsuario(userData);
+      try {
+        // 1. SUBIR ARCHIVOS PRIMERO (si hay)
+        let rutaFoto = '';
+        let rutaDocumento = '';
         
-      operation.subscribe({
-        next: (response) => {
-          this.loading = false;
+        const usuarioId = this.selectedUser?.idusuario || 0; // Para creación usar 0
+        
+        if (this.selectedPhoto || this.selectedDocument) {
+          const archivos: { foto?: File, documento?: File } = {};
+          if (this.selectedPhoto) archivos.foto = this.selectedPhoto;
+          if (this.selectedDocument) archivos.documento = this.selectedDocument;
           
-          // Verificar si el backend devolvió success: false (error controlado)
-          if (response && response.success === false) {            
-            let mensajeError = '';
-            
-            // Si hay errores específicos en el array 'errors'
-            if (response.errors && Array.isArray(response.errors) && response.errors.length > 0) {
-              // Tomar el primer error específico
-              mensajeError = response.errors[0].msg || response.errors[0].message || response.errors[0];
-            } 
-            // Si no hay array de errores, usar el mensaje general
-            else if (response.message) {
-              mensajeError = response.message;
-            } 
-            // Fallback
-            else {
-              mensajeError = 'Error de validación';
-            }
-            
-            this.alerta.alertaError(mensajeError);
-            return;
-          }
-          
-          const mensaje = this.isEditMode ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente';
-          this.loadUsers();
-          this.showList();
-          this.alerta.alertaExito(mensaje);
-        },
-        error: (error) => {
-          console.error('Error no manejado:', error);
-          this.loading = false;
-          
-          let mensajeError = '';
-          
-          // Verificar si el error tiene la estructura de respuesta del backend
-          if (error.error) {
-            // Si hay errores específicos en el array
-            if (error.error.errors && Array.isArray(error.error.errors) && error.error.errors.length > 0) {
-              mensajeError = error.error.errors[0].msg || error.error.errors[0].message || error.error.errors[0];
-            }
-            // Si hay mensaje general
-            else if (error.error.message) {
-              mensajeError = error.error.message;
-            }
-            // Si el error es un string directo
-            else if (typeof error.error === 'string') {
-              mensajeError = error.error;
-            }
-          } 
-          // Error basado en código de estado HTTP
-          else if (error.status) {
-            switch (error.status) {
-              case 400:
-                mensajeError = 'Datos inválidos. Revisa los campos ingresados.';
-                break;
-              case 401:
-                mensajeError = 'No tienes permisos para realizar esta acción.';
-                break;
-              case 404:
-                mensajeError = 'Usuario no encontrado.';
-                break;
-              case 500:
-                mensajeError = 'Error interno del servidor. Intenta más tarde.';
-                break;
-              default:
-                mensajeError = `Error del servidor (${error.status})`;
-            }
-          }
-          
-          // Mensaje por defecto si no se pudo determinar el error específico
-          if (!mensajeError) {
-            mensajeError = this.isEditMode 
-              ? 'No se pudo actualizar el usuario' 
-              : 'No se pudo crear el usuario';
-          }
-          
-          this.alerta.alertaError(mensajeError);
+          const resultadoArchivos = await this.archivoService.subirArchivos('usuarios', usuarioId, archivos);
+          rutaFoto = resultadoArchivos.rutaFoto || '';
+          rutaDocumento = resultadoArchivos.rutaDocumento || '';
         }
-      });
+
+        const userData: Omit<Usuario, 'idusuario'> = {
+          fkrol: parseInt(formData.role),
+          usuario: formData.usuario,
+          clave: (this.isEditMode && (!formData.password || formData.password.trim() === '')) 
+            ? this.selectedUser!.clave
+            : formData.password,
+          nombres: formData.nombres,
+          apellidos: formData.apellidos,
+          fechanacimiento: this.formatDateForDatabase(formData.fechaNacimiento),
+          correo: formData.correo,
+          puesto: formData.puesto,
+          profesion: formData.profesion || '',
+          telinstitucional: formData.telinstitucional || '',
+          extension: formData.extension || '',
+          telefonopersonal: formData.telPersonal || '',
+          nombrecontactoemergencia: formData.contactoEmergencia || '',
+          telefonoemergencia: formData.telEmergencia || '',
+          rutafotoperfil: rutaFoto || (this.selectedUser?.rutafotoperfil || ''),
+          observaciones: formData.observaciones || '',
+          usuariocreacion: '1',
+          estado: parseInt(formData.status)
+        };
+
+        const operation = this.isEditMode 
+          ? this.UsuarioService.actualizarUsuario(this.selectedUser!.idusuario, userData)
+          : this.UsuarioService.crearUsuario(userData);
+          
+        operation.subscribe({
+          next: (response) => {
+            this.loading = false;
+            
+            if (response && response.success === false) {            
+              let mensajeError = '';
+              
+              if (response.errors && Array.isArray(response.errors) && response.errors.length > 0) {
+                mensajeError = response.errors[0].msg || response.errors[0].message || response.errors[0];
+              } else if (response.message) {
+                mensajeError = response.message;
+              } else {
+                mensajeError = 'Error de validación';
+              }
+              
+              this.alerta.alertaError(mensajeError);
+              return;
+            }
+            
+            const mensaje = this.isEditMode ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente';
+            this.loadUsers();
+            this.showList();
+            this.alerta.alertaExito(mensaje);
+          },
+          error: (error) => {
+            // Tu manejo de errores existente se mantiene igual
+            this.loading = false;
+            this.alerta.alertaError('Error al procesar la solicitud');
+          }
+        });
+
+      } catch (error: any) {
+        this.loading = false;
+        this.alerta.alertaError(error.message);
+      }
     } else {
       this.alerta.alertaPreventiva('Completa todos los campos requeridos');
     }

@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, Subject } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment.development';
+import { ArchivoService } from '../services/archivo.service';
+import { BehaviorSubject } from 'rxjs';
 
 export interface CambiarClaveRequest {
   usuario: string;
@@ -15,6 +17,8 @@ export interface CambiarClaveRequest {
   providedIn: 'root'
 })
 export class AuthService {
+  private userInfoSubject = new BehaviorSubject<any>({ name: 'Usuario', avatar: null });
+  public userInfo$ = this.userInfoSubject.asObservable();
   private apiUrl = `${environment.apiUrl}/auth`;
 
   // ✅ AGREGAR para mensaje de bienvenida
@@ -27,7 +31,8 @@ export class AuthService {
 
   constructor(
     private http: HttpClient,
-    private router: Router
+    private router: Router,
+    private archivoService: ArchivoService
   ) {}
 
   /**
@@ -157,6 +162,33 @@ export class AuthService {
       currentUser.cambiarclave = false;
       // Actualizar en localStorage o donde manejes el estado
       localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    }
+  }
+
+  // auth.service.ts - SOLO AQUÍ manejas la lógica
+  loadUserInfo(): void {
+    console.log('🚀 loadUserInfo() SE ESTÁ EJECUTANDO');
+    try {
+      const usuarioData = localStorage.getItem('usuario');
+      console.log('=== DEBUG SIMPLE ===');
+    console.log('usuarioData raw:', usuarioData);
+
+      if (usuarioData) {
+        const usuario = JSON.parse(usuarioData);        
+        console.log('usuario parseado:', usuario);
+      console.log('usuario.rutafotoperfil:', usuario.rutafotoperfil);
+      
+        const userInfo = {
+          name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim(),
+          avatar: usuario.rutafotoperfil ? this.archivoService.obtenerUrlPublica(usuario.rutafotoperfil) : null,
+          usuario: usuario
+        };
+        
+        this.userInfoSubject.next(userInfo);
+      } 
+    } catch (error) {
+      console.error('Error al cargar información del usuario:', error);
+      this.userInfoSubject.next({ name: 'Usuario', avatar: null });
     }
   }
 }

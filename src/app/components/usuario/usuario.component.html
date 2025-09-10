@@ -210,8 +210,8 @@
       <div class="photo-section">
         <div class="photo-upload">
           <div class="photo-preview">
-            <img *ngIf="selectedPhoto" [src]="selectedPhoto" alt="Preview" class="photo-img">
-            <div *ngIf="!selectedPhoto" class="photo-placeholder">
+            <img *ngIf="photoPreview" [src]="photoPreview" alt="Preview" class="photo-img">
+            <div *ngIf="!photoPreview" class="photo-placeholder">
               <i class="fas fa-user-circle"></i>
               <span>Foto del usuario</span>
             </div>
