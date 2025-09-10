@@ -87,6 +87,29 @@ export class AlertaService {
     });
   }
   
+  alertaInfo(titulo: string): void {
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        customClass: {
+          popup: 'toast-info-border',
+          timerProgressBar: 'toast-info-timer'
+        },
+        didOpen: (toast) => {
+          toast.addEventListener('mouseenter', Swal.stopTimer)
+          toast.addEventListener('mouseleave', Swal.resumeTimer)
+        }
+    });
+
+    Toast.fire({
+        icon: 'info',
+        title: titulo
+    });
+  }
+  
   alertaPreventiva(titulo: string): void {
     const Toast = Swal.mixin({
         toast: true,

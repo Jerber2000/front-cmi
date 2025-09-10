@@ -2,7 +2,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
+/**
+ * Interface del paciente
+ */
 export interface Paciente {
   idpaciente?: number;
   nombres: string;
@@ -27,25 +31,31 @@ export interface Paciente {
   fechamodificacion?: string;
   estado?: number;
   
-  // Datos del expediente para crear
-  numeroexpediente?: string;
-  historiaenfermedad?: string;
-  antmedico?: string;
-  antmedicamento?: string;
-  anttraumaticos?: string;
-  antfamiliar?: string;
-  antalergico?: string;
+  // Rutas de archivos
+  rutafotoperfil?: string;
+  rutafotoencargado?: string;
+  rutacartaautorizacion?: string;
+
+  // Relación con expedientes
+  expedientes?: Array<{
+    idexpediente: number;
+    numeroexpediente: string;
+    historiaenfermedad?: string;
+  }>;
 }
 
-export interface PacienteResponse {
-  success: boolean;
-  data: Paciente | Paciente[];
-  message?: string;
-  pagination?: {
-    page: number;
-    limit: number;
+/**
+ * Respuesta del servidor para pacientes
+ */
+export interface RespuestaPaciente {
+  exito: boolean;
+  datos: Paciente | Paciente[];
+  mensaje?: string;
+  paginacion?: {
+    pagina: number;
+    limite: number;
     total: number;
-    totalPages: number;
+    totalPaginas: number;
   };
   error?: string;
 }
@@ -53,41 +63,84 @@ export interface PacienteResponse {
 @Injectable({
   providedIn: 'root'
 })
-export class PacienteService {
-  private apiUrl = 'https://back-cmi-production.up.railway.app/api/pacientes';
+export class ServicioPaciente {
+  private urlApi = `${environment.apiUrl}/pacientes`;
 
   constructor(private http: HttpClient) {}
 
-  // Obtener todos los pacientes con paginación y búsqueda
-  getAllPacientes(page: number = 1, limit: number = 10, search: string = ''): Observable<PacienteResponse> {
-    let params = new HttpParams()
-      .set('page', page.toString())
-      .set('limit', limit.toString());
+  /**
+   * Obtiene todos los pacientes con paginación y búsqueda
+   */
+  obtenerTodosLosPacientes(pagina: number = 1, limite: number = 10, busqueda: string = ''): Observable<RespuestaPaciente> {
+    let parametros = new HttpParams()
+      .set('pagina', pagina.toString())
+      .set('limite', limite.toString());
     
-    if (search.trim()) {
-      params = params.set('search', search);
+    if (busqueda.trim()) {
+      parametros = parametros.set('busqueda', busqueda);
     }
 
-    return this.http.get<PacienteResponse>(this.apiUrl, { params });
+    return this.http.get<RespuestaPaciente>(this.urlApi, { params: parametros });
   }
 
-  // Obtener un paciente por ID
-  getPacienteById(id: number): Observable<PacienteResponse> {
-    return this.http.get<PacienteResponse>(`${this.apiUrl}/${id}`);
+  /**
+   * Obtiene un paciente por ID
+   */
+  obtenerPacientePorId(id: number): Observable<RespuestaPaciente> {
+    return this.http.get<RespuestaPaciente>(`${this.urlApi}/${id}`);
   }
 
-  // Crear nuevo paciente
-  createPaciente(paciente: Paciente): Observable<PacienteResponse> {
-    return this.http.post<PacienteResponse>(this.apiUrl, paciente);
+  /**
+   * Crea un nuevo paciente
+   */
+  crearPaciente(paciente: Paciente): Observable<RespuestaPaciente> {
+    return this.http.post<RespuestaPaciente>(this.urlApi, paciente);
   }
 
-  // Actualizar paciente
-  updatePaciente(id: number, paciente: Partial<Paciente>): Observable<PacienteResponse> {
-    return this.http.put<PacienteResponse>(`${this.apiUrl}/${id}`, paciente);
+  /**
+   * Actualiza un paciente existente
+   */
+  actualizarPaciente(id: number, paciente: Partial<Paciente>): Observable<RespuestaPaciente> {
+    return this.http.put<RespuestaPaciente>(`${this.urlApi}/${id}`, paciente);
   }
 
-  // Eliminar paciente
-  deletePaciente(id: number): Observable<PacienteResponse> {
-    return this.http.delete<PacienteResponse>(`${this.apiUrl}/${id}`);
+  /**
+   * Elimina un paciente
+   */
+  eliminarPaciente(id: number): Observable<RespuestaPaciente> {
+    return this.http.delete<RespuestaPaciente>(`${this.urlApi}/${id}`);
   }
+
+  /**
+   * Obtiene pacientes disponibles para asignar a expedientes
+   */
+  obtenerPacientesDisponibles(): Observable<RespuestaPaciente> {
+    return this.http.get<RespuestaPaciente>(`${this.urlApi}/disponibles`);
+  }
+
+  /**
+   * Verifica si un paciente tiene expedientes
+   */
+  pacienteTieneExpedientes(paciente: Paciente): boolean {
+    return !!(paciente.expedientes && paciente.expedientes.length > 0);
+  }
+
+  /**
+   * Obtiene el primer expediente de un paciente
+   */
+  obtenerPrimerExpediente(paciente: Paciente): any | null {
+    if (this.pacienteTieneExpedientes(paciente)) {
+      return paciente.expedientes![0];
+    }
+    return null;
+  }
+
+  // Métodos de compatibilidad
+  getAllPacientes = this.obtenerTodosLosPacientes;
+  getPacienteById = this.obtenerPacientePorId;
+  createPaciente = this.crearPaciente;
+  updatePaciente = this.actualizarPaciente;
+  deletePaciente = this.eliminarPaciente;
+  getPacientesDisponibles = this.obtenerPacientesDisponibles;
+  getPrimerExpediente = this.obtenerPrimerExpediente;
 }

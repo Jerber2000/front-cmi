@@ -35,6 +35,7 @@ export class SidebarComponent {
       icon: 'fas fa-users',
       children: [
         { label: 'Pacientes', route: '/pacientes' },
+        { label: 'Expedientes', route: '/expedientes' },
         { label: 'Traslados', route: '/pacientes/traslados' },
         { label: 'Citas', route: '/pacientes/citas' },
         { label: 'Usuarios', route: '/usuario' } 

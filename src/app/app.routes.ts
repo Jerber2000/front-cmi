@@ -1,6 +1,7 @@
 import type { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { cambioClaveGuard } from './guards/cambioClave.guard';
+import { HistorialMedicoComponent } from './components/historialMedico/historialMedico';
 
 export const routes: Routes = [
   {
@@ -33,9 +34,22 @@ export const routes: Routes = [
   {
     path: 'pacientes',
     loadComponent: () =>
-      import('./components/paciente/paciente-list.component').then(m => m.PacienteListComponent),
+      import('./components/paciente/paciente-list.component').then(m => m.PacienteListaComponent), 
     canActivate: [authGuard],
   },
+  {
+    path: 'expedientes',
+    loadComponent: () =>
+      import('./components/expediente/expediente').then(m => m.ExpedienteListaComponent), 
+    canActivate: [authGuard],
+  },
+  {
+    path: 'historial/:id',
+    loadComponent: () =>
+      import('./components/historialMedico/historialMedico').then(m => m.HistorialMedicoComponent),
+    canActivate: [authGuard],
+  },
+
   {
     path: '',
     redirectTo: '/login',

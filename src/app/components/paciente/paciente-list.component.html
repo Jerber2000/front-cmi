@@ -1,495 +1,733 @@
-<!-- src/app/components/paciente/paciente-list.component.html -->
-<div class="pacientes-container">
-  <!-- Header con estilo Fraijanes -->
-  <div class="header-fraijanes">
-    <div class="header-content">
-      <h1 class="module-title">Pacientes</h1>
-      <div class="logo-container">
-        <img src="assets/img/LogoFraijanes.png" alt="Municipalidad de Fraijanes" class="logo-fraijanes">
+<!-- paciente-list.component.html -->
+<div class="content-area" [class.sidebar-expanded]="barraLateralExpandida">
+  <!-- Sidebar con información del usuario corregida -->
+  <app-sidebar [informacionUsuario]="informacionUsuario"></app-sidebar>
+  
+  <div class="contenedor-menu">
+    <header class="encabezado">
+      <div class="contenido-encabezado">
+        <div class="izquierda-encabezado">
+          <div class="texto-encabezado">
+            <h1 class="titulo">PACIENTES</h1>
+          </div>
+          <img src="assets/img/LogoFraijanes.png" alt="Logo Fraijanes" class="logo">
+        </div>
       </div>
+    </header>
+  </div>
+
+  <!-- Indicador de subida de archivos -->
+  <div *ngIf="subiendoArchivos" class="estado-subida">
+    <div class="indicador-subida">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Subiendo archivos...</span>
     </div>
   </div>
 
-  <!-- Alertas -->
-  <div class="alerts-container">
-    <div *ngIf="success" class="alert alert-success alert-dismissible fade show" role="alert">
-      <i class="fas fa-check-circle me-2"></i>{{ success }}
-      <button type="button" class="btn-close" (click)="success = ''" aria-label="Close"></button>
-    </div>
-
-    <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
-      <i class="fas fa-exclamation-circle me-2"></i>{{ error }}
-      <button type="button" class="btn-close" (click)="error = ''" aria-label="Close"></button>
-    </div>
-  </div>
-
-  <!-- Sección de búsqueda y nuevo paciente -->
-  <div class="search-section">
-    <div class="search-container">
-      <div class="search-box">
-        <input
-          type="text"
-          class="form-control search-input"
-          placeholder="Buscar por nombre, apellido o CUI..."
-          [value]="searchTerm"
-          (input)="onSearchChange($event)"
+  <!-- Controles de búsqueda -->
+  <div class="tarjeta-control">
+    <div class="controles-busqueda">
+      <div class="contenedor-busqueda">
+        <input 
+          type="text" 
+          class="entrada-busqueda" 
+          placeholder="Buscar"
+          [(ngModel)]="terminoBusqueda"
+          (input)="filtrarPacientes()"
         >
-        <i class="fas fa-search search-icon"></i>
+        <button class="boton-agregar" (click)="mostrarFormulario()" *ngIf="vistaActual === 'lista'">
+          <i class="fas fa-plus"></i>
+        </button>
       </div>
-      <button class="btn btn-add-patient" (click)="openCreateModal()">
-        <i class="fas fa-plus me-2"></i>
-        Crear nuevo paciente
+      
+      <div class="informacion-encabezado">
+        <div class="informacion-fecha">
+          Fecha: {{ fechaActual | date:'dd/MM/yyyy' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- Lista de pacientes -->
+<div class="contenedor-tabla" *ngIf="vistaActual === 'lista'">
+  <table class="tabla-datos">
+    <thead>
+      <tr>
+        <th>Nombre del Paciente</th>
+        <th>Género</th>
+        <th>Edad</th>
+        <th>CUI</th>
+        <th>Teléfono</th>
+        <th>Historial</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let paciente of paginatedPacientes; let i = index" class="fila-tabla">
+        <td class="nombre-usuario">
+          {{ paciente.nombres }} {{ paciente.apellidos }}
+        </td>
+        <td>{{ paciente.genero === 'M' ? 'Masculino' : 'Femenino' }}</td>
+        <td>{{ calcularEdad(paciente.fechanacimiento) }} años</td>
+        <td>{{ paciente.cui }}</td>
+        <td>{{ paciente.telefonopersonal || 'No registrado' }}</td>
+        <td>
+          <span *ngIf="obtenerInformacionExpedientePaciente(paciente).tieneExpediente" 
+                class="insignia-expediente expediente-existe">
+            <i class="fas fa-file-medical"></i>
+            {{ obtenerInformacionExpedientePaciente(paciente).numeroExpediente }}
+          </span>
+          <span *ngIf="!obtenerInformacionExpedientePaciente(paciente).tieneExpediente" 
+                class="insignia-expediente expediente-faltante">
+            <i class="fas fa-file-plus"></i>
+            Asignar Expediente
+          </span>
+        </td>
+        <!-- NUEVA COLUMNA DE ACCIONES CON MENÚ DE TRES PUNTOS -->
+        <td class="columna-acciones">
+          <div class="menu-tres-puntos" [class.activo]="menuAbierto === i">
+            <!-- Botón de tres puntos -->
+            <button 
+              class="boton-tres-puntos"
+              (click)="toggleMenu(i); $event.stopPropagation()"
+              type="button"
+            >
+              <span class="punto"></span>
+              <span class="punto"></span>
+              <span class="punto"></span>
+            </button>
+            
+            <!-- Menú contextual -->
+            <div class="menu-contextual" *ngIf="menuAbierto === i">
+              <div class="menu-header">
+                <span class="paciente-nombre">{{ paciente.nombres }} {{ paciente.apellidos }}</span>
+              </div>
+              
+              <div class="menu-items">
+                <button 
+                  class="menu-item historial" 
+                  (click)="verHistorialClinico(paciente); cerrarMenu()"
+                  type="button"
+                >
+                  <div class="item-icono">📋</div>
+                  <div class="item-texto">
+                    <span class="item-titulo">Historial Clínico</span>
+                    <span class="item-desc">Ver historial médico</span>
+                  </div>
+                </button>
+                
+                <button 
+                  class="menu-item editar" 
+                  (click)="editarPaciente(paciente); cerrarMenu()"
+                  type="button"
+                >
+                  <div class="item-icono">✏️</div>
+                  <div class="item-texto">
+                    <span class="item-titulo">Editar Paciente</span>
+                    <span class="item-desc">Modificar información</span>
+                  </div>
+                </button>
+                
+                <button 
+                  *ngIf="!obtenerInformacionExpedientePaciente(paciente).tieneExpediente"
+                  class="menu-item expediente" 
+                  (click)="crearExpedientePaciente(paciente); cerrarMenu()"
+                  type="button"
+                >
+                  <div class="item-icono">📄</div>
+                  <div class="item-texto">
+                    <span class="item-titulo">Crear Expediente</span>
+                    <span class="item-desc">Nuevo expediente médico</span>
+                  </div>
+                </button>
+                
+                <button 
+                  *ngIf="obtenerInformacionExpedientePaciente(paciente).tieneExpediente"
+                  class="menu-item expediente" 
+                  (click)="verExpedientePaciente(paciente); cerrarMenu()"
+                  type="button"
+                >
+                  <div class="item-icono">👁️</div>
+                  <div class="item-texto">
+                    <span class="item-titulo">Ver Expediente</span>
+                    <span class="item-desc">Expediente #{{ obtenerInformacionExpedientePaciente(paciente).numeroExpediente }}</span>
+                  </div>
+                </button>
+                
+                <div class="menu-separador"></div>
+                
+                <button 
+                  class="menu-item eliminar" 
+                  (click)="eliminarPaciente(paciente.idpaciente!); cerrarMenu()"
+                  type="button"
+                >
+                  <div class="item-icono">🗑️</div>
+                  <div class="item-texto">
+                    <span class="item-titulo">Eliminar Paciente</span>
+                    <span class="item-desc">Eliminar permanentemente</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Resto del código de paginación permanece igual... -->
+  <div class="pagination-container" *ngIf="totalItems > 0">
+    <!-- Navegación de páginas (solo si hay más de 1 página) -->
+    <div class="pagination" *ngIf="totalPages > 1">
+      <!-- Botón anterior -->
+      <button 
+        class="pagination-btn" 
+        [class.disabled]="currentPage === 1"
+        (click)="previousPage()"
+        [disabled]="currentPage === 1"
+      >
+        <i class="fas fa-chevron-left"></i>
+      </button>
+
+      <!-- Primera página -->
+      <button 
+        *ngIf="getPages()[0] > 1"
+        class="pagination-btn"
+        (click)="goToPage(1)"
+      >
+        1
+      </button>
+      
+      <!-- Puntos suspensivos si hay salto -->
+      <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
+
+      <!-- Páginas visibles -->
+      <button 
+        *ngFor="let page of getPages()"
+        class="pagination-btn"
+        [class.active]="page === currentPage"
+        (click)="goToPage(page)"
+      >
+        {{ page }}
+      </button>
+
+      <!-- Puntos suspensivos si hay salto al final -->
+      <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
+
+      <!-- Última página -->
+      <button 
+        *ngIf="getPages()[getPages().length - 1] < totalPages"
+        class="pagination-btn"
+        (click)="goToPage(totalPages)"
+      >
+        {{ totalPages }}
+      </button>
+
+      <!-- Botón siguiente -->
+      <button 
+        class="pagination-btn" 
+        [class.disabled]="currentPage === totalPages"
+        (click)="nextPage()"
+        [disabled]="currentPage === totalPages"
+      >
+        <i class="fas fa-chevron-right"></i>
       </button>
     </div>
-  </div>
 
-  <!-- Loading spinner -->
-  <div *ngIf="loading" class="loading-container">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Cargando...</span>
+    <!-- Mostrar mensaje si solo hay una página -->
+    <div *ngIf="totalPages <= 1" class="pagination-single">
+      Página 1 de 1
+    </div>
+
+    <!-- Selector de elementos por página -->
+    <div class="items-per-page">
+      <label>Mostrar:</label>
+      <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
+        <option [value]="5">5</option>
+        <option [value]="10">10</option>
+        <option [value]="20">20</option>
+        <option [value]="50">50</option>
+      </select>
+      <span>por página</span>
     </div>
   </div>
-
-  <!-- Tabla de pacientes -->
-  <div *ngIf="!loading" class="table-container">
-    <div class="table-responsive">
-      <table class="table patients-table">
-        <thead>
-          <tr>
-            <th>Nombre Paciente</th>
-            <th>Género</th>
-            <th>Edad</th>
-            <th>CUI</th>
-            <th>Dirección</th>
-            <th>Discapacidad</th>
-            <th>Teléfono</th>
-            <th>Municipio</th>
-            <th>Editar</th>
-            <th>Eliminar</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let paciente of pacientes">
-            <td class="patient-name">{{ paciente.nombres }} {{ paciente.apellidos }}</td>
-            <td>
-              <span class="badge-gender" [class]="paciente.genero === 'M' ? 'male' : 'female'">
-                {{ paciente.genero }}
-              </span>
-            </td>
-            <td>{{ calculateAge(paciente.fechanacimiento) }}</td>
-            <td>{{ paciente.cui }}</td>
-            <td class="address-cell">{{ paciente.direccion }}</td>
-            <td>{{ paciente.tipodiscapacidad || 'Ninguna' }}</td>
-            <td>{{ paciente.telefonopersonal || 'N/A' }}</td>
-            <td>{{ paciente.municipio }}</td>
-            <td>
-              <button 
-                class="btn-action btn-edit" 
-                (click)="openEditModal(paciente)"
-                title="Editar paciente">
-                <i class="fas fa-edit"></i>
-              </button>
-            </td>
-            <td>
-              <button 
-                class="btn-action btn-delete" 
-                (click)="deletePaciente(paciente)"
-                title="Eliminar paciente">
-                <i class="fas fa-trash"></i>
-              </button>
-            </td>
-          </tr>
-          <tr *ngIf="pacientes.length === 0">
-            <td colspan="10" class="no-data">
-              <div class="no-data-content">
-                <i class="fas fa-users fa-3x"></i>
-                <p>{{ searchTerm ? 'No se encontraron pacientes con los criterios de búsqueda' : 'No hay pacientes registrados' }}</p>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Paginación -->
-    <div *ngIf="totalPages > 1" class="pagination-container">
-      <div class="pagination-info">
-        <small>
-          Mostrando {{ (currentPage - 1) * pageSize + 1 }} a 
-          {{ Math.min(currentPage * pageSize, totalItems) }} de 
-          {{ totalItems }} registros
-        </small>
-      </div>
-      <nav class="pagination-nav">
-        <ul class="pagination">
-          <li [class.disabled]="currentPage === 1">
-            <button (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 1">
-              <i class="fas fa-chevron-left"></i>
-            </button>
-          </li>
-          <li *ngFor="let page of getPages()" [class.active]="page === currentPage">
-            <button (click)="onPageChange(page)">{{ page }}</button>
-          </li>
-          <li [class.disabled]="currentPage === totalPages">
-            <button (click)="onPageChange(currentPage + 1)" [disabled]="currentPage === totalPages">
-              <i class="fas fa-chevron-right"></i>
-            </button>
-          </li>
-        </ul>
-      </nav>
-    </div>
+  
+  <!-- Estado sin datos -->
+  <div *ngIf="pacientesFiltrados.length === 0 && !cargando" class="estado-vacio">
+    <i class="fas fa-users"></i>
+    <h3>No se encontraron pacientes</h3>
+    <p>No hay pacientes que coincidan con su búsqueda</p>
   </div>
 </div>
 
-<!-- Modal para crear/editar paciente -->
-<div class="modal fade" id="pacienteModal" tabindex="-1" aria-labelledby="pacienteModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="pacienteModalLabel">
-          <i class="fas fa-user-plus me-2"></i>
-          {{ isEditMode ? 'Editar Paciente' : 'Nuevo Paciente' }}
-        </h5>
-        <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close"></button>
-      </div>
+  <!-- Modal de formulario -->
+  <div class="fondo-modal" *ngIf="vistaActual === 'formulario'" (click)="cerrarModal()">
+    <div class="contenido-modal-grande" (click)="$event.stopPropagation()">
       
-      <form [formGroup]="pacienteForm" (ngSubmit)="onSubmit()" novalidate>
-        <div class="modal-body">
-          <!-- Datos Personales -->
-          <div class="form-section">
-            <h6 class="section-title">
-              <i class="fas fa-user me-2"></i>Datos Personales
-            </h6>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Nombres *</label>
-                <input
-                  type="text"
-                  class="form-control"
+      <!-- Encabezado del modal -->
+      <div class="encabezado-modal">
+        <h3>{{ modoEdicion ? 'Editar Paciente' : 'Nuevo Paciente' }}</h3>
+        <button class="cerrar-modal" (click)="cerrarModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Cuerpo del modal con scroll -->
+      <div class="cuerpo-modal-scroll">
+        
+        <!-- Sección de fotografías -->
+        <div class="seccion-fotos">
+          <h4 class="titulo-seccion">
+            <i class="fas fa-images"></i> Fotografías
+          </h4>
+          
+          <div class="contenedor-fotos">
+            <!-- Foto del paciente -->
+            <div class="tarjeta-foto">
+              <div class="vista-previa-foto-circulo">
+                <img *ngIf="fotoSeleccionada" [src]="fotoSeleccionada" alt="Foto Paciente" class="imagen-foto-circulo">
+                <div *ngIf="!fotoSeleccionada" class="marcador-posicion-foto-circulo">
+                  <i class="fas fa-user"></i>
+                </div>
+              </div>
+              <label class="etiqueta-foto">Foto del paciente</label>
+              <input 
+                type="file" 
+                #entradaArchivoPaciente 
+                (change)="alSeleccionarFoto($event, 'perfil')" 
+                accept="image/*" 
+                style="display: none;"
+              >
+              <button type="button" class="boton-subir-foto" (click)="entradaArchivoPaciente.click()">
+                <i class="fas fa-camera"></i>
+                {{ fotoSeleccionada ? 'Cambiar Foto' : 'Seleccionar Foto' }}
+              </button>
+              <button 
+                *ngIf="fotoSeleccionada" 
+                type="button" 
+                class="boton-eliminar-foto" 
+                (click)="eliminarFoto('perfil')"
+              >
+                <i class="fas fa-trash"></i> Eliminar
+              </button>
+            </div>
+
+            <!-- Foto del encargado -->
+            <div class="tarjeta-foto">
+              <div class="vista-previa-foto-circulo">
+                <img *ngIf="fotoEncargadoSeleccionada" [src]="fotoEncargadoSeleccionada" alt="Foto Encargado" class="imagen-foto-circulo">
+                <div *ngIf="!fotoEncargadoSeleccionada" class="marcador-posicion-foto-circulo">
+                  <i class="fas fa-user-tie"></i>
+                </div>
+              </div>
+              <label class="etiqueta-foto">Foto del encargado</label>
+              <input 
+                type="file" 
+                #entradaArchivoEncargado 
+                (change)="alSeleccionarFoto($event, 'encargado')" 
+                accept="image/*" 
+                style="display: none;"
+              >
+              <button type="button" class="boton-subir-foto" (click)="entradaArchivoEncargado.click()">
+                <i class="fas fa-camera"></i>
+                {{ fotoEncargadoSeleccionada ? 'Cambiar Foto' : 'Seleccionar Foto' }}
+              </button>
+              <button 
+                *ngIf="fotoEncargadoSeleccionada" 
+                type="button" 
+                class="boton-eliminar-foto" 
+                (click)="eliminarFoto('encargado')"
+              >
+                <i class="fas fa-trash"></i> Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección de documentos -->
+        <div class="seccion-documentos">
+          <h4 class="titulo-seccion">
+            <i class="fas fa-file-contract"></i> Documentos Adicionales (Opcional)
+          </h4>
+          
+          <div class="tarjeta-documento">
+            <div class="contenedor-vista-previa-documento">
+              <div class="vista-previa-documento" *ngIf="cartaSeleccionada">
+                <div class="icono-documento" *ngIf="esCartaPDF">
+                  <i class="fas fa-file-pdf"></i>
+                  <span>PDF</span>
+                </div>
+                <img *ngIf="!esCartaPDF" [src]="cartaSeleccionada" alt="Carta Autorización" class="imagen-documento">
+              </div>
+              <div *ngIf="!cartaSeleccionada" class="marcador-posicion-documento">
+                <i class="fas fa-file-upload"></i>
+                <span>Carta de Autorización</span>
+                <small>Formatos: JPG, PNG, PDF</small>
+              </div>
+            </div>
+            
+            <div class="acciones-documento">
+              <input 
+                type="file" 
+                #entradaArchivoCarta 
+                (change)="alSeleccionarFoto($event, 'carta')" 
+                accept="image/*,application/pdf" 
+                style="display: none;"
+              >
+              <button type="button" class="boton-subir-documento" (click)="entradaArchivoCarta.click()">
+                <i class="fas fa-upload"></i>
+                {{ cartaSeleccionada ? 'Cambiar Documento' : 'Subir Documento' }}
+              </button>
+              <button 
+                *ngIf="cartaSeleccionada" 
+                type="button" 
+                class="boton-eliminar-documento" 
+                (click)="eliminarFoto('carta')"
+              >
+                <i class="fas fa-trash"></i> Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulario de datos del paciente -->
+        <form [formGroup]="formularioPaciente" class="formulario-usuario">
+          
+          <!-- Información personal -->
+          <div class="seccion-formulario">
+            <h4 class="titulo-seccion">
+              <i class="fas fa-user"></i> Información Personal
+            </h4>
+            <div class="grilla-formulario">
+              <div class="grupo-formulario">
+                <label>Nombres *</label>
+                <input 
+                  type="text" 
                   formControlName="nombres"
-                  [class.is-invalid]="isFieldInvalid('nombres')"
-                  placeholder="Ingrese los nombres"
+                  class="entrada-formulario"
+                  [class.error]="esCampoInvalido('nombres')"
+                  placeholder="Ingrese los nombres completos"
                 >
-                <div *ngIf="isFieldInvalid('nombres')" class="invalid-feedback">
-                  {{ getFieldError('nombres') }}
-                </div>
+                <div *ngIf="esCampoInvalido('nombres')" class="texto-error">{{ obtenerErrorCampo('nombres') }}</div>
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Apellidos *</label>
-                <input
-                  type="text"
-                  class="form-control"
+
+              <div class="grupo-formulario">
+                <label>Apellidos *</label>
+                <input 
+                  type="text" 
                   formControlName="apellidos"
-                  [class.is-invalid]="isFieldInvalid('apellidos')"
-                  placeholder="Ingrese los apellidos"
+                  class="entrada-formulario"
+                  [class.error]="esCampoInvalido('apellidos')"
+                  placeholder="Ingrese los apellidos completos"
                 >
-                <div *ngIf="isFieldInvalid('apellidos')" class="invalid-feedback">
-                  {{ getFieldError('apellidos') }}
-                </div>
+                <div *ngIf="esCampoInvalido('apellidos')" class="texto-error">{{ obtenerErrorCampo('apellidos') }}</div>
               </div>
-            </div>
 
-            <div class="row">
-              <div class="col-md-4 mb-3">
-                <label class="form-label">CUI *</label>
-                <input
-                  type="text"
-                  class="form-control"
+              <div class="grupo-formulario">
+                <label>CUI (Código Único de Identificación) *</label>
+                <input 
+                  type="text" 
                   formControlName="cui"
-                  [class.is-invalid]="isFieldInvalid('cui')"
-                  placeholder="1234567890123"
+                  class="entrada-formulario"
+                  [class.error]="esCampoInvalido('cui')"
+                  placeholder="1234567890123 (13 dígitos)"
                   maxlength="13"
                 >
-                <div *ngIf="isFieldInvalid('cui')" class="invalid-feedback">
-                  {{ getFieldError('cui') }}
-                </div>
+                <div *ngIf="esCampoInvalido('cui')" class="texto-error">{{ obtenerErrorCampo('cui') }}</div>
               </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">Fecha de Nacimiento *</label>
-                <input
-                  type="date"
-                  class="form-control"
+
+              <div class="grupo-formulario">
+                <label>Fecha de Nacimiento *</label>
+                <input 
+                  type="date" 
                   formControlName="fechanacimiento"
-                  [class.is-invalid]="isFieldInvalid('fechanacimiento')"
+                  class="entrada-formulario"
+                  [class.error]="esCampoInvalido('fechanacimiento')"
                 >
-                <div *ngIf="isFieldInvalid('fechanacimiento')" class="invalid-feedback">
-                  {{ getFieldError('fechanacimiento') }}
-                </div>
+                <div *ngIf="esCampoInvalido('fechanacimiento')" class="texto-error">{{ obtenerErrorCampo('fechanacimiento') }}</div>
               </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">Género *</label>
-                <select
-                  class="form-control"
-                  formControlName="genero"
-                  [class.is-invalid]="isFieldInvalid('genero')"
-                >
-                  <option value="">Seleccione género</option>
-                  <option *ngFor="let genero of generos" [value]="genero.value">
-                    {{ genero.label }}
-                  </option>
-                </select>
-                <div *ngIf="isFieldInvalid('genero')" class="invalid-feedback">
-                  {{ getFieldError('genero') }}
-                </div>
-              </div>
-            </div>
 
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Tipo de Consulta *</label>
-                <select
-                  class="form-control"
-                  formControlName="tipoconsulta"
-                  [class.is-invalid]="isFieldInvalid('tipoconsulta')"
-                >
-                  <option value="">Seleccione tipo</option>
-                  <option *ngFor="let tipo of tiposConsulta" [value]="tipo.value">
-                    {{ tipo.label }}
-                  </option>
+              <div class="grupo-formulario">
+                <label>Género *</label>
+                <select formControlName="genero" class="entrada-formulario" [class.error]="esCampoInvalido('genero')">
+                  <option value="">Seleccionar género</option>
+                  <option value="M">Masculino</option>
+                  <option value="F">Femenino</option>
                 </select>
-                <div *ngIf="isFieldInvalid('tipoconsulta')" class="invalid-feedback">
-                  {{ getFieldError('tipoconsulta') }}
-                </div>
+                <div *ngIf="esCampoInvalido('genero')" class="texto-error">{{ obtenerErrorCampo('genero') }}</div>
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Tipo de Discapacidad</label>
-                <select class="form-control" formControlName="tipodiscapacidad">
-                  <option *ngFor="let tipo of tiposDiscapacidad" [value]="tipo.value">
-                    {{ tipo.label }}
-                  </option>
-                </select>
+
+              <div class="grupo-formulario">
+                <label>Tipo de Consulta *</label>
+                <input 
+                  type="text" 
+                  formControlName="tipoconsulta" 
+                  class="entrada-formulario" 
+                  [class.error]="esCampoInvalido('tipoconsulta')"
+                  placeholder="Ej: Primera vez, Subsecuente, Urgencia"
+                  list="listaTipoConsulta"
+                >
+                <datalist id="listaTipoConsulta">
+                  <option value="Primera vez">
+                  <option value="Subsecuente">
+                  <option value="Urgencia">
+                  <option value="Consulta General">
+                  <option value="Control">
+                </datalist>
+                <div *ngIf="esCampoInvalido('tipoconsulta')" class="texto-error">{{ obtenerErrorCampo('tipoconsulta') }}</div>
               </div>
             </div>
           </div>
 
-          <!-- Información de Contacto -->
-          <div class="form-section">
-            <h6 class="section-title">
-              <i class="fas fa-phone me-2"></i>Información de Contacto
-            </h6>
-            <div class="row">
-              <div class="col-md-4 mb-3">
-                <label class="form-label">Teléfono Personal</label>
-                <input
-                  type="text"
-                  class="form-control"
+          <!-- Información de contacto -->
+          <div class="seccion-formulario">
+            <h4 class="titulo-seccion">
+              <i class="fas fa-phone"></i> Información de Contacto
+            </h4>
+            <div class="grilla-formulario">
+              <div class="grupo-formulario">
+                <label>Teléfono Personal</label>
+                <input 
+                  type="text" 
                   formControlName="telefonopersonal"
-                  [class.is-invalid]="isFieldInvalid('telefonopersonal')"
-                  placeholder="12345678"
-                  maxlength="8"
+                  class="entrada-formulario"
+                  placeholder="+502 4444-4444"
+                  maxlength="14"
+                  (input)="formatearTelefono('telefonopersonal')"
                 >
-                <div *ngIf="isFieldInvalid('telefonopersonal')" class="invalid-feedback">
-                  {{ getFieldError('telefonopersonal') }}
-                </div>
               </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">Contacto de Emergencia</label>
-                <input
-                  type="text"
-                  class="form-control"
+
+              <div class="grupo-formulario">
+                <label>Nombre del Contacto de Emergencia</label>
+                <input 
+                  type="text" 
                   formControlName="nombrecontactoemergencia"
-                  placeholder="Nombre del contacto"
+                  class="entrada-formulario"
+                  placeholder="Nombre completo del contacto"
                 >
               </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">Teléfono de Emergencia</label>
-                <input
-                  type="text"
-                  class="form-control"
+
+              <div class="grupo-formulario">
+                <label>Teléfono de Emergencia</label>
+                <input 
+                  type="text" 
                   formControlName="telefonoemergencia"
-                  [class.is-invalid]="isFieldInvalid('telefonoemergencia')"
-                  placeholder="12345678"
-                  maxlength="8"
+                  class="entrada-formulario"
+                  placeholder="+502 4444-4444"
+                  maxlength="14"
+                  (input)="formatearTelefono('telefonoemergencia')"
                 >
-                <div *ngIf="isFieldInvalid('telefonoemergencia')" class="invalid-feedback">
-                  {{ getFieldError('telefonoemergencia') }}
-                </div>
               </div>
             </div>
+          </div>
 
-            <!-- Información del Encargado -->
-            <div class="row">
-              <div class="col-md-4 mb-3">
-                <label class="form-label">Nombre del Encargado</label>
-                <input
-                  type="text"
-                  class="form-control"
+          <!-- Información del encargado -->
+          <div class="seccion-formulario">
+            <h4 class="titulo-seccion">
+              <i class="fas fa-user-friends"></i> Información del Encargado/Responsable
+            </h4>
+            <div class="grilla-formulario">
+              <div class="grupo-formulario">
+                <label>Nombre del Encargado</label>
+                <input 
+                  type="text" 
                   formControlName="nombreencargado"
-                  placeholder="Nombre completo"
+                  class="entrada-formulario"
+                  placeholder="Nombre completo del encargado o responsable"
                 >
               </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">DPI del Encargado</label>
-                <input
-                  type="text"
-                  class="form-control"
+
+              <div class="grupo-formulario">
+                <label>DPI del Encargado</label>
+                <input 
+                  type="text" 
                   formControlName="dpiencargado"
-                  [class.is-invalid]="isFieldInvalid('dpiencargado')"
-                  placeholder="1234567890123"
+                  class="entrada-formulario"
+                  placeholder="1234567890101"
                   maxlength="13"
                 >
-                <div *ngIf="isFieldInvalid('dpiencargado')" class="invalid-feedback">
-                  {{ getFieldError('dpiencargado') }}
-                </div>
               </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">Teléfono del Encargado</label>
-                <input
-                  type="text"
-                  class="form-control"
+
+              <div class="grupo-formulario">
+                <label>Teléfono del Encargado</label>
+                <input 
+                  type="text" 
                   formControlName="telefonoencargado"
-                  [class.is-invalid]="isFieldInvalid('telefonoencargado')"
-                  placeholder="12345678"
-                  maxlength="8"
+                  class="entrada-formulario"
+                  placeholder="+502 4444-4444"
+                  maxlength="14"
+                  (input)="formatearTelefono('telefonoencargado')"
                 >
-                <div *ngIf="isFieldInvalid('telefonoencargado')" class="invalid-feedback">
-                  {{ getFieldError('telefonoencargado') }}
-                </div>
               </div>
             </div>
           </div>
 
-          <!-- Dirección -->
-          <div class="form-section">
-            <h6 class="section-title">
-              <i class="fas fa-map-marker-alt me-2"></i>Dirección
-            </h6>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Municipio *</label>
-                <input
-                  type="text"
-                  class="form-control"
+          <!-- Información adicional -->
+          <div class="seccion-formulario">
+            <h4 class="titulo-seccion">
+              <i class="fas fa-info-circle"></i> Información Médica Adicional
+            </h4>
+            <div class="grilla-formulario">
+              <div class="grupo-formulario">
+                <label>Tipo de Discapacidad</label>
+                <input 
+                  type="text" 
+                  formControlName="tipodiscapacidad" 
+                  class="entrada-formulario"
+                  placeholder="Ej: Ninguna, Física, Visual, Auditiva"
+                  list="listaTipoDiscapacidad"
+                >
+                <datalist id="listaTipoDiscapacidad">
+                  <option value="Ninguna">
+                  <option value="Física">
+                  <option value="Visual">
+                  <option value="Auditiva">
+                  <option value="Intelectual">
+                  <option value="Psicosocial">
+                  <option value="Múltiple">
+                  <option value="Otra">
+                </datalist>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información de dirección -->
+          <div class="seccion-formulario">
+            <h4 class="titulo-seccion">
+              <i class="fas fa-map-marker-alt"></i> Información de Ubicación
+            </h4>
+            <div class="grilla-formulario">
+              <div class="grupo-formulario">
+                <label>Municipio *</label>
+                <input 
+                  type="text" 
                   formControlName="municipio"
-                  [class.is-invalid]="isFieldInvalid('municipio')"
+                  class="entrada-formulario"
+                  [class.error]="esCampoInvalido('municipio')"
                   placeholder="Nombre del municipio"
                 >
-                <div *ngIf="isFieldInvalid('municipio')" class="invalid-feedback">
-                  {{ getFieldError('municipio') }}
-                </div>
+                <div *ngIf="esCampoInvalido('municipio')" class="texto-error">{{ obtenerErrorCampo('municipio') }}</div>
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Aldea/Zona</label>
-                <input
-                  type="text"
-                  class="form-control"
+
+              <div class="grupo-formulario">
+                <label>Aldea/Zona/Colonia</label>
+                <input 
+                  type="text" 
                   formControlName="aldea"
-                  placeholder="Aldea o zona"
+                  class="entrada-formulario"
+                  placeholder="Aldea, zona o colonia"
                 >
               </div>
-            </div>
-            <div class="row">
-              <div class="col-12 mb-3">
-                <label class="form-label">Dirección Completa *</label>
+
+              <div class="grupo-formulario ancho-completo">
+                <label>Dirección Completa *</label>
                 <textarea
-                  class="form-control"
                   formControlName="direccion"
-                  [class.is-invalid]="isFieldInvalid('direccion')"
+                  class="area-texto-formulario"
+                  [class.error]="esCampoInvalido('direccion')"
                   rows="3"
-                  placeholder="Dirección detallada"
+                  placeholder="Ingrese la dirección detallada del paciente"
                 ></textarea>
-                <div *ngIf="isFieldInvalid('direccion')" class="invalid-feedback">
-                  {{ getFieldError('direccion') }}
-                </div>
+                <div *ngIf="esCampoInvalido('direccion')" class="texto-error">{{ obtenerErrorCampo('direccion') }}</div>
               </div>
             </div>
           </div>
 
-          <!-- Información del Expediente (solo para crear) -->
-          <div *ngIf="!isEditMode" class="form-section" [formGroup]="expedienteForm">
-            <h6 class="section-title">
-              <i class="fas fa-file-medical me-2"></i>Expediente Médico
-            </h6>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Número de Expediente</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  formControlName="numeroexpediente"
-                  placeholder="Se generará automáticamente si se deja vacío"
-                >
-                <small class="text-muted">Formato: YYYY-XXXXXX</small>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-12 mb-3">
-                <label class="form-label">Historia de la Enfermedad</label>
-                <textarea
-                  class="form-control"
-                  formControlName="historiaenfermedad"
-                  rows="3"
-                  placeholder="Descripción de la enfermedad actual"
-                ></textarea>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Antecedentes Médicos</label>
-                <textarea
-                  class="form-control"
-                  formControlName="antmedico"
-                  rows="2"
-                  placeholder="Antecedentes médicos relevantes"
-                ></textarea>
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Antecedentes de Medicamentos</label>
-                <textarea
-                  class="form-control"
-                  formControlName="antmedicamento"
-                  rows="2"
-                  placeholder="Medicamentos que toma o ha tomado"
-                ></textarea>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-md-4 mb-3">
-                <label class="form-label">Antecedentes Traumáticos</label>
-                <textarea
-                  class="form-control"
-                  formControlName="anttraumaticos"
-                  rows="2"
-                  placeholder="Traumas o accidentes previos"
-                ></textarea>
-              </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">Antecedentes Familiares</label>
-                <textarea
-                  class="form-control"
-                  formControlName="antfamiliar"
-                  rows="2"
-                  placeholder="Enfermedades familiares relevantes"
-                ></textarea>
-              </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">Antecedentes Alérgicos</label>
-                <textarea
-                  class="form-control"
-                  formControlName="antalergico"
-                  rows="2"
-                  placeholder="Alergias conocidas"
-                ></textarea>
-              </div>
-            </div>
-          </div>
-        </div>
+        </form>
+      </div>
 
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" (click)="closeModal()">
-            <i class="fas fa-times me-2"></i>Cancelar
-          </button>
-          <button
-            type="submit"
-            class="btn btn-primary"
-            [disabled]="loading || pacienteForm.invalid"
-          >
-            <span *ngIf="loading" class="spinner-border spinner-border-sm me-2" role="status"></span>
-            <i *ngIf="!loading" class="fas fa-save me-2"></i>
-            {{ isEditMode ? 'Actualizar' : 'Guardar' }} Paciente
-          </button>
-        </div>
-      </form>
+      <!-- Pie del modal fijo -->
+      <div class="pie-modal">
+        <button type="button" class="boton-cancelar" (click)="cerrarModal()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button 
+          type="button"
+          class="boton-guardar" 
+          (click)="alEnviar()"
+          [disabled]="formularioPaciente.invalid || cargando"
+        >
+          <span *ngIf="cargando">
+            <i class="fas fa-spinner fa-spin"></i> Guardando...
+          </span>
+          <span *ngIf="!cargando">
+            <i class="fas fa-save"></i> {{ modoEdicion ? 'Actualizar' : 'Crear' }} Paciente
+          </span>
+        </button>
+      </div>
+
     </div>
   </div>
+
+  <!-- Vista de detalles del paciente -->
+  <div class="tarjeta-principal" *ngIf="vistaActual === 'detalle'">
+    <div class="encabezado-detalle">
+      <h3>Información Completa del Paciente</h3>
+      <div class="acciones-detalle">
+        <button class="boton-editar" (click)="editarPaciente(pacienteSeleccionado!)">
+          <i class="fas fa-edit"></i> Editar Información
+        </button>
+        <button class="boton-volver" (click)="mostrarLista()">
+          <i class="fas fa-arrow-left"></i> Volver a la Lista
+        </button>
+      </div>
+    </div>
+
+    <div class="grilla-detalle" *ngIf="pacienteSeleccionado">
+      <div class="elemento-detalle">
+        <label>Nombre Completo:</label>
+        <span>{{ pacienteSeleccionado.nombres }} {{ pacienteSeleccionado.apellidos }}</span>
+      </div>
+      <div class="elemento-detalle">
+        <label>CUI:</label>
+        <span>{{ pacienteSeleccionado.cui }}</span>
+      </div>
+      <div class="elemento-detalle">
+        <label>Edad:</label>
+        <span>{{ calcularEdad(pacienteSeleccionado.fechanacimiento) }} años</span>
+      </div>
+      <div class="elemento-detalle">
+        <label>Género:</label>
+        <span>{{ pacienteSeleccionado.genero === 'M' ? 'Masculino' : 'Femenino' }}</span>
+      </div>
+      <div class="elemento-detalle">
+        <label>Teléfono Personal:</label>
+        <span>{{ pacienteSeleccionado.telefonopersonal || 'No registrado' }}</span>
+      </div>
+      <div class="elemento-detalle">
+        <label>Tipo de Consulta:</label>
+        <span>{{ pacienteSeleccionado.tipoconsulta }}</span>
+      </div>
+      <div class="elemento-detalle">
+        <label>Municipio:</label>
+        <span>{{ pacienteSeleccionado.municipio }}</span>
+      </div>
+      <div class="elemento-detalle ancho-completo">
+        <label>Dirección Completa:</label>
+        <span>{{ pacienteSeleccionado.direccion }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de expediente médico -->
+  <div *ngIf="vistaActual === 'modal-expediente'" class="contenedor-modal-expediente">
+    <div class="contenedor-modal-expediente">
+      <div class="encabezado-modal-expediente">
+        <h3>Crear Expediente Médico</h3>
+        <button class="cerrar-modal" (click)="cerrarModalExpediente()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="contenido-modal-expediente">
+        <app-expediente-lista 
+          [mostrarComoModal]="true"
+          [datosPaciente]="datosExpedientePaciente"
+          (cerrarModal)="cerrarModalExpediente()"
+          (expedienteCreado)="cerrarModalExpediente($event)">
+        </app-expediente-lista>
+      </div>
+    </div>
+  </div>
+
 </div>
