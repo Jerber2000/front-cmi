@@ -14,6 +14,7 @@ app.get('/health', (req, res) => {
 app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist/cmi-front/index.html'));
 });
+
 const port = process.env.PORT || 3000;
 app.listen(port, '0.0.0.0', () => {
   console.log(`🚀 Servidor corriendo en puerto ${port}`);
