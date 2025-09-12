@@ -11,6 +11,7 @@ import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { NgxPaginationModule } from 'ngx-pagination';
 import { PdfService } from '../../services/pdf.service';
+import { ArchivoService } from '../../services/archivo.service';
 
 
 
@@ -73,6 +74,7 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
     private servicioExpediente: ServicioExpediente,
     private fb: FormBuilder,
     private servicioAlerta: AlertaService,
+    private archivoService: ArchivoService,
     private pdfService: PdfService
   ) {
     this.formularioExpediente = this.crearFormulario();
@@ -190,20 +192,21 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
    */
   cargarInformacionUsuario(): void {
     try {
-      const datosUsuario = localStorage.getItem('usuario');
-      if (datosUsuario) {
-        const usuario = JSON.parse(datosUsuario);
+      const usuarioData = localStorage.getItem('usuario');
+      if (usuarioData) {
+        const usuario = JSON.parse(usuarioData);
         this.informacionUsuario = {
-          name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim() || 'Usuario',
-          avatar: usuario.avatar || null
+          name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim(),
+          avatar: usuario.rutafotoperfil ? 
+            this.archivoService.obtenerUrlPublica(usuario.rutafotoperfil) : null  // ✅ CAMBIAR esta línea
         };
       }
     } catch (error) {
       console.error('Error al cargar información del usuario:', error);
-      this.informacionUsuario = { name: 'Usuario', avatar: null }; // ✅ Fallback
+      this.informacionUsuario = { name: 'Usuario', avatar: null };
     }
     
-    // ✅ AGREGAR: Restaurar estado del sidebar
+    // Restaurar estado del sidebar
     const sidebarState = localStorage.getItem('sidebarExpanded');
     if (sidebarState !== null) {
       this.barraLateralExpandida = sidebarState === 'true';

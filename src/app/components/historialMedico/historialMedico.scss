@@ -984,3 +984,298 @@
     font-size: 12px;
   }
 }
+
+/* ====================================
+   BOTONES DEL HEADER
+   ==================================== */
+.header-buttons {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.btn-notas-rapidas {
+  background: linear-gradient(135deg, #ffc107, #e0a800);
+  color: #212529;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+}
+
+.btn-notas-rapidas:hover {
+  background: linear-gradient(135deg, #e0a800, #d39e00);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(255, 193, 7, 0.4);
+}
+
+.btn-volver {
+  background: linear-gradient(135deg, #6c757d, #545b62);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
+}
+
+.btn-volver:hover {
+  background: linear-gradient(135deg, #545b62, #495057);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(108, 117, 125, 0.4);
+}
+
+/* ====================================
+   VISTA DE NOTAS RÁPIDAS
+   ==================================== */
+.notas-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.nota-card {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  border-left: 4px solid #ffc107;
+}
+
+.nota-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.nota-fecha {
+  color: #ffc107;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(255, 193, 7, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.nota-doctor {
+  color: #6c757d;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.nota-content {
+  margin-bottom: 15px;
+}
+
+.nota-section {
+  margin-bottom: 15px;
+
+  h5 {
+    color: #333;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    i {
+      color: #5ba892;
+    }
+  }
+
+  .nota-text {
+    color: #555;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 3px solid #5ba892;
+  }
+
+  .recordatorio-text {
+    color: #856404;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+    padding: 10px;
+    background: #fff3cd;
+    border-radius: 6px;
+    border-left: 3px solid #ffc107;
+  }
+}
+
+.nota-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6c757d;
+  font-style: italic;
+  font-size: 14px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.nota-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-ver-completo {
+  background: linear-gradient(135deg, #2c6662, #1f4540);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-ver-completo:hover {
+  background: linear-gradient(135deg, #1f4540, #174239);
+  transform: translateY(-1px);
+}
+
+/* ====================================
+   LABELS PARA FORMULARIOS
+   ==================================== */
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* ====================================
+   SECCIÓN DE ARCHIVOS MEJORADA
+   ==================================== */
+.files-section {
+  margin-top: 25px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border: 2px dashed #dee2e6;
+
+  h4 {
+    color: #2c6662;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &::before {
+      content: '📎';
+      font-size: 16px;
+    }
+  }
+}
+
+/* ====================================
+   RESPONSIVE PARA NUEVAS FUNCIONALIDADES
+   ==================================== */
+@media (max-width: 768px) {
+  .header-buttons {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .btn-notas-rapidas,
+  .btn-nueva-sesion {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .nota-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .nota-card {
+    padding: 15px;
+  }
+
+  .nota-section {
+    .nota-text,
+    .recordatorio-text {
+      padding: 8px;
+      font-size: 13px;
+    }
+  }
+
+  .files-section {
+    padding: 15px;
+
+    h4 {
+      font-size: 13px;
+    }
+  }
+}
+
+/* ====================================
+   ESTADOS ESPECIALES PARA NOTAS
+   ==================================== */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6c757d;
+  
+  i {
+    font-size: 48px;
+    margin-bottom: 20px;
+    color: #adb5bd;
+  }
+
+  h4 {
+    font-size: 18px;
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+}

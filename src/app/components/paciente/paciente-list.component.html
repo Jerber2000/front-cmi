@@ -1,9 +1,10 @@
 <!-- paciente-list.component.html -->
 <div class="content-area" [class.sidebar-expanded]="barraLateralExpandida">
   <!-- Sidebar con información del usuario corregida -->
-  <app-sidebar [informacionUsuario]="informacionUsuario"></app-sidebar>
+   <app-sidebar [userInfo]="informacionUsuario"></app-sidebar>
   
-  <div class="contenedor-menu">
+  
+ <div class="contenedor-menu">
     <header class="encabezado">
       <div class="contenido-encabezado">
         <div class="izquierda-encabezado">
@@ -64,7 +65,7 @@
     </thead>
     <tbody>
       <tr *ngFor="let paciente of paginatedPacientes; let i = index" class="fila-tabla">
-        <td class="nombre-usuario">
+        <td class="nombre-usuario" (click)="verPaciente(paciente)">
           {{ paciente.nombres }} {{ paciente.apellidos }}
         </td>
         <td>{{ paciente.genero === 'M' ? 'Masculino' : 'Femenino' }}</td>
@@ -140,7 +141,8 @@
                     <span class="item-desc">Nuevo expediente médico</span>
                   </div>
                 </button>
-                
+
+                <!-- SE OCULTA EL BOTON DE VER EXPEDIENTE POR AHORA
                 <button 
                   *ngIf="obtenerInformacionExpedientePaciente(paciente).tieneExpediente"
                   class="menu-item expediente" 
@@ -153,6 +155,7 @@
                     <span class="item-desc">Expediente #{{ obtenerInformacionExpedientePaciente(paciente).numeroExpediente }}</span>
                   </div>
                 </button>
+                -->
                 
                 <div class="menu-separador"></div>
                 

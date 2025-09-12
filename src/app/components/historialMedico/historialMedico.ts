@@ -13,6 +13,7 @@ import {
 } from '../../services/historialMedico.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AlertaService } from '../../services/alerta.service';
+import { ArchivoService } from '../../services/archivo.service';
 
 @Component({
   selector: 'app-historial-medico',
@@ -22,7 +23,7 @@ import { AlertaService } from '../../services/alerta.service';
   styleUrls: ['./historialMedico.scss']
 })
 export class HistorialMedicoComponent implements OnInit, AfterViewInit {
-  currentView: 'historial' | 'nueva-sesion' | 'diagnostico' = 'historial';
+  currentView: 'historial' | 'nueva-sesion' | 'diagnostico' | 'notas-rapidas' = 'historial';
   sidebarExpanded = true;
   loading = false;
   
@@ -43,6 +44,7 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit {
     private route: ActivatedRoute,
     private router: Router,
     public historialService: HistorialMedicoService,
+    private archivoService: ArchivoService,
     private alerta: AlertaService
   ) {
     // ✅ FORMULARIO ACTUALIZADO con todos los campos
@@ -82,7 +84,8 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit {
         const usuario = JSON.parse(usuarioData);
         this.userInfo = {
           name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim(),
-          avatar: usuario.avatar || null
+          avatar: usuario.rutafotoperfil ? 
+            this.archivoService.obtenerUrlPublica(usuario.rutafotoperfil) : null  // ✅ CAMBIAR esta línea
         };
       }
     } catch (error) {
@@ -157,6 +160,10 @@ cargarDatosPaciente(): void {
   });
 }
 
+  mostrarNotasRapidas(): void {
+    this.currentView = 'notas-rapidas';
+  }
+
   cargarHistorial(): void {
     this.historialService.obtenerHistorialPorPaciente(this.idPaciente).subscribe({
       next: (historial: HistorialMedico[]) => {
@@ -185,9 +192,13 @@ cargarDatosPaciente(): void {
     this.sesionActual = sesion;
     this.currentView = 'diagnostico';
     
-    this.diagnosticoForm.patchValue({
-      evolucion: sesion.evolucion || '',
-      diagnosticotratamiento: sesion.diagnosticotratamiento || ''
+    // ✅ NUEVO: Llenar TODOS los campos de la sesión para edición
+    this.diagnosticoForm = this.fb.group({
+      motivoconsulta: [sesion.motivoconsulta || ''],
+      notaconsulta: [sesion.notaconsulta || ''],
+      recordatorio: [sesion.recordatorio || ''],
+      evolucion: [sesion.evolucion || ''],
+      diagnosticotratamiento: [sesion.diagnosticotratamiento || '']
     });
   }
 
@@ -227,59 +238,81 @@ cargarDatosPaciente(): void {
     return fieldNames[fieldName] || fieldName;
   }
 
-  // ✅ MÉTODO ACTUALIZADO para incluir todos los campos
-  crearSesion(): void {
-    if (this.sesionForm.valid && this.infoPaciente) {
-      this.loading = true;
-      
-      const usuarioData = localStorage.getItem('usuario');
-      if (!usuarioData) {
-        this.alerta.alertaError('No se encontró información del usuario');
-        this.loading = false;
-        return;
-      }
+/**
+ * Actualiza el método crearSesion para manejar archivos
+ */
+crearSesion(): void {
+  if (this.sesionForm.valid && this.infoPaciente) {
+    this.loading = true;
+    
+    const usuarioData = localStorage.getItem('usuario');
+    if (!usuarioData) {
+      this.alerta.alertaError('No se encontró información del usuario');
+      this.loading = false;
+      return;
+    }
 
-      const usuario = JSON.parse(usuarioData);
-      const formData = this.sesionForm.value;
-      
-      // ✅ INCLUIR TODOS LOS CAMPOS que espera el backend
-      const nuevaSesion: CrearSesionRequest = {
-        fkpaciente: this.idPaciente,
-        fkusuario: usuario.idusuario,
-        fecha: new Date().toISOString(),
-        motivoconsulta: formData.motivoconsulta,
-        notaconsulta: formData.notaconsulta || '',
-        recordatorio: formData.recordatorio || '',
-        evolucion: formData.evolucion || '',
-        diagnosticotratamiento: formData.diagnosticotratamiento || ''
-      };
+    const usuario = JSON.parse(usuarioData);
+    const formData = this.sesionForm.value;
+    
+    const nuevaSesion: CrearSesionRequest = {
+      fkpaciente: this.idPaciente,
+      fkusuario: usuario.idusuario,
+      fecha: new Date().toISOString(),
+      motivoconsulta: formData.motivoconsulta,
+      notaconsulta: formData.notaconsulta || '',
+      recordatorio: formData.recordatorio || '',
+      evolucion: formData.evolucion || '',
+      diagnosticotratamiento: formData.diagnosticotratamiento || ''
+    };
 
-
-      this.historialService.crearSesion(nuevaSesion).subscribe({
-        next: (sesionCreada: HistorialMedico) => {
+    this.historialService.crearSesion(nuevaSesion).subscribe({
+      next: (sesionCreada: HistorialMedico) => {
+        // ✅ NUEVO: Subir archivos si existen
+        if (this.selectedFiles && this.selectedFiles.length > 0) {
+          this.historialService.subirArchivos(this.idPaciente, this.selectedFiles).subscribe({
+            next: () => {
+              this.loading = false;
+              this.alerta.alertaExito('Sesión creada con archivos correctamente');
+              this.cargarHistorial();
+              this.mostrarHistorial();
+              this.selectedFiles = null;
+              // Limpiar input de archivos
+              const fileInput = document.getElementById('archivos-nueva-sesion') as HTMLInputElement;
+              if (fileInput) fileInput.value = '';
+            },
+            error: (error: any) => {
+              console.error('Error subiendo archivos:', error);
+              this.loading = false;
+              this.alerta.alertaPreventiva('Sesión creada pero error al subir archivos');
+              this.cargarHistorial();
+              this.mostrarHistorial();
+            }
+          });
+        } else {
           this.loading = false;
           this.alerta.alertaExito('Sesión creada correctamente');
           this.cargarHistorial();
           this.mostrarHistorial();
-        },
-        error: (error: any) => {
-          console.error('Error creando sesión:', error);
-          this.loading = false;
-          
-          let mensaje = 'Error al crear la sesión';
-          if (error.error && error.error.message) {
-            mensaje = error.error.message;
-          }
-          
-          this.alerta.alertaError(mensaje);
         }
-      });
-    } else {
-      // ✅ Marcar todos los campos como tocados para mostrar errores
-      this.marcarFormularioComoTocado(this.sesionForm);
-      this.alerta.alertaPreventiva('Complete al menos el motivo de consulta');
-    }
+      },
+      error: (error: any) => {
+        console.error('Error creando sesión:', error);
+        this.loading = false;
+        
+        let mensaje = 'Error al crear la sesión';
+        if (error.error && error.error.message) {
+          mensaje = error.error.message;
+        }
+        
+        this.alerta.alertaError(mensaje);
+      }
+    });
+  } else {
+    this.marcarFormularioComoTocado(this.sesionForm);
+    this.alerta.alertaPreventiva('Complete al menos el motivo de consulta');
   }
+}
 
   // ✅ MÉTODO AUXILIAR para marcar campos como tocados
   private marcarFormularioComoTocado(form: FormGroup): void {
@@ -291,13 +324,20 @@ cargarDatosPaciente(): void {
     });
   }
 
+  /**
+   * Actualizar método guardarDiagnostico para incluir todos los campos
+   */
   guardarDiagnostico(): void {
     if (this.sesionActual) {
       this.loading = true;
       
       const formData = this.diagnosticoForm.value;
       
+      // ✅ NUEVO: Incluir TODOS los campos
       const datosActualizacion: ActualizarSesionRequest = {
+        motivoconsulta: formData.motivoconsulta || '',
+        notaconsulta: formData.notaconsulta || '',
+        recordatorio: formData.recordatorio || '',
         evolucion: formData.evolucion || '',
         diagnosticotratamiento: formData.diagnosticotratamiento || ''
       };
@@ -305,15 +345,15 @@ cargarDatosPaciente(): void {
       this.historialService.actualizarSesion(this.sesionActual.idhistorial, datosActualizacion).subscribe({
         next: (sesionActualizada: HistorialMedico) => {
           this.loading = false;
-          this.alerta.alertaExito('Diagnóstico guardado correctamente');
+          this.alerta.alertaExito('Sesión actualizada correctamente');
           this.cargarHistorial();
           this.mostrarHistorial();
         },
         error: (error: any) => {
-          console.error('Error actualizando diagnóstico:', error);
+          console.error('Error actualizando sesión:', error);
           this.loading = false;
           
-          let mensaje = 'Error al guardar el diagnóstico';
+          let mensaje = 'Error al actualizar la sesión';
           if (error.error && error.error.message) {
             mensaje = error.error.message;
           }
@@ -323,7 +363,6 @@ cargarDatosPaciente(): void {
       });
     }
   }
-
   onFilesSelected(event: any): void {
     const files = event.target.files;
     if (files && files.length > 0) {

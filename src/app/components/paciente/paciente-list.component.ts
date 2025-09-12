@@ -13,13 +13,14 @@ import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { ExpedienteListaComponent } from '../expediente/expediente';
 import { HostListener } from '@angular/core';
+import { ArchivoService } from '../../services/archivo.service';
 
 // Interfaz para la información del usuario
 export interface InformacionUsuario {
-  name?: string;
+  name: string;        
+  avatar?: string | undefined;      
   nombres?: string;
   apellidos?: string;
-  avatar?: string;
   rol?: string;
 }
 
@@ -125,10 +126,9 @@ cerrarDropdown(): void {
   // Interfaz de usuario
   fechaActual = new Date();
   barraLateralExpandida = true;
-  informacionUsuario: InformacionUsuario = {
+  informacionUsuario: any = {
     name: 'Usuario',
-    rol: 'Administrador',
-    avatar: 'assets/img/avatar-default.png'
+    avatar: null
   };
   error = '';
 
@@ -138,6 +138,7 @@ cerrarDropdown(): void {
     private fb: FormBuilder,
     private servicioAlerta: AlertaService,
     private servicioArchivo: FileService,
+    private archivoService: ArchivoService,
     private router: Router
   ) {
     this.formularioPaciente = this.crearFormulario();
@@ -195,31 +196,32 @@ cerrarDropdown(): void {
       .subscribe(() => this.filtrarPacientes());
   }
 
-  /**
-   * Carga la información del usuario desde localStorage
-   */
-  cargarInformacionUsuario(): void {
-    try {
-      const datosUsuario = localStorage.getItem('usuario');
-      if (datosUsuario) {
-        const usuario = JSON.parse(datosUsuario);
-        this.informacionUsuario = {
-          name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim() || 'Usuario',
-          nombres: usuario.nombres,
-          apellidos: usuario.apellidos,
-          avatar: usuario.avatar || usuario.foto || 'assets/img/avatar-default.png',
-          rol: usuario.rol || 'Usuario'
-        };
-      }
-    } catch (error) {
-      console.error('Error al cargar información del usuario:', error);
+/**
+ * Carga la información del usuario desde localStorage
+ */
+
+cargarInformacionUsuario(): void {
+  try {
+    const usuarioData = localStorage.getItem('usuario');
+    
+    if (usuarioData) {
+      const usuario = JSON.parse(usuarioData);
+      
+      // Usar 'any' para evitar problemas de tipos
       this.informacionUsuario = {
-        name: 'Usuario',
-        rol: 'Usuario',
-        avatar: 'assets/img/avatar-default.png'
+        name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim(),
+        avatar: usuario.rutafotoperfil ? 
+          this.archivoService.obtenerUrlPublica(usuario.rutafotoperfil) : null
       };
     }
+  } catch (error) {
+    console.error('Error al cargar información del usuario:', error);
+    this.informacionUsuario = {
+  name: 'Usuario',
+  avatar: null
+    };
   }
+}
 
   /**
    * Detecta el estado de la barra lateral

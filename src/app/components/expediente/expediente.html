@@ -27,10 +27,11 @@
           [(ngModel)]="terminoBusqueda"
           (input)="filtrarExpedientes()"
         >
+         <!-- BOTON SE ESCONDE DE MOMENTO
         <button class="boton-agregar" (click)="mostrarFormulario()" *ngIf="vistaActual === 'lista'">
           <i class="fas fa-plus"></i>
         </button>
-
+        -->
 
             <!-- Estadísticas rápidas -->
     <div class="fila-estadisticas" *ngIf="vistaActual === 'lista' && estadisticas">
@@ -64,7 +65,6 @@
             <th>Historia de Enfermedad</th>
             <th>Paciente Asignado</th>
             <th>Fecha de Creación</th>
-            <th>Ver</th>
             <th>Editar</th>
             <th>Eliminar</th>
           </tr>
@@ -104,16 +104,6 @@
             </td>
             <td>{{ expediente.fechacreacion | date:'dd/MM/yyyy' }}</td>
 
-            <!-- BOTÓN VER -->
-            <td>
-              <button 
-                class="boton-accion boton-ver" 
-                (click)="verExpediente(expediente)"
-                title="Ver detalles del expediente"
-              >
-                <i class="fas fa-eye"></i>
-              </button>
-            </td>
                         
             <!-- BOTÓN EDITAR -->
             <td>
