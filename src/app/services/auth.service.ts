@@ -19,7 +19,7 @@ export interface CambiarClaveRequest {
 export class AuthService {
   private userInfoSubject = new BehaviorSubject<any>({ name: 'Usuario', avatar: null });
   public userInfo$ = this.userInfoSubject.asObservable();
-  private apiUrl = `${environment.apiUrl}/auth`;
+  private apiUrl = `${environment.apiUrl}/api/auth`;
 
   // ✅ AGREGAR para mensaje de bienvenida
   private showWelcomeSubject = new Subject<boolean>();
