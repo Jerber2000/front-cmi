@@ -1,8 +1,4 @@
-# ✅ DOCKERFILE MEJORADO PARA FRONTEND
-FROM node:18-alpine as builder
-
-# Instalar dependencias del sistema
-RUN apk add --no-cache python3 make g++
+FROM node:18-alpine
 
 WORKDIR /app
 
@@ -10,41 +6,19 @@ WORKDIR /app
 COPY package*.json ./
 
 # Instalar dependencias
-RUN npm ci --silent
+RUN npm ci
 
-# Copiar código fuente
+# Copiar todo el código
 COPY . .
 
-# Construir la aplicación Angular para producción
-RUN npm run build -- --configuration=production
+# Usar el script build del package.json (que ya tiene --configuration=production)
+RUN npm run build
 
-# ===== STAGE 2: Runtime =====
-FROM node:18-alpine
-
-WORKDIR /app
-
-# Instalar solo dependencias necesarias para el servidor
-RUN npm init -y && \
-    npm install express compression --save
-
-# Copiar archivos construidos desde builder
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/server.js ./
-
-# Crear usuario no-root
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S angular -u 1001
-
-# Cambiar ownership
-RUN chown -R angular:nodejs /app
-USER angular
+# Instalar express para el servidor
+RUN npm install express
 
 # Exponer puerto
 EXPOSE 4200
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "const http=require('http');http.get('http://localhost:4200/health',(r)=>r.statusCode===200?process.exit(0):process.exit(1))"
-
-# Ejecutar servidor
+# Ejecutar servidor Express
 CMD ["node", "server.js"]
