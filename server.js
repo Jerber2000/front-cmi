@@ -38,7 +38,7 @@ app.get('/health', (req, res) => {
 });
 
 // ✅ Manejo de rutas SPA - DEBE IR AL FINAL
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {  
   // Log para debugging
   console.log(`📍 Ruta solicitada: ${req.url}`);
   
