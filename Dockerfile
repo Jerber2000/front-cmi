@@ -16,7 +16,7 @@ RUN npm ci --silent
 COPY . .
 
 # Construir la aplicación Angular para producción
-RUN npm run build --prod
+RUN npm run build -- --configuration=production
 
 # ===== STAGE 2: Runtime =====
 FROM node:18-alpine
