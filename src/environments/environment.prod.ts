@@ -1,5 +1,7 @@
-  //environment.ts/environment.prod.ts
 export const environment = {
   production: true,
-  apiUrl: 'https://back-cmi-production.up.railway.app/api'
+  // ✅ USAR LA URL CORRECTA DEL BACKEND EN RAILWAY
+  apiUrl: 'https://back-production-280a.up.railway.app/api',
+  appName: 'CMI - Producción',
+  enableLogging: false
 };
