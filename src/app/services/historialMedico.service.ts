@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface HistorialMedico {
   idhistorial: number;
@@ -75,7 +76,8 @@ export interface ApiResponse<T> {
   providedIn: 'root'
 })
 export class HistorialMedicoService {
-  private apiUrl = 'http://localhost:3000/api/historial';
+  private apiUrl = `${environment.apiUrl}/historial`;
+
 
   constructor(private http: HttpClient) {}
 
