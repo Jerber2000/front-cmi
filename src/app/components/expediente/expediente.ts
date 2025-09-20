@@ -665,22 +665,14 @@ cargarExpedientes(): void {
  * Elimina un expediente con confirmación - VERSION SIMPLIFICADA
  */
 eliminarExpediente(id: number): void {
-  console.log('🗑️ Iniciando eliminación del expediente:', id);
-  
-  Swal.fire({
-    title: '¿Eliminar expediente?',
-    text: "Esta acción no se puede deshacer. Si tiene pacientes asignados no se podrá eliminar.",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#d33',
-    cancelButtonColor: '#3085d6',
-    confirmButtonText: 'Sí, eliminar',
-    cancelButtonText: 'Cancelar'
-  }).then((resultado: any) => {
-    if (resultado.isConfirmed) {
+  this.servicioAlerta.alertaConfirmacion(
+    '¿Eliminar expediente?',
+    'Esta acción no se puede deshacer. Si tiene pacientes asignados no se podrá eliminar.',
+    'Sí, eliminar',
+    'Cancelar'
+  ).then((confirmado: boolean) => {
+    if (confirmado) {
       this.ejecutarEliminacion(id);
-    } else {
-      console.log('❌ Usuario canceló eliminación');
     }
   });
 }

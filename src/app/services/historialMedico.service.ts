@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface HistorialMedico {
   idhistorial: number;
@@ -14,6 +15,7 @@ export interface HistorialMedico {
   recordatorio?: string;
   evolucion?: string;
   diagnosticotratamiento?: string;
+  rutahistorialclinico?: string;
   fechacreacion: string;
   fechamodificacion?: string;
   usuario?: {
@@ -75,7 +77,7 @@ export interface ApiResponse<T> {
   providedIn: 'root'
 })
 export class HistorialMedicoService {
-  private apiUrl = 'http://localhost:3000/api/historial';
+  private apiUrl = `${environment.apiUrl}/historial`;
 
   constructor(private http: HttpClient) {}
 
@@ -125,33 +127,14 @@ export class HistorialMedicoService {
     );
   }
 
-  subirArchivos(idpaciente: number, archivos: FileList): Observable<any> {
-    const formData = new FormData();
-    
-    for (let i = 0; i < archivos.length; i++) {
-      formData.append('archivos', archivos[i]);
-    }
-
-    const token = localStorage.getItem('token');
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`
-    });
-
-    return this.http.post<ApiResponse<any>>(
-      `${this.apiUrl}/subir-archivos/${idpaciente}`,
-      formData, 
-      { headers }
-    );
-  }
-
-  eliminarSesion(idhistorial: number): Observable<any> {
-    return this.http.delete<ApiResponse<any>>(
-      `${this.apiUrl}/eliminar-sesion/${idhistorial}`,
-      { headers: this.getHeaders() }
-    ).pipe(
-      map(response => response.data)
-    );
-  }
+eliminarSesion(idhistorial: number): Observable<any> {
+  return this.http.delete<ApiResponse<any>>(
+    `${this.apiUrl}/eliminar-sesion/${idhistorial}`, // ✅ Verificar que esta ruta exista en backend
+    { headers: this.getHeaders() }
+  ).pipe(
+    map(response => response.data)
+  );
+}
 
   formatearFechaInput(fecha: string): string {
     if (!fecha) return '';
@@ -163,6 +146,46 @@ export class HistorialMedicoService {
     const date = new Date(fecha);
     return date.toLocaleDateString('es-GT');
   }
+
+obtenerArchivosSesion(idHistorial: number): Observable<any[]> {
+  return this.http.get<ApiResponse<any[]>>(
+    `${this.apiUrl}/sesion/${idHistorial}/archivos`,
+    { headers: this.getHeaders() }
+  ).pipe(
+    map(response => response.data || [])
+  );
+}
+
+actualizarArchivoseSesion(idHistorial: number, rutaarchivos: string): Observable<any> {
+  return this.http.put<ApiResponse<any>>(
+    `${this.apiUrl}/sesion/${idHistorial}/archivos`,
+    { rutaarchivos },
+    { headers: this.getHeaders() }
+  ).pipe(
+    map(response => response.data)
+  );
+}
+
+
+// 1. Método para actualizar ruta de archivos
+actualizarRutaArchivos(idhistorial: number, rutaarchivos: string): Observable<any> {
+  return this.http.put<ApiResponse<any>>(
+    `${this.apiUrl}/sesion/${idhistorial}/archivos`, // ✅ Ruta correcta
+    { rutaarchivos }, // ✅ Nombre correcto del campo
+    { headers: this.getHeaders() }
+  ).pipe(map(response => response.data));
+}
+
+// 2. Método para obtener una sesión específica
+obtenerSesion(idhistorial: number): Observable<HistorialMedico> {
+  return this.http.get<ApiResponse<HistorialMedico>>(
+    `${this.apiUrl}/sesion/${idhistorial}`,
+    { headers: this.getHeaders() }
+  ).pipe(
+    map(response => response.data)
+  );
+}
+
 
   calcularEdad(fechaNacimiento: string): number {
     if (!fechaNacimiento) return 0;
@@ -178,3 +201,4 @@ export class HistorialMedicoService {
     return age;
   }
 }
+

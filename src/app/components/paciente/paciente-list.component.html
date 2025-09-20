@@ -1,10 +1,10 @@
 <!-- paciente-list.component.html -->
 <div class="content-area" [class.sidebar-expanded]="barraLateralExpandida">
-  <!-- Sidebar con información del usuario corregida -->
-   <app-sidebar [userInfo]="informacionUsuario"></app-sidebar>
+  <!-- Sidebar -->
+  <app-sidebar [userInfo]="informacionUsuario"></app-sidebar>
   
-  
- <div class="contenedor-menu">
+  <!-- Header -->
+  <div class="contenedor-menu">
     <header class="encabezado">
       <div class="contenido-encabezado">
         <div class="izquierda-encabezado">
@@ -49,219 +49,234 @@
     </div>
   </div>
 
-<!-- Lista de pacientes -->
-<div class="contenedor-tabla" *ngIf="vistaActual === 'lista'">
-  <table class="tabla-datos">
-    <thead>
-      <tr>
-        <th>Nombre del Paciente</th>
-        <th>Género</th>
-        <th>Edad</th>
-        <th>CUI</th>
-        <th>Teléfono</th>
-        <th>Historial</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let paciente of paginatedPacientes; let i = index" class="fila-tabla">
-        <td class="nombre-usuario" (click)="verPaciente(paciente)">
-          {{ paciente.nombres }} {{ paciente.apellidos }}
-        </td>
-        <td>{{ paciente.genero === 'M' ? 'Masculino' : 'Femenino' }}</td>
-        <td>{{ calcularEdad(paciente.fechanacimiento) }} años</td>
-        <td>{{ paciente.cui }}</td>
-        <td>{{ paciente.telefonopersonal || 'No registrado' }}</td>
-        <td>
-          <span *ngIf="obtenerInformacionExpedientePaciente(paciente).tieneExpediente" 
-                class="insignia-expediente expediente-existe">
-            <i class="fas fa-file-medical"></i>
-            {{ obtenerInformacionExpedientePaciente(paciente).numeroExpediente }}
-          </span>
-          <span *ngIf="!obtenerInformacionExpedientePaciente(paciente).tieneExpediente" 
-                class="insignia-expediente expediente-faltante">
-            <i class="fas fa-file-plus"></i>
-            Asignar Expediente
-          </span>
-        </td>
-        <!-- NUEVA COLUMNA DE ACCIONES CON MENÚ DE TRES PUNTOS -->
-        <td class="columna-acciones">
-          <div class="menu-tres-puntos" [class.activo]="menuAbierto === i">
-            <!-- Botón de tres puntos -->
-            <button 
-              class="boton-tres-puntos"
-              (click)="toggleMenu(i); $event.stopPropagation()"
-              type="button"
-            >
-              <span class="punto"></span>
-              <span class="punto"></span>
-              <span class="punto"></span>
-            </button>
-            
-            <!-- Menú contextual -->
-            <div class="menu-contextual" *ngIf="menuAbierto === i">
-              <div class="menu-header">
-                <span class="paciente-nombre">{{ paciente.nombres }} {{ paciente.apellidos }}</span>
-              </div>
-              
-              <div class="menu-items">
-                <button 
-                  class="menu-item historial" 
-                  (click)="verHistorialClinico(paciente); cerrarMenu()"
-                  type="button"
-                >
-                  <div class="item-icono">📋</div>
-                  <div class="item-texto">
-                    <span class="item-titulo">Historial Clínico</span>
-                    <span class="item-desc">Ver historial médico</span>
-                  </div>
-                </button>
-                
-                <button 
-                  class="menu-item editar" 
-                  (click)="editarPaciente(paciente); cerrarMenu()"
-                  type="button"
-                >
-                  <div class="item-icono">✏️</div>
-                  <div class="item-texto">
-                    <span class="item-titulo">Editar Paciente</span>
-                    <span class="item-desc">Modificar información</span>
-                  </div>
-                </button>
-                
-                <button 
-                  *ngIf="!obtenerInformacionExpedientePaciente(paciente).tieneExpediente"
-                  class="menu-item expediente" 
-                  (click)="crearExpedientePaciente(paciente); cerrarMenu()"
-                  type="button"
-                >
-                  <div class="item-icono">📄</div>
-                  <div class="item-texto">
-                    <span class="item-titulo">Crear Expediente</span>
-                    <span class="item-desc">Nuevo expediente médico</span>
-                  </div>
-                </button>
-
-                <!-- SE OCULTA EL BOTON DE VER EXPEDIENTE POR AHORA
-                <button 
-                  *ngIf="obtenerInformacionExpedientePaciente(paciente).tieneExpediente"
-                  class="menu-item expediente" 
-                  (click)="verExpedientePaciente(paciente); cerrarMenu()"
-                  type="button"
-                >
-                  <div class="item-icono">👁️</div>
-                  <div class="item-texto">
-                    <span class="item-titulo">Ver Expediente</span>
-                    <span class="item-desc">Expediente #{{ obtenerInformacionExpedientePaciente(paciente).numeroExpediente }}</span>
-                  </div>
-                </button>
-                -->
-                
-                <div class="menu-separador"></div>
-                
-                <button 
-                  class="menu-item eliminar" 
-                  (click)="eliminarPaciente(paciente.idpaciente!); cerrarMenu()"
-                  type="button"
-                >
-                  <div class="item-icono">🗑️</div>
-                  <div class="item-texto">
-                    <span class="item-titulo">Eliminar Paciente</span>
-                    <span class="item-desc">Eliminar permanentemente</span>
-                  </div>
-                </button>
-              </div>
+  <!-- Lista de pacientes -->
+  <div class="contenedor-tabla" *ngIf="vistaActual === 'lista'">
+    <table class="tabla-datos">
+      <thead>
+        <tr>
+          <th>Nombre del Paciente</th>
+          <th>Género</th>
+          <th>Edad</th>
+          <th>CUI</th>
+          <th>Teléfono</th>
+          <th>Historial</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let paciente of paginatedPacientes; let i = index" class="fila-tabla">
+          <td class="nombre-usuario" (click)="verPaciente(paciente)">
+            {{ paciente.nombres }} {{ paciente.apellidos }}
+          </td>
+          <td>{{ paciente.genero === 'M' ? 'Masculino' : 'Femenino' }}</td>
+          <td>{{ calcularEdad(paciente.fechanacimiento) }} años</td>
+          <td>{{ paciente.cui }}</td>
+          <td>{{ paciente.telefonopersonal || 'No registrado' }}</td>
+          <td>
+            <span *ngIf="obtenerInformacionExpedientePaciente(paciente).tieneExpediente" 
+                  class="insignia-expediente expediente-existe">
+              <i class="fas fa-file-medical"></i>
+              {{ obtenerInformacionExpedientePaciente(paciente).numeroExpediente }}
+            </span>
+            <span *ngIf="!obtenerInformacionExpedientePaciente(paciente).tieneExpediente" 
+                  class="insignia-expediente expediente-faltante">
+              <i class="fas fa-file-plus"></i>
+              Asignar Expediente
+            </span>
+          </td>
+          <!-- Columna de acciones con menú de tres puntos -->
+          <td class="columna-acciones">
+            <div class="contenedor-boton-acciones">
+              <button 
+                class="boton-tres-puntos"
+                (click)="abrirModalAcciones(paciente, i)"
+                type="button"
+                [attr.aria-label]="'Opciones para ' + paciente.nombres + ' ' + paciente.apellidos"
+              >
+                <span class="punto"></span>
+                <span class="punto"></span>
+                <span class="punto"></span>
+              </button>
             </div>
-          </div>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
 
-  <!-- Resto del código de paginación permanece igual... -->
-  <div class="pagination-container" *ngIf="totalItems > 0">
-    <!-- Navegación de páginas (solo si hay más de 1 página) -->
-    <div class="pagination" *ngIf="totalPages > 1">
-      <!-- Botón anterior -->
-      <button 
-        class="pagination-btn" 
-        [class.disabled]="currentPage === 1"
-        (click)="previousPage()"
-        [disabled]="currentPage === 1"
-      >
-        <i class="fas fa-chevron-left"></i>
-      </button>
+    <!-- Paginación -->
+    <div class="pagination-container" *ngIf="totalItems > 0">
+      <!-- Navegación de páginas (solo si hay más de 1 página) -->
+      <div class="pagination" *ngIf="totalPages > 1">
+        <!-- Botón anterior -->
+        <button 
+          class="pagination-btn" 
+          [class.disabled]="currentPage === 1"
+          (click)="previousPage()"
+          [disabled]="currentPage === 1"
+        >
+          <i class="fas fa-chevron-left"></i>
+        </button>
 
-      <!-- Primera página -->
-      <button 
-        *ngIf="getPages()[0] > 1"
-        class="pagination-btn"
-        (click)="goToPage(1)"
-      >
-        1
-      </button>
+        <!-- Primera página -->
+        <button 
+          *ngIf="getPages()[0] > 1"
+          class="pagination-btn"
+          (click)="goToPage(1)"
+        >
+          1
+        </button>
+        
+        <!-- Puntos suspensivos si hay salto -->
+        <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
+
+        <!-- Páginas visibles -->
+        <button 
+          *ngFor="let page of getPages()"
+          class="pagination-btn"
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)"
+        >
+          {{ page }}
+        </button>
+
+        <!-- Puntos suspensivos si hay salto al final -->
+        <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
+
+        <!-- Última página -->
+        <button 
+          *ngIf="getPages()[getPages().length - 1] < totalPages"
+          class="pagination-btn"
+          (click)="goToPage(totalPages)"
+        >
+          {{ totalPages }}
+        </button>
+
+        <!-- Botón siguiente -->
+        <button 
+          class="pagination-btn" 
+          [class.disabled]="currentPage === totalPages"
+          (click)="nextPage()"
+          [disabled]="currentPage === totalPages"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <!-- Mostrar mensaje si solo hay una página -->
+      <div *ngIf="totalPages <= 1" class="pagination-single">
+        Página 1 de 1
+      </div>
+
+      <!-- Selector de elementos por página -->
+      <div class="items-per-page">
+        <label>Mostrar:</label>
+        <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
+          <option [value]="5">5</option>
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+        </select>
+        <span>por página</span>
+      </div>
+    </div>
+    
+    <!-- Estado sin datos -->
+    <div *ngIf="pacientesFiltrados.length === 0 && !cargando" class="estado-vacio">
+      <i class="fas fa-users"></i>
+      <h3>No se encontraron pacientes</h3>
+      <p>No hay pacientes que coincidan con su búsqueda</p>
+    </div>
+  </div>
+
+  <!-- Modal de Acciones del Paciente (CORREGIDO) -->
+  <div class="modal-acciones-overlay" *ngIf="modalAccionesAbierto" (click)="cerrarModalAcciones()">
+    <div class="modal-acciones-container" (click)="$event.stopPropagation()">
       
-      <!-- Puntos suspensivos si hay salto -->
-      <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
+      <!-- Header del modal -->
+      <div class="modal-acciones-header">
+        <div class="paciente-info">
+          <div class="paciente-avatar">
+            <span>{{ obtenerIniciales(pacienteSeleccionadoAcciones?.nombres, pacienteSeleccionadoAcciones?.apellidos) }}</span>
+          </div>
+          <div class="paciente-datos">
+            <h3 class="paciente-nombre-modal">{{ pacienteSeleccionadoAcciones?.nombres }} {{ pacienteSeleccionadoAcciones?.apellidos }}</h3>
+            <p class="paciente-cui">CUI: {{ pacienteSeleccionadoAcciones?.cui }}</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" (click)="cerrarModalAcciones()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
 
-      <!-- Páginas visibles -->
-      <button 
-        *ngFor="let page of getPages()"
-        class="pagination-btn"
-        [class.active]="page === currentPage"
-        (click)="goToPage(page)"
-      >
-        {{ page }}
-      </button>
+      <!-- Acciones disponibles -->
+      <div class="modal-acciones-content">
+        
+        <!-- Historial Clínico -->
+        <button 
+          class="accion-btn accion-historial" 
+          (click)="verHistorialClinicoDesdeModal(pacienteSeleccionadoAcciones!)"
+        >
+          <div class="accion-icon">
+            <i class="fas fa-file-medical-alt"></i>
+          </div>
+          <div class="accion-info">
+            <span class="accion-titulo">Historial Clínico</span>
+            <span class="accion-descripcion">Ver y gestionar historial médico</span>
+          </div>
+          <div class="accion-arrow">
+            <i class="fas fa-chevron-right"></i>
+          </div>
+        </button>
 
-      <!-- Puntos suspensivos si hay salto al final -->
-      <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
+        <!-- Editar Paciente -->
+        <button 
+          class="accion-btn accion-editar" 
+          (click)="editarPacienteDesdeModal(pacienteSeleccionadoAcciones!)"
+        >
+          <div class="accion-icon">
+            <i class="fas fa-user-edit"></i>
+          </div>
+          <div class="accion-info">
+            <span class="accion-titulo">Editar Paciente</span>
+            <span class="accion-descripcion">Modificar información personal</span>
+          </div>
+          <div class="accion-arrow">
+            <i class="fas fa-chevron-right"></i>
+          </div>
+        </button>
 
-      <!-- Última página -->
-      <button 
-        *ngIf="getPages()[getPages().length - 1] < totalPages"
-        class="pagination-btn"
-        (click)="goToPage(totalPages)"
-      >
-        {{ totalPages }}
-      </button>
 
-      <!-- Botón siguiente -->
-      <button 
-        class="pagination-btn" 
-        [class.disabled]="currentPage === totalPages"
-        (click)="nextPage()"
-        [disabled]="currentPage === totalPages"
-      >
-        <i class="fas fa-chevron-right"></i>
-      </button>
-    </div>
+        <!-- Separador -->
+        <div class="accion-separador"></div>
 
-    <!-- Mostrar mensaje si solo hay una página -->
-    <div *ngIf="totalPages <= 1" class="pagination-single">
-      Página 1 de 1
-    </div>
+        <!-- Eliminar Paciente -->
+        <button 
+          class="accion-btn accion-eliminar" 
+          (click)="eliminarPacienteDesdeModal(pacienteSeleccionadoAcciones!)"
+        >
+          <div class="accion-icon">
+            <i class="fas fa-trash-alt"></i>
+          </div>
+          <div class="accion-info">
+            <span class="accion-titulo">Eliminar Paciente</span>
+            <span class="accion-descripcion">Eliminar permanentemente</span>
+          </div>
+          <div class="accion-arrow">
+            <i class="fas fa-chevron-right"></i>
+          </div>
+        </button>
 
-    <!-- Selector de elementos por página -->
-    <div class="items-per-page">
-      <label>Mostrar:</label>
-      <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
-        <option [value]="5">5</option>
-        <option [value]="10">10</option>
-        <option [value]="20">20</option>
-        <option [value]="50">50</option>
-      </select>
-      <span>por página</span>
+      </div>
+
+      <!-- Footer del modal -->
+      <div class="modal-acciones-footer">
+        <button class="btn-cancelar-modal" (click)="cerrarModalAcciones()">
+          Cancelar
+        </button>
+      </div>
+
     </div>
   </div>
-  
-  <!-- Estado sin datos -->
-  <div *ngIf="pacientesFiltrados.length === 0 && !cargando" class="estado-vacio">
-    <i class="fas fa-users"></i>
-    <h3>No se encontraron pacientes</h3>
-    <p>No hay pacientes que coincidan con su búsqueda</p>
-  </div>
-</div>
 
   <!-- Modal de formulario -->
   <div class="fondo-modal" *ngIf="vistaActual === 'formulario'" (click)="cerrarModal()">
