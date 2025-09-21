@@ -3,7 +3,7 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
+import { AuthService } from '../../services/auth.service';
 
 export interface MenuItem {
   label: string;
@@ -78,7 +78,10 @@ export class SidebarComponent {
     }
   ];
 
-  constructor(private router: Router, private http: HttpClient) {}
+  constructor(
+    private router: Router, 
+    private authService: AuthService
+  ){}
 
   get currentMenuItems(): MenuItem[] {
     return this.menuItems.length > 0 ? this.menuItems : this.defaultMenuItems;
@@ -98,37 +101,20 @@ export class SidebarComponent {
     this.menuItemClick.emit(item);
   }
 
-  onSubMenuItemClick(item: MenuItem) {
+    onSubMenuItemClick(item: MenuItem) {
     if (item.label === 'Cerrar Sesion') {
-      this.logout();
+      this.authService.logout(); // Usar tu servicio existente
     } else if (item.route) {
-
-      // ✅ AGREGAR navegación
       this.router.navigate([item.route]);
       this.menuItemClick.emit(item);
     } else {
       this.menuItemClick.emit(item);
-
     }
-    this.menuItemClick.emit(item);
   }
 
   onUserNameClick() {
     this.router.navigate(['/menu']);
   }
 
-  logout() {
-    this.http.post('http://localhost:3000/api/auth/logout', {}).subscribe({
-      next: () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('usuario');
-        this.router.navigate(['/login']);
-      },
-      error: () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('usuario');
-        this.router.navigate(['/login']);
-      }
-    });
-  }
+
 }
