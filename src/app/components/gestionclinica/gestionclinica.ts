@@ -72,7 +72,7 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
   private readonly archivoService = inject(ArchivoService);
 
   // Propiedades del componente
-  public sidebarExpanded = false;
+  public sidebarExpanded = true;
   public userInfo: UserInfo = { name: 'Usuario', permissions: [] };
 
   // Propiedades computadas
@@ -105,7 +105,7 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   ngAfterViewInit(): void {
-    this.checkSidebarState();
+    this.sidebarExpanded = false; // Empezar siempre contraído
   }
 
   ngOnDestroy(): void {
