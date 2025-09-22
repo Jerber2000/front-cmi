@@ -561,6 +561,7 @@ private limpiarArchivosSeleccionados(): void {
   private tieneArchivosParaSubir(): boolean {
     return !!(this.selectedFotoPaciente || this.selectedFotoEncargado || this.selectedCartaAutorizacion);
   }
+  
 //Sube todos los archivos seleccionados
 private async subirTodosLosArchivos(pacienteId: number): Promise<{ rutaFotoPaciente?: string, rutaFotoEncargado?: string, rutaCartaAutorizacion?: string }> {
   if (!this.tieneArchivosParaSubir()) {
