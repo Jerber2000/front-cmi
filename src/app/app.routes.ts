@@ -2,6 +2,7 @@ import type { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { cambioClaveGuard } from './guards/cambioClave.guard';
 import { HistorialMedicoComponent } from './components/historialMedico/historialMedico';
+import { AgendaComponent } from './components/agenda/agenda.component';
 
 export const routes: Routes = [
   {
@@ -49,7 +50,7 @@ export const routes: Routes = [
       import('./components/historialMedico/historialMedico').then(m => m.HistorialMedicoComponent),
     canActivate: [authGuard],
   },
-
+  { path: 'agenda', component: AgendaComponent },
   {
     path: '',
     redirectTo: '/login',

@@ -55,6 +55,8 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
   // Exponer Math para usar en el template
   Math = Math;
 
+  private currentUserId: string = '1';
+
   constructor(
     private UsuarioService: UsuarioService,
     private fb: FormBuilder,
@@ -82,6 +84,28 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
       observaciones: [''],
       status: ['', [Validators.required]]
     });
+  }
+
+    /**
+   * Obtiene el ID del usuario logueado desde localStorage
+   */
+  private getCurrentUserId(): string {
+    try {
+      const usuarioData = localStorage.getItem('usuario');
+      if (usuarioData) {
+        const usuario = JSON.parse(usuarioData);
+        
+        const userId = usuario.idusuario;
+        if (userId) {
+          return userId.toString();
+        }
+      }
+    } catch (error) {
+      console.error('Error al obtener el ID del usuario desde localStorage:', error);
+    }
+    
+    // Valor por defecto si no se puede obtener
+    return '1';
   }
 
   isFieldInvalid(fieldName: string): boolean {
@@ -175,6 +199,7 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
+    this.currentUserId = this.getCurrentUserId();
     this.loadUserInfo();
     this.loadUsers();
     this.loadRoles();
@@ -658,6 +683,8 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
           rutaDocumento = resultadoArchivos.rutaDocumento || '';
         }
 
+        const currentUserId = this.getCurrentUserId();
+
         const userData: Omit<Usuario, 'idusuario'> = {
           fkrol: parseInt(formData.role),
           usuario: formData.usuario,
@@ -677,7 +704,8 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
           telefonoemergencia: formData.telEmergencia || '',
           rutafotoperfil: rutaFoto || (this.selectedUser?.rutafotoperfil || ''),
           observaciones: formData.observaciones || '',
-          usuariocreacion: '1',
+          usuariocreacion: currentUserId,
+          usuariomodificacion: currentUserId,
           estado: parseInt(formData.status)
         };
 

@@ -34,30 +34,23 @@ export class SidebarComponent {
       label: 'Gestión de usuarios',
       icon: 'fas fa-users',
       children: [
-        { label: 'Pacientes', route: '/pacientes' },
-        { label: 'Expedientes', route: '/expedientes' },
-        { label: 'Traslados', route: '/pacientes/traslados' },
-        { label: 'Citas', route: '/pacientes/citas' },
         { label: 'Usuarios', route: '/usuario' } 
       ]
     },
     {
-      label: 'Gestión de clínica',
-      icon: 'fas fa-hospital',
+      label: 'Gestión de Pacientes',
+      icon: 'fas fa-hospital-user',
       children: [
-        { label: 'Administración', route: '/clinica/admin' },
-        { label: 'Educación Inclusiva', route: '/clinica/educacion' },
-        { label: 'Fisioterapia', route: '/clinica/fisioterapia' },
-        { label: 'Medicina General', route: '/clinica/medicina' },
-        { label: 'Nutrición', route: '/clinica/nutricion' },
-        { label: 'Psicología', route: '/clinica/psicologia' }
+        { label: 'Pacientes', route: '/pacientes' },
+        { label: 'Expedientes', route: '/expedientes' }
+        // { label: 'Traslados', route: '/pacientes/traslados' }
       ]
     },
     {
-      label: 'Informes',
-      icon: 'fas fa-chart-bar',
+      label: 'Gestión Clinica',
+      icon: 'fas fa-hospital',
       children: [
-        { label: 'Informes de pacientes', route: '/informes/pacientes' }
+        { label: 'Agenda', route: '/agenda' }
       ]
     },
     {

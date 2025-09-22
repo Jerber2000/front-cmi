@@ -24,6 +24,7 @@ export interface Usuario {
     rutafotoperfil:           string;
     observaciones?:           string;
     usuariocreacion:          string;
+    usuariomodificacion?:     string;
     estado:                   number;
 }
 

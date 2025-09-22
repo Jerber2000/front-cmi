@@ -1,0 +1,342 @@
+<div class="content-area" [class.sidebar-expanded]="sidebarExpanded">
+  <app-sidebar [userInfo]="userInfo"></app-sidebar>
+  <div class="menu-container">
+    <header class="header">
+      <div class="header-content">
+        <div class="header-left">
+          <div class="header-text">
+            <h1 class="title">Agenda</h1>
+          </div>
+          <img src="assets/img/LogoFraijanes.png" alt="Logo Fraijanes" class="logo">
+        </div>
+      </div>
+    </header>
+    
+    <!-- Barra de herramientas -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <button 
+          class="btn btn-primary btn-add"
+          (click)="abrirModalNuevaCita()"
+          title="Nueva Cita">
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
+
+      <div class="toolbar-center">
+        <!-- Select centrado -->
+        <div class="agenda-controls">
+          <select 
+            class="form-select form-select-sm"
+            [(ngModel)]="selectedMedico"
+            (change)="filtrarPorMedico()"
+            title="Filtrar por médico">
+            <option value="">Todos los médicos</option>
+            <option *ngFor="let medico of medicos" [value]="medico.id">
+              Dr. {{ medico.nombres }} {{ medico.apellidos }}
+            </option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="toolbar-right">
+        <div class="header-right">
+          <span class="fecha">Fecha: {{ fechaActual }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calendario directo sin main-content -->
+    <div class="calendar-wrapper">
+      <!-- Loading spinner -->
+      <div *ngIf="loading" class="loading-overlay">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+
+      <!-- Header personalizado del calendario -->
+      <div class="calendar-header">
+        <div class="calendar-nav">
+          <button 
+            class="btn btn-sm btn-outline-secondary"
+            (click)="navegarMes('prev')"
+            title="Mes anterior">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          
+          <h4 class="calendar-title">{{ tituloCalendario }}</h4>
+          
+          <button 
+            class="btn btn-sm btn-outline-secondary"
+            (click)="navegarMes('next')"
+            title="Mes siguiente">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+          
+          <div class="calendar-actions">
+            <button 
+              class="btn btn-sm btn-primary me-2"
+              (click)="irAHoy()"
+              title="Ir a hoy">
+              Hoy
+            </button>
+            
+            <!-- Controles de vista aquí -->
+            <div class="view-controls">
+              <button 
+                class="btn btn-sm"
+                (click)="cambiarVista('dayGridMonth')"
+                [class.active]="currentView === 'dayGridMonth'"
+                title="Vista Mensual">
+                <i class="fas fa-calendar"></i>
+              </button>
+              <button 
+                class="btn btn-sm"
+                (click)="cambiarVista('timeGridWeek')"
+                [class.active]="currentView === 'timeGridWeek'"
+                title="Vista Semanal">
+                <i class="fas fa-calendar-week"></i>
+              </button>
+              <button 
+                class="btn btn-sm"
+                (click)="cambiarVista('timeGridDay')"
+                [class.active]="currentView === 'timeGridDay'"
+                title="Vista Diaria">
+                <i class="fas fa-calendar-day"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- FullCalendar -->
+      <full-calendar [options]="calendarOptions"></full-calendar>
+    </div>
+
+    <!-- Leyenda de colores -->
+    <div class="calendar-legend">
+      <h6>Médicos:</h6>
+      <div class="legend-items">
+        <div class="legend-item" *ngFor="let medico of medicos">
+          <span class="color-box" [style.background-color]="getColorPorMedico(medico.id)"></span>
+          <span>Dr. {{ medico.nombres }} {{ medico.apellidos }}</span>
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- Cerrar menu-container -->
+</div> <!-- Cerrar content-area -->
+
+<!-- Modal para crear/editar/ver citas -->
+<div 
+  class="modal fade"
+  [class.show]="showModal"
+  [style.display]="showModal ? 'block' : 'none'"
+  tabindex="-1"
+  role="dialog"
+  *ngIf="showModal">
+  
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-calendar-plus" *ngIf="modalMode === 'create'"></i>
+          <i class="fas fa-calendar-edit" *ngIf="modalMode === 'edit'"></i>
+          <i class="fas fa-calendar-check" *ngIf="modalMode === 'view'"></i>
+          
+          <span *ngIf="modalMode === 'create'"> Nueva Cita</span>
+          <span *ngIf="modalMode === 'edit'"> Editar Cita</span>
+          <span *ngIf="modalMode === 'view'"> Detalles de la Cita</span>
+        </h5>
+        <button 
+          type="button" 
+          class="btn-close" 
+          (click)="cerrarModal()"
+          aria-label="Close">
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Formulario para crear/editar -->
+        <form *ngIf="modalMode === 'create' || modalMode === 'edit'" [formGroup]="citaForm" (ngSubmit)="guardarCita()">
+          <div class="row">
+            <div class="col-md-12">
+              <div class="mb-3">
+                <label for="paciente" class="form-label">Paciente *</label>
+                <select class="form-select" id="paciente" formControlName="fkpaciente" required>
+                  <option value="">Seleccionar paciente</option>
+                  <option *ngFor="let paciente of pacientes" [value]="paciente.id">
+                    {{ paciente.nombres }} {{ paciente.apellidos }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="nombreEncargado" class="form-label">Nombre Encargado *</label>
+                <input type="text" class="form-control" id="nombreEncargado" formControlName="nombreEncargado" required readonly>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="contactoEncargado" class="form-label">Contacto de Encargado *</label>
+                <input type="text" class="form-control" id="contactoEncargado" formControlName="contactoEncargado" required readonly>
+              </div>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-12">
+              <div class="mb-3">
+                <label for="medico" class="form-label">Nombre del Profesional *</label>
+                <select class="form-select" id="medico" formControlName="fkusuario" required>
+                  <option value="">Seleccionar médico</option>
+                  <option *ngFor="let medico of medicos" [value]="medico.id">
+                    Dr. {{ medico.nombres }} {{ medico.apellidos }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="fecha" class="form-label">Fecha *</label>
+                <input type="date" class="form-control" id="fecha" formControlName="fechaatencion" required>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="hora" class="form-label">Horarios disponibles *</label>
+                <select class="form-select" id="hora" formControlName="horaatencion" required>
+                  <option value="">Seleccionar hora</option>
+                  <option *ngFor="let slot of slotsDisponibles" [value]="slot.hora">
+                    {{ slot.hora }}
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label for="comentario" class="form-label">Comentarios</label>
+            <textarea class="form-control" id="comentario" formControlName="comentario" rows="3"></textarea>
+          </div>
+          
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="transporte" formControlName="transporte">
+              <label class="form-check-label" for="transporte">
+                Agregar transporte
+              </label>
+            </div>
+          </div>
+          
+          <div class="row" *ngIf="citaForm.get('transporte')?.value">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="horaTransporte" class="form-label">Horario de transporte</label>
+                <input type="time" class="form-control" id="horaTransporte" formControlName="horariotransporte">
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="direccionTransporte" class="form-label">Dirección de Transporte</label>
+              <textarea class="form-control" id="direccionTransporte" formControlName="direccionTransporte" rows="3"></textarea>
+            </div>
+          </div>
+        </form>
+        
+        <!-- Vista de detalles -->
+        <div *ngIf="modalMode === 'view' && selectedCita" class="cita-details">
+          <div class="row">
+            <div class="col-md-6">
+              <h6>Paciente:</h6>
+              <p>{{ selectedCita.paciente.nombres }} {{ selectedCita.paciente.apellidos }}</p>
+              <small class="text-muted">CUI: {{ selectedCita.paciente.cui }}</small>
+            </div>
+            <div class="col-md-6">
+              <h6>Médico:</h6>
+              <p>Dr. {{ selectedCita.usuario.nombres }} {{ selectedCita.usuario.apellidos }}</p>
+              <small class="text-muted">{{ selectedCita.usuario.profesion }}</small>
+            </div>
+          </div>
+          
+          <div class="row mt-3">
+            <div class="col-md-6">
+              <h6>Fecha:</h6>
+              <p>{{ selectedCita.fechaatencion | date:'fullDate':'':'es' }}</p>
+            </div>
+            <div class="col-md-6">
+              <h6>Hora:</h6>
+              <p>{{ selectedCita.horaatencion }}</p>
+            </div>
+          </div>
+          
+          <div class="row mt-3" *ngIf="selectedCita.comentario">
+            <div class="col-12">
+              <h6>Comentarios:</h6>
+              <p>{{ selectedCita.comentario }}</p>
+            </div>
+          </div>
+          
+          <div class="row mt-3" *ngIf="selectedCita.transporte">
+            <div class="col-12">
+              <h6>Transporte:</h6>
+              <p>
+                <i class="fas fa-bus text-primary"></i>
+                Fecha: {{ selectedCita.fechatransporte | date:'shortDate':'':'es' }}
+                Hora: {{ selectedCita.horariotransporte }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button 
+          type="button" 
+          class="btn btn-secondary" 
+          (click)="cerrarModal()">
+          Cerrar
+        </button>
+        
+        <div *ngIf="modalMode === 'view'" class="btn-group">
+          <button 
+            type="button" 
+            class="btn btn-primary"
+            (click)="editarCita()">
+            <i class="fas fa-edit"></i> Editar
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-danger"
+            (click)="eliminarCita()">
+            <i class="fas fa-trash"></i> Eliminar
+          </button>
+        </div>
+        
+        <button 
+          *ngIf="modalMode === 'create' || modalMode === 'edit'"
+          type="button" 
+          class="btn btn-primary btn-save"
+          [disabled]="citaForm.invalid"
+          (click)="guardarCita()">
+          <i class="fas fa-save"></i>
+          {{ modalMode === 'create' ? 'Crear Cita' : 'Guardar Cambios' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop del modal -->
+<div 
+  class="modal-backdrop fade"
+  [class.show]="showModal"
+  *ngIf="showModal"
+  (click)="cerrarModal()">
+</div>
