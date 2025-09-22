@@ -11,6 +11,7 @@ import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { NgxPaginationModule } from 'ngx-pagination';
 import { PdfService } from '../../services/pdf.service';
+import { ArchivoService } from '../../services/archivo.service';
 
 
 
@@ -73,6 +74,7 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
     private servicioExpediente: ServicioExpediente,
     private fb: FormBuilder,
     private servicioAlerta: AlertaService,
+    private archivoService: ArchivoService,
     private pdfService: PdfService
   ) {
     this.formularioExpediente = this.crearFormulario();
@@ -190,20 +192,21 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
    */
   cargarInformacionUsuario(): void {
     try {
-      const datosUsuario = localStorage.getItem('usuario');
-      if (datosUsuario) {
-        const usuario = JSON.parse(datosUsuario);
+      const usuarioData = localStorage.getItem('usuario');
+      if (usuarioData) {
+        const usuario = JSON.parse(usuarioData);
         this.informacionUsuario = {
-          name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim() || 'Usuario',
-          avatar: usuario.avatar || null
+          name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim(),
+          avatar: usuario.rutafotoperfil ? 
+            this.archivoService.obtenerUrlPublica(usuario.rutafotoperfil) : null  // ✅ CAMBIAR esta línea
         };
       }
     } catch (error) {
       console.error('Error al cargar información del usuario:', error);
-      this.informacionUsuario = { name: 'Usuario', avatar: null }; // ✅ Fallback
+      this.informacionUsuario = { name: 'Usuario', avatar: null };
     }
     
-    // ✅ AGREGAR: Restaurar estado del sidebar
+    // Restaurar estado del sidebar
     const sidebarState = localStorage.getItem('sidebarExpanded');
     if (sidebarState !== null) {
       this.barraLateralExpandida = sidebarState === 'true';
@@ -662,22 +665,14 @@ cargarExpedientes(): void {
  * Elimina un expediente con confirmación - VERSION SIMPLIFICADA
  */
 eliminarExpediente(id: number): void {
-  console.log('🗑️ Iniciando eliminación del expediente:', id);
-  
-  Swal.fire({
-    title: '¿Eliminar expediente?',
-    text: "Esta acción no se puede deshacer. Si tiene pacientes asignados no se podrá eliminar.",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#d33',
-    cancelButtonColor: '#3085d6',
-    confirmButtonText: 'Sí, eliminar',
-    cancelButtonText: 'Cancelar'
-  }).then((resultado: any) => {
-    if (resultado.isConfirmed) {
+  this.servicioAlerta.alertaConfirmacion(
+    '¿Eliminar expediente?',
+    'Esta acción no se puede deshacer. Si tiene pacientes asignados no se podrá eliminar.',
+    'Sí, eliminar',
+    'Cancelar'
+  ).then((confirmado: boolean) => {
+    if (confirmado) {
       this.ejecutarEliminacion(id);
-    } else {
-      console.log('❌ Usuario canceló eliminación');
     }
   });
 }

@@ -6,7 +6,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { FormsModule } from '@angular/forms';
 import { ServicioPaciente, Paciente, RespuestaPaciente } from '../../services/paciente.service';
 import { ServicioExpediente } from '../../services/expediente.service'; 
-import { FileService, FileUploadResponse } from '../../services/file.service';
+import { ArchivoService } from '../../services/archivo.service';
 import { AlertaService } from '../../services/alerta.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { Subject } from 'rxjs';
@@ -16,10 +16,10 @@ import { HostListener } from '@angular/core';
 
 // Interfaz para la información del usuario
 export interface InformacionUsuario {
-  name?: string;
+  name: string;        
+  avatar?: string | undefined;      
   nombres?: string;
   apellidos?: string;
-  avatar?: string;
   rol?: string;
 }
 
@@ -44,15 +44,13 @@ export class PacienteListaComponent implements OnInit, AfterViewInit, OnDestroy 
   @ViewChild(ExpedienteListaComponent) componenteExpediente!: ExpedienteListaComponent;
   private destruir$ = new Subject<void>();
 
-  // Listener para cerrar dropdown al hacer clic fuera
-@HostListener('document:click', ['$event'])
-onDocumentClick(event: Event): void {
-  const target = event.target as HTMLElement;
-  if (!target.closest('.menu-tres-puntos')) {
-    this.menuAbierto = null;
+
+  @HostListener('document:keydown.escape', ['$event'])
+onEscapeKey(event: KeyboardEvent): void {
+  if (this.modalAccionesAbierto) {
+    this.cerrarModalAcciones();
   }
 }
-  
   // Estados de la aplicación
   vistaActual: 'lista' | 'formulario' | 'detalle' | 'modal-expediente' = 'lista';
   datosExpedientePaciente: any = null;
@@ -78,6 +76,16 @@ onDocumentClick(event: Event): void {
   
   // Formulario
   formularioPaciente: FormGroup;
+
+    // Archivos seleccionados
+  selectedFotoPaciente: File | null = null;
+  selectedFotoEncargado: File | null = null;
+  selectedCartaAutorizacion: File | null = null;
+
+  // Previews específicos para pacientes
+  fotoPacientePreview: string | null = null;
+  fotoEncargadoPreview: string | null = null;
+  cartaAutorizacionPreview: string | null = null;
   
   // Variables de archivos (mantener compatibilidad con HTML)
   fotoSeleccionada: string | null = null;
@@ -85,34 +93,30 @@ onDocumentClick(event: Event): void {
   cartaSeleccionada: string | null = null;
   esCartaPDF = false;
   
-  dropdownAbierto: number | null = null;
-  menuAbierto: number | null = null;
 
-// Métodos para manejar el dropdown
-toggleMenu(index: number): void {
-  // Si el menú ya está abierto en este índice, cerrarlo
-  if (this.menuAbierto === index) {
-    this.menuAbierto = null;
-  } else {
-    // Cerrar cualquier menú abierto y abrir el nuevo
-    this.menuAbierto = index;
-  }
+  modalAccionesAbierto = false;
+  pacienteSeleccionadoAcciones: Paciente | null = null;
+
+
+abrirModalAcciones(paciente: Paciente, index: number): void {
+  this.pacienteSeleccionadoAcciones = paciente;
+  this.modalAccionesAbierto = true;
+  document.body.style.overflow = 'hidden';
 }
 
-cerrarMenu(): void {
-  this.menuAbierto = null;
+cerrarModalAcciones(): void {
+  this.modalAccionesAbierto = false;
+  this.pacienteSeleccionadoAcciones = null;
+  document.body.style.overflow = 'auto';
 }
 
-cerrarDropdown(): void {
-  this.dropdownAbierto = null;
+obtenerIniciales(nombres?: string, apellidos?: string): string {
+  if (!nombres && !apellidos) return '??';
+  const inicial1 = nombres ? nombres.charAt(0).toUpperCase() : '';
+  const inicial2 = apellidos ? apellidos.charAt(0).toUpperCase() : '';
+  return inicial1 + inicial2 || '??';
 }
 
-  // Archivos seleccionados para subida
-  private archivosSeleccionados: {
-    perfil?: File;
-    encargado?: File;
-    carta?: File;
-  } = {};
   
   // Búsqueda y paginación
   terminoBusqueda = '';
@@ -125,10 +129,9 @@ cerrarDropdown(): void {
   // Interfaz de usuario
   fechaActual = new Date();
   barraLateralExpandida = true;
-  informacionUsuario: InformacionUsuario = {
+  informacionUsuario: any = {
     name: 'Usuario',
-    rol: 'Administrador',
-    avatar: 'assets/img/avatar-default.png'
+    avatar: null
   };
   error = '';
 
@@ -137,7 +140,7 @@ cerrarDropdown(): void {
     private servicioExpediente: ServicioExpediente,
     private fb: FormBuilder,
     private servicioAlerta: AlertaService,
-    private servicioArchivo: FileService,
+    private archivoService: ArchivoService,
     private router: Router
   ) {
     this.formularioPaciente = this.crearFormulario();
@@ -162,9 +165,8 @@ cerrarDropdown(): void {
   // CONFIGURACIÓN INICIAL
   // ==========================================
 
-  /**
-   * Crea el formulario reactivo para pacientes
-   */
+
+  // Crea el formulario reactivo para pacientes
   crearFormulario(): FormGroup {
     return this.fb.group({
       nombres: ['', [Validators.required, Validators.minLength(2)]],
@@ -186,44 +188,55 @@ cerrarDropdown(): void {
     });
   }
 
-  /**
-   * Configura la búsqueda con debounce
-   */
-  configurarBusqueda(): void {
-    this.sujetoBusqueda
-      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destruir$))
-      .subscribe(() => this.filtrarPacientes());
-  }
-
-  /**
-   * Carga la información del usuario desde localStorage
-   */
-  cargarInformacionUsuario(): void {
-    try {
-      const datosUsuario = localStorage.getItem('usuario');
-      if (datosUsuario) {
-        const usuario = JSON.parse(datosUsuario);
-        this.informacionUsuario = {
-          name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim() || 'Usuario',
-          nombres: usuario.nombres,
-          apellidos: usuario.apellidos,
-          avatar: usuario.avatar || usuario.foto || 'assets/img/avatar-default.png',
-          rol: usuario.rol || 'Usuario'
-        };
+  
+  //Configura la búsqueda con debounce
+configurarBusqueda(): void {
+  this.sujetoBusqueda
+    .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destruir$))
+    .subscribe(termino => {
+      if (!termino.trim()) {
+        this.pacientesFiltrados = [...this.pacientes];
+      } else {
+        const terminoBusqueda = termino.toLowerCase();
+        this.pacientesFiltrados = this.pacientes.filter(paciente =>
+          paciente.nombres.toLowerCase().includes(terminoBusqueda) ||
+          paciente.apellidos.toLowerCase().includes(terminoBusqueda) ||
+          paciente.cui.toLowerCase().includes(terminoBusqueda) ||
+          (paciente.telefonopersonal && paciente.telefonopersonal.toLowerCase().includes(terminoBusqueda))
+        );
       }
-    } catch (error) {
-      console.error('Error al cargar información del usuario:', error);
+      this.currentPage = 1;
+      this.updatePagination();
+    });
+}
+
+
+//Carga la información del usuario desde localStorage
+cargarInformacionUsuario(): void {
+  try {
+    const usuarioData = localStorage.getItem('usuario');
+    
+    if (usuarioData) {
+      const usuario = JSON.parse(usuarioData);
+      
+      // Usar 'any' para evitar problemas de tipos
       this.informacionUsuario = {
-        name: 'Usuario',
-        rol: 'Usuario',
-        avatar: 'assets/img/avatar-default.png'
+        name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim(),
+        avatar: usuario.rutafotoperfil ? 
+          this.archivoService.obtenerUrlPublica(usuario.rutafotoperfil) : null
       };
     }
+  } catch (error) {
+    console.error('Error al cargar información del usuario:', error);
+    this.informacionUsuario = {
+  name: 'Usuario',
+  avatar: null
+    };
   }
+}
 
-  /**
-   * Detecta el estado de la barra lateral
-   */
+
+  //Detecta el estado de la barra lateral
   detectarEstadoBarraLateral(): void {
     const verificarBarraLateral = () => {
       const barraLateral = document.querySelector('.sidebar-container');
@@ -250,34 +263,26 @@ cerrarDropdown(): void {
   // NAVEGACIÓN ENTRE VISTAS
   // ==========================================
 
-  /**
-   * Muestra la vista de lista
-   */
+  //Muestra la vista de lista
   mostrarLista(): void {
     this.vistaActual = 'lista';
     this.reiniciarFormulario();
   }
 
-  /**
-   * Muestra el formulario para crear nuevo paciente
-   */
+  //Muestra el formulario para crear nuevo paciente
   mostrarFormulario(): void {
     this.vistaActual = 'formulario';
     this.modoEdicion = false;
     this.reiniciarFormulario();
   }
 
-  /**
-   * Muestra los detalles de un paciente
-   */
+  //Muestra los detalles de un paciente
   verPaciente(paciente: Paciente): void {
     this.pacienteSeleccionado = paciente;
     this.vistaActual = 'detalle';
   }
 
-  /**
-   * Abre el formulario para editar un paciente
-   */
+  //Abre el formulario para editar un paciente
   editarPaciente(paciente: Paciente): void {
     this.pacienteSeleccionado = paciente;
     this.modoEdicion = true;
@@ -286,40 +291,43 @@ cerrarDropdown(): void {
     this.cargarFotosExistentes(paciente);
   }
 
-  /**
-   * Cierra el modal
-   */
+   //Cierra el modal
   cerrarModal(): void {
     this.vistaActual = 'lista';
     this.reiniciarFormulario();
   }
 
-  /**
-   * Reinicia el formulario a su estado inicial
-   */
-  reiniciarFormulario(): void {
-    this.formularioPaciente.reset();
-    this.formularioPaciente.patchValue({ tipodiscapacidad: 'Ninguna' });
-    this.modoEdicion = false;
-    this.pacienteSeleccionado = null;
-    
-    // Limpiar archivos
-    this.archivosSeleccionados = {};
-    this.fotoSeleccionada = null;
-    this.fotoEncargadoSeleccionada = null;
-    this.cartaSeleccionada = null;
-    this.esCartaPDF = false;
-    this.subiendoArchivos = false;
-    this.error = '';
-  }
+  
+// Reinicia el formulario a su estado inicial
+reiniciarFormulario(): void {
+  this.formularioPaciente.reset();
+  this.formularioPaciente.patchValue({ tipodiscapacidad: 'Ninguna' });
+  this.modoEdicion = false;
+  this.pacienteSeleccionado = null;
+  
+  // Limpiar archivos específicos de pacientes
+  this.limpiarArchivosSeleccionados();
+  
+  this.fotoPacientePreview = null;
+  this.fotoEncargadoPreview = null;
+  this.cartaAutorizacionPreview = null;
+  
+  // Mantener compatibilidad con HTML
+  this.fotoSeleccionada = null;
+  this.fotoEncargadoSeleccionada = null;
+  this.cartaSeleccionada = null;
+  this.esCartaPDF = false;
+  this.subiendoArchivos = false;
+  this.error = '';
+}
+
 
   // ==========================================
   // GESTIÓN DE DATOS
   // ==========================================
 
-  /**
-   * Carga la lista de pacientes desde el servidor
-   */
+  
+// Carga la lista de pacientes desde el servidor
 cargarPacientes(): void {
     this.cargando = true;
     this.error = '';
@@ -359,26 +367,10 @@ cargarPacientes(): void {
       });
   }
 
-  /**
-   * Filtra los pacientes según el término de búsqueda
-   */
- filtrarPacientes(): void {
-    if (!this.terminoBusqueda.trim()) {
-      this.pacientesFiltrados = [...this.pacientes];
-    } else {
-      const termino = this.terminoBusqueda.toLowerCase();
-      this.pacientesFiltrados = this.pacientes.filter(paciente =>
-        paciente.nombres.toLowerCase().includes(termino) ||
-        paciente.apellidos.toLowerCase().includes(termino) ||
-        paciente.cui.toLowerCase().includes(termino) ||
-        (paciente.telefonopersonal && paciente.telefonopersonal.toLowerCase().includes(termino))
-      );
-    }
-    
-    // AGREGAR ESTAS LÍNEAS
-    this.currentPage = 1; // Resetear a primera página
-    this.updatePagination();
-  }
+ //Filtra los pacientes según el término de búsqueda
+filtrarPacientes(): void {
+  this.sujetoBusqueda.next(this.terminoBusqueda);
+}
 
 
 formatearTelefono(campo: string): void {
@@ -411,14 +403,11 @@ formatearTelefono(campo: string): void {
   this.formularioPaciente.get(campo)?.setValue(formateado, { emitEvent: false });
 }
 
-
   // ==========================================
   // OPERACIONES CRUD
   // ==========================================
 
-  /**
-   * Procesa el envío del formulario
-   */
+  //Procesa el envío del formulario
   async alEnviar(): Promise<void> {
     if (!this.formularioPaciente.valid) {
       this.marcarFormularioComoTocado(this.formularioPaciente);
@@ -445,9 +434,7 @@ formatearTelefono(campo: string): void {
     }
   }
 
-  /**
-   * Crea un nuevo paciente con archivos
-   */
+  // Crea un nuevo paciente con archivos
   private async crearPacienteConArchivos(datosPaciente: Paciente): Promise<void> {
     try {
       const respuesta = await this.servicioUsuario.crearPaciente(datosPaciente)
@@ -464,7 +451,19 @@ formatearTelefono(campo: string): void {
         const pacienteId = nuevoPaciente.idpaciente;
         
         if (pacienteId && this.tieneArchivosParaSubir()) {
-          await this.subirTodosLosArchivos(pacienteId);
+          const rutasArchivos = await this.subirTodosLosArchivos(pacienteId);
+          
+          // Actualizar el paciente con las rutas de los archivos
+          if (Object.keys(rutasArchivos).length > 0) {
+            const datosActualizados: any = {};
+            if (rutasArchivos.rutaFotoPaciente) datosActualizados.rutafotoperfil = rutasArchivos.rutaFotoPaciente;
+            if (rutasArchivos.rutaFotoEncargado) datosActualizados.rutafotoencargado = rutasArchivos.rutaFotoEncargado;
+            if (rutasArchivos.rutaCartaAutorizacion) datosActualizados.rutacartaautorizacion = rutasArchivos.rutaCartaAutorizacion;
+            
+            // Actualizar paciente con las rutas
+            await this.servicioUsuario.actualizarPaciente(pacienteId, datosActualizados).toPromise();
+          }
+          
           this.servicioAlerta.alertaExito('Paciente creado con archivos');
         } else {
           this.servicioAlerta.alertaExito('Paciente creado exitosamente');
@@ -483,159 +482,236 @@ formatearTelefono(campo: string): void {
     }
   }
 
-  /**
-   * Actualiza un paciente existente con archivos
-   */
-  private async actualizarPacienteConArchivos(pacienteId: number, datosPaciente: Paciente): Promise<void> {
-    try {
-      const respuesta = await this.servicioUsuario.actualizarPaciente(pacienteId, datosPaciente)
-        .toPromise()
-        .then(resp => {
-          if (!resp) {
-            throw new Error('No se recibió respuesta del servidor');
-          }
-          return resp;
-        });
+
+//Actualiza un paciente existente con archivos
+private async actualizarPacienteConArchivos(pacienteId: number, datosPaciente: Paciente): Promise<void> {
+  try {
+    // Si hay archivos nuevos, subirlos primero
+    let datosConArchivos = { ...datosPaciente };
+    
+    if (this.tieneArchivosParaSubir()) {
+      const rutasArchivos = await this.subirTodosLosArchivos(pacienteId);
       
-      if (respuesta.exito) {
-        if (this.tieneArchivosParaSubir()) {
-          await this.subirTodosLosArchivos(pacienteId);
-          this.servicioAlerta.alertaExito('Paciente actualizado con archivos');
-        } else {
-          this.servicioAlerta.alertaExito('Paciente actualizado exitosamente');
+      // MANTENER ARCHIVOS EXISTENTES SI NO SE REEMPLAZAN
+      const pacienteActual = this.pacienteSeleccionado;
+      
+      // Solo actualizar rutas si se subieron archivos nuevos
+      if (rutasArchivos.rutaFotoPaciente) {
+        datosConArchivos.rutafotoperfil = rutasArchivos.rutaFotoPaciente;
+      } else if (pacienteActual?.rutafotoperfil) {
+        datosConArchivos.rutafotoperfil = pacienteActual.rutafotoperfil;
+      }
+      
+      if (rutasArchivos.rutaFotoEncargado) {
+        datosConArchivos.rutafotoencargado = rutasArchivos.rutaFotoEncargado;
+      } else if (pacienteActual?.rutafotoencargado) {
+        datosConArchivos.rutafotoencargado = pacienteActual.rutafotoencargado;
+      }
+      
+      if (rutasArchivos.rutaCartaAutorizacion) {
+        datosConArchivos.rutacartaautorizacion = rutasArchivos.rutaCartaAutorizacion;
+      } else if (pacienteActual?.rutacartaautorizacion) {
+        datosConArchivos.rutacartaautorizacion = pacienteActual.rutacartaautorizacion;
+      }
+    } else {
+      // SI NO HAY ARCHIVOS NUEVOS, MANTENER LOS EXISTENTES
+      const pacienteActual = this.pacienteSeleccionado;
+      if (pacienteActual?.rutafotoperfil) datosConArchivos.rutafotoperfil = pacienteActual.rutafotoperfil;
+      if (pacienteActual?.rutafotoencargado) datosConArchivos.rutafotoencargado = pacienteActual.rutafotoencargado;
+      if (pacienteActual?.rutacartaautorizacion) datosConArchivos.rutacartaautorizacion = pacienteActual.rutacartaautorizacion;
+    }
+
+    const respuesta = await this.servicioUsuario.actualizarPaciente(pacienteId, datosConArchivos)
+      .toPromise()
+      .then(resp => {
+        if (!resp) {
+          throw new Error('No se recibió respuesta del servidor');
         }
-        
-        this.cargarPacientes();
-        this.mostrarLista();
-      } else {
-        throw new Error(respuesta.mensaje || 'Error al actualizar paciente');
-      }
-    } catch (error) {
-      throw error;
-    } finally {
-      this.cargando = false;
-      this.subiendoArchivos = false;
-    }
-  }
-
-  /**
-   * Verifica si hay archivos para subir
-   */
-  private tieneArchivosParaSubir(): boolean {
-    return !!(this.archivosSeleccionados.perfil || this.archivosSeleccionados.encargado || this.archivosSeleccionados.carta);
-  }
-
-  /**
-   * Sube todos los archivos seleccionados
-   */
-  private async subirTodosLosArchivos(pacienteId: number): Promise<void> {
-    if (!this.tieneArchivosParaSubir()) {
-      return;
-    }
-
-    this.subiendoArchivos = true;
-    const promesasSubida: Promise<FileUploadResponse>[] = [];
-
-    try {
-      if (this.archivosSeleccionados.perfil) {
-        const promesa = this.servicioArchivo.uploadFile(this.archivosSeleccionados.perfil, pacienteId, 'perfil')
-          .toPromise()
-          .then(response => {
-            if (!response) {
-              throw new Error('No se recibió respuesta del servidor');
-            }
-            return response;
-          });
-        promesasSubida.push(promesa);
-      }
-
-      if (this.archivosSeleccionados.encargado) {
-        const promesa = this.servicioArchivo.uploadFile(this.archivosSeleccionados.encargado, pacienteId, 'encargado')
-          .toPromise()
-          .then(response => {
-            if (!response) {
-              throw new Error('No se recibió respuesta del servidor');
-            }
-            return response;
-          });
-        promesasSubida.push(promesa);
-      }
-
-      if (this.archivosSeleccionados.carta) {
-        const promesa = this.servicioArchivo.uploadFile(this.archivosSeleccionados.carta, pacienteId, 'carta')
-          .toPromise()
-          .then(response => {
-            if (!response) {
-              throw new Error('No se recibió respuesta del servidor');
-            }
-            return response;
-          });
-        promesasSubida.push(promesa);
-      }
-
-      await Promise.all(promesasSubida);
-      this.archivosSeleccionados = {};
+        return resp;
+      });
+    
+    if (respuesta.exito) {
+      const mensaje = this.tieneArchivosParaSubir() ? 'Paciente actualizado con archivos' : 'Paciente actualizado exitosamente';
+      this.servicioAlerta.alertaExito(mensaje);
       
-    } catch (error) {
-      console.error('Error subiendo archivos:', error);
-      throw error;
-    } finally {
-      this.subiendoArchivos = false;
+      // LIMPIAR ARCHIVOS SELECCIONADOS DESPUÉS DE ACTUALIZAR
+      this.limpiarArchivosSeleccionados();
+      
+      this.cargarPacientes();
+      this.mostrarLista();
+    } else {
+      throw new Error(respuesta.mensaje || 'Error al actualizar paciente');
     }
+  } catch (error) {
+    throw error;
+  } finally {
+    this.cargando = false;
+    this.subiendoArchivos = false;
+  }
+}
+
+//Método para limpiar archivos seleccionados
+private limpiarArchivosSeleccionados(): void {
+  this.selectedFotoPaciente = null;
+  this.selectedFotoEncargado = null;
+  this.selectedCartaAutorizacion = null;
+}
+
+  //Verifica si hay archivos para subir
+  private tieneArchivosParaSubir(): boolean {
+    return !!(this.selectedFotoPaciente || this.selectedFotoEncargado || this.selectedCartaAutorizacion);
+  }
+//Sube todos los archivos seleccionados
+private async subirTodosLosArchivos(pacienteId: number): Promise<{ rutaFotoPaciente?: string, rutaFotoEncargado?: string, rutaCartaAutorizacion?: string }> {
+  if (!this.tieneArchivosParaSubir()) {
+    return {};
   }
 
-  /**
-   * Elimina un paciente con confirmación
-   */
-  eliminarPaciente(id: number): void {
-    Swal.fire({
-      title: '¿Eliminar paciente?',
-      text: "Esta acción no se puede deshacer",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
-    }).then((resultado: any) => {
-      if (resultado.isConfirmed) {
-        this.cargando = true;
-        
-        this.servicioUsuario.eliminarPaciente(id)
-          .pipe(takeUntil(this.destruir$))
-          .subscribe({
-            next: (respuesta) => {
-              if (respuesta.exito) {
-                this.servicioAlerta.alertaExito('Paciente eliminado');
-                this.cargarPacientes();
-              } else {
-                this.servicioAlerta.alertaError('Error al eliminar');
-              }
-              this.cargando = false;
-            },
-            error: () => {
-              this.servicioAlerta.alertaError('Error al eliminar');
-              this.cargando = false;
-            }
-          });
-      }
-    });
+  this.subiendoArchivos = true;
+
+  try {
+    const resultados: { rutaFotoPaciente?: string, rutaFotoEncargado?: string, rutaCartaAutorizacion?: string } = {};
+
+    // Subir todos los archivos de una vez usando subirArchivos
+    // Preparar archivos para subida múltiple
+    const archivosParaSubir: { foto?: File, documento?: File } = {};
+
+    // Priorizar foto del paciente como 'foto' principal
+    if (this.selectedFotoPaciente) {
+      archivosParaSubir.foto = this.selectedFotoPaciente;
+    }
+
+    // Si hay carta de autorización, usar como 'documento'
+    if (this.selectedCartaAutorizacion) {
+      archivosParaSubir.documento = this.selectedCartaAutorizacion;
+    }
+
+    // Subir foto del paciente y carta de autorización juntos
+    if (Object.keys(archivosParaSubir).length > 0) {
+      const resultado = await this.archivoService.subirArchivos('pacientes', pacienteId, archivosParaSubir);
+      if (resultado.rutaFoto) resultados.rutaFotoPaciente = resultado.rutaFoto;
+      if (resultado.rutaDocumento) resultados.rutaCartaAutorizacion = resultado.rutaDocumento;
+    }
+
+    // Subir foto del encargado por separado usando subirFoto
+    if (this.selectedFotoEncargado) {
+      const rutaEncargado = await this.archivoService.subirFoto('pacientes', pacienteId, this.selectedFotoEncargado);
+      resultados.rutaFotoEncargado = rutaEncargado;
+    }
+
+    return resultados;
+    
+  } catch (error) {
+    console.error('Error subiendo archivos:', error);
+    throw error;
+  } finally {
+    this.subiendoArchivos = false;
   }
+}
+
+  //Elimina un paciente con confirmación
+eliminarPaciente(id: number): void {
+  this.servicioAlerta.alertaConfirmacion(
+    '¿Eliminar paciente?',
+    'Esta acción no se puede deshacer. Se eliminará permanentemente el paciente y toda su información.',
+    'Sí, eliminar',
+    'Cancelar'
+  ).then((confirmado: boolean) => {
+    if (confirmado) {
+      this.cargando = true;
+      
+      this.servicioUsuario.eliminarPaciente(id)
+        .pipe(takeUntil(this.destruir$))
+        .subscribe({
+          next: (respuesta) => {
+            this.cargando = false;
+            
+            if (respuesta.exito) {
+              this.servicioAlerta.alertaExito(respuesta.mensaje || 'Paciente eliminado correctamente');
+              this.cargarPacientes();
+            } else {
+              // ✅ MEJORA: Mostrar mensaje específico del servidor
+              this.servicioAlerta.alertaError(respuesta.mensaje || 'Error al eliminar el paciente');
+            }
+          },
+          error: (error) => {
+            this.cargando = false;
+            console.error('Error completo al eliminar paciente:', error);
+            
+            let mensajeError = 'Error desconocido al eliminar paciente';
+            
+            // ✅ MEJORA: Manejar respuestas específicas del backend
+            if (error.error && error.error.mensaje) {
+              mensajeError = error.error.mensaje;
+            } else if (error.error && error.error.message) {
+              mensajeError = error.error.message;
+            } else if (error.status) {
+              switch (error.status) {
+                case 400:
+                  mensajeError = 'Solicitud inválida. Verifique los datos del paciente.';
+                  break;
+                case 401:
+                  mensajeError = 'No tienes permisos para eliminar pacientes';
+                  break;
+                case 404:
+                  mensajeError = 'Paciente no encontrado';
+                  break;
+                case 409:
+                  // ✅ MEJORA: Mensaje más específico para conflictos
+                  mensajeError = error.error?.mensaje || 
+                    'No se puede eliminar el paciente porque tiene expedientes activos o historial médico asociado';
+                  break;
+                case 500:
+                  mensajeError = 'Error interno del servidor. Intenta más tarde';
+                  break;
+                case 0:
+                  mensajeError = 'Sin conexión al servidor. Verifica tu conexión a internet';
+                  break;
+                default:
+                  mensajeError = `Error del servidor (código ${error.status}): ${error.statusText || 'Error desconocido'}`;
+              }
+            } else if (error.message) {
+              mensajeError = error.message;
+            }
+            
+            // ✅ MEJORA: Mostrar información adicional si está disponible
+            if (error.error?.detalles) {
+              const detalles = error.error.detalles;
+              if (detalles.historialCount > 0 || detalles.expedientesActivos > 0) {
+                mensajeError += `\n\nDetalles:\n• Historiales médicos: ${detalles.historialCount}\n• Expedientes activos: ${detalles.expedientesActivos}`;
+                if (detalles.expedientesInactivos > 0) {
+                  mensajeError += `\n• Expedientes inactivos: ${detalles.expedientesInactivos}`;
+                }
+              }
+            }
+            
+            this.servicioAlerta.alertaError(mensajeError);
+            
+            // Log adicional para debug
+            console.error('Detalles del error:', {
+              status: error.status,
+              statusText: error.statusText,
+              errorResponse: error.error,
+              fullError: error
+            });
+          }
+        });
+    }
+  });
+}
 
   // ==========================================
   // GESTIÓN DE EXPEDIENTES MÉDICOS
   // ==========================================
 
-  /**
-   * Verifica si un paciente tiene expedientes
-   */
+  
+  //Verifica si un paciente tiene expedientes
   pacienteTieneExpedientes(paciente: Paciente): boolean {
     return !!(paciente.expedientes && paciente.expedientes.length > 0);
   }
 
-  /**
-   * Obtiene el primer expediente de un paciente
-   */
+  
+   //Obtiene el primer expediente de un paciente
   obtenerPrimerExpediente(paciente: Paciente): any | null {
     if (this.pacienteTieneExpedientes(paciente)) {
       return paciente.expedientes![0];
@@ -643,9 +719,8 @@ formatearTelefono(campo: string): void {
     return null;
   }
 
-  /**
-   * Obtiene información del expediente para el template
-   */
+  
+  //Obtiene información del expediente para el template
   obtenerInformacionExpedientePaciente(paciente: Paciente): { 
     tieneExpediente: boolean, 
     numeroExpediente?: string, 
@@ -660,9 +735,7 @@ formatearTelefono(campo: string): void {
     };
   }
 
-  /**
-   * Crear expediente para un paciente específico
-   */
+  //Crear expediente para un paciente específico
   crearExpedientePaciente(paciente: Paciente): void {
     Swal.fire({
       title: 'Crear Expediente Médico',
@@ -685,9 +758,8 @@ formatearTelefono(campo: string): void {
     });
   }
 
-  /**
-   * Ver expediente existente de un paciente
-   */
+  
+  //Ver expediente existente de un paciente
   verExpedientePaciente(paciente: Paciente): void {
     const informacionExpediente = this.obtenerInformacionExpedientePaciente(paciente);
     
@@ -701,9 +773,8 @@ formatearTelefono(campo: string): void {
     );
   }
 
-  /**
-   * Abre el modal para crear expediente
-   */
+  
+  //Abre el modal para crear expediente
   private abrirModalExpediente(paciente: Paciente): void {
     this.datosExpedientePaciente = {
       idpaciente: paciente.idpaciente,
@@ -725,9 +796,8 @@ formatearTelefono(campo: string): void {
     }, 100);
   }
 
-  /**
-   * Cierra el modal de expediente
-   */
+
+  //Cierra el modal de expediente
   cerrarModalExpediente(datosExpediente?: any): void {
     if (datosExpediente) {
       this.servicioAlerta.alertaExito(
@@ -741,9 +811,57 @@ formatearTelefono(campo: string): void {
     this.cargarPacientes();
   }
 
-  /**
-   * Actualiza la información local del paciente con nuevo expediente
-   */
+
+  // ==========================================
+// MÉTODOS ESPECÍFICOS DEL MODAL DE ACCIONES (AGREGAR AL COMPONENTE)
+// ==========================================
+
+/**
+ * Maneja la acción de editar paciente desde el modal
+ */
+editarPacienteDesdeModal(paciente: Paciente): void {
+  this.cerrarModalAcciones();
+  this.editarPaciente(paciente);
+}
+
+/**
+ * Maneja la acción de crear expediente desde el modal
+ */
+crearExpedienteDesdeModal(paciente: Paciente): void {
+  this.cerrarModalAcciones();
+  this.crearExpedientePaciente(paciente);
+}
+
+/**
+ * Maneja la acción de ver expediente desde el modal
+ */
+verExpedienteDesdeModal(paciente: Paciente): void {
+  this.cerrarModalAcciones();
+  this.verExpedientePaciente(paciente);
+}
+
+/**
+ * Maneja la acción de eliminar paciente desde el modal
+ */
+eliminarPacienteDesdeModal(paciente: Paciente): void {
+  this.cerrarModalAcciones();
+  
+  if (paciente.idpaciente) {
+    this.eliminarPaciente(paciente.idpaciente);
+  } else {
+    this.servicioAlerta.alertaError('No se puede eliminar: ID de paciente no válido');
+  }
+}
+
+/**
+ * Maneja la navegación al historial clínico desde el modal
+ */
+verHistorialClinicoDesdeModal(paciente: Paciente): void {
+  this.cerrarModalAcciones();
+  this.verHistorialClinico(paciente);
+}
+  
+  //Actualiza la información local del paciente con nuevo expediente
   private actualizarPacienteConExpediente(datosExpediente: any): void {
     if (!datosExpediente.pacienteId) {
       return;
@@ -781,71 +899,172 @@ formatearTelefono(campo: string): void {
   // GESTIÓN DE ARCHIVOS
   // ==========================================
 
-  /**
-   * Maneja la selección de fotos y documentos
-   */
+  
+  //Maneja la selección de fotos y documentos
   async alSeleccionarFoto(evento: any, tipo: 'perfil' | 'encargado' | 'carta'): Promise<void> {
-    const archivo = evento.target.files[0];
-    if (!archivo) return;
+  const archivo = evento.target.files[0];
+  if (!archivo) return;
 
-    try {
-      const validacion = this.servicioArchivo.validateFile(archivo, tipo);
-      if (!validacion.valid) {
-        this.servicioAlerta.alertaPreventiva(validacion.message || 'Archivo no válido');
+  try {
+    // VALIDACIONES ESPECÍFICAS PARA CADA TIPO
+    if (tipo === 'carta') {
+      // Para carta autorización: PDF, Word, Excel, imágenes
+      const tiposPermitidos = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/webp',
+        'image/gif'
+      ];
+
+      if (!tiposPermitidos.includes(archivo.type)) {
+        this.servicioAlerta.alertaError('Solo se permiten archivos PDF, Word, Excel o imágenes');
         evento.target.value = '';
         return;
       }
 
-      const vistaPrevia = await this.servicioArchivo.getFilePreview(archivo);
-      this.archivosSeleccionados[tipo] = archivo;
-
-      switch (tipo) {
-        case 'perfil':
-          this.fotoSeleccionada = vistaPrevia;
-          break;
-        case 'encargado':
-          this.fotoEncargadoSeleccionada = vistaPrevia;
-          break;
-        case 'carta':
-          this.cartaSeleccionada = vistaPrevia;
-          this.esCartaPDF = archivo.type === 'application/pdf';
-          break;
+      // Tamaño máximo 15MB para documentos
+      if (archivo.size > 15 * 1024 * 1024) {
+        this.servicioAlerta.alertaError('El archivo no puede superar los 15MB');
+        evento.target.value = '';
+        return;
+      }
+    } else {
+      // Para fotos de paciente y encargado: solo imágenes
+      if (!archivo.type.startsWith('image/')) {
+        this.servicioAlerta.alertaError('Solo se permiten imágenes (JPG, PNG, WebP)');
+        evento.target.value = '';
+        return;
       }
 
-    } catch (error) {
-      console.error('Error procesando archivo:', error);
-      this.servicioAlerta.alertaError('Error al procesar archivo');
-      evento.target.value = '';
+      // Tamaño máximo 5MB para imágenes
+      if (archivo.size > 5 * 1024 * 1024) {
+        this.servicioAlerta.alertaError('Las imágenes no pueden superar los 5MB');
+        evento.target.value = '';
+        return;
+      }
     }
-  }
 
-  /**
-   * Elimina una foto o documento seleccionado
-   */
-  eliminarFoto(tipo: 'perfil' | 'encargado' | 'carta'): void {
-    delete this.archivosSeleccionados[tipo];
-    
+    //  CREAR VISTA PREVIA
+    let vistaPrevia: string | null = null;
+    let esPDF = false;
+    let esDocumento = false;
+
+    if (archivo.type.startsWith('image/')) {
+      vistaPrevia = await this.archivoService.crearVistaPrevia(archivo);
+    } else if (archivo.type === 'application/pdf') {
+      esPDF = true;
+      esDocumento = true;
+    } else {
+      esDocumento = true; // Word, Excel, etc.
+    }
+
+    // GUARDAR ARCHIVO Y PREVIEW SEGÚN EL TIPO
     switch (tipo) {
       case 'perfil':
-        this.fotoSeleccionada = null;
+        this.selectedFotoPaciente = archivo;
+        this.fotoPacientePreview = vistaPrevia;
+        this.fotoSeleccionada = vistaPrevia; // Compatibilidad con HTML
         break;
       case 'encargado':
-        this.fotoEncargadoSeleccionada = null;
+        this.selectedFotoEncargado = archivo;
+        this.fotoEncargadoPreview = vistaPrevia;
+        this.fotoEncargadoSeleccionada = vistaPrevia; // Compatibilidad con HTML
         break;
       case 'carta':
-        this.cartaSeleccionada = null;
-        this.esCartaPDF = false;
+        this.selectedCartaAutorizacion = archivo;
+        this.cartaAutorizacionPreview = vistaPrevia;
+        this.cartaSeleccionada = vistaPrevia; // Compatibilidad con HTML
+        this.esCartaPDF = esPDF;
+        
+        //  AGREGAR INFORMACIÓN DEL ARCHIVO PARA DOCUMENTOS
+        if (esDocumento) {
+          this.cartaSeleccionada = `${archivo.name} (${this.archivoService.formatearTamaño(archivo.size)})`;
+        }
         break;
     }
+
+  } catch (error) {
+    console.error('Error procesando archivo:', error);
+    this.servicioAlerta.alertaError('Error al procesar archivo');
+    evento.target.value = '';
   }
+}
+
+   //Elimina una foto o documento seleccionado
+  eliminarFoto(tipo: 'perfil' | 'encargado' | 'carta'): void {
+  // Si estamos en modo edición y el archivo existe, preguntar confirmación
+  if (this.modoEdicion) {
+    const paciente = this.pacienteSeleccionado;
+    let tieneArchivoExistente = false;
+    let nombreArchivo = '';
+
+    switch (tipo) {
+      case 'perfil':
+        tieneArchivoExistente = !!(paciente?.rutafotoperfil);
+        nombreArchivo = 'foto del paciente';
+        break;
+      case 'encargado':
+        tieneArchivoExistente = !!(paciente?.rutafotoencargado);
+        nombreArchivo = 'foto del encargado';
+        break;
+      case 'carta':
+        tieneArchivoExistente = !!(paciente?.rutacartaautorizacion);
+        nombreArchivo = 'carta de autorización';
+        break;
+    }
+
+    if (tieneArchivoExistente) {
+      this.servicioAlerta.alertaConfirmacion(
+        '¿Eliminar archivo?',
+        `¿Está seguro de que desea eliminar la ${nombreArchivo}? Esta acción no se puede deshacer.`,
+        'Sí, eliminar',
+        'Cancelar'
+      ).then((confirmado: boolean) => {
+        if (confirmado) {
+          this.ejecutarEliminacionArchivo(tipo);
+        }
+      });
+      return;
+    }
+  }
+    this.ejecutarEliminacionArchivo(tipo);
+}
+
+//Método auxiliar para ejecutar eliminación de archivo
+private ejecutarEliminacionArchivo(tipo: 'perfil' | 'encargado' | 'carta'): void {
+  switch (tipo) {
+    case 'perfil':
+      this.selectedFotoPaciente = null;
+      this.fotoPacientePreview = null;
+      this.fotoSeleccionada = null;
+      break;
+    case 'encargado':
+      this.selectedFotoEncargado = null;
+      this.fotoEncargadoPreview = null;
+      this.fotoEncargadoSeleccionada = null;
+      break;
+    case 'carta':
+      this.selectedCartaAutorizacion = null;
+      this.cartaAutorizacionPreview = null;
+      this.cartaSeleccionada = null;
+      this.esCartaPDF = false;
+      break;
+  }
+}
+
 
   // ==========================================
   // FUNCIONES DE UTILIDAD
   // ==========================================
 
-  /**
-   * Calcula la edad basada en la fecha de nacimiento
-   */
+  
+  //Calcula la edad basada en la fecha de nacimiento
   calcularEdad(fechaNacimiento: string): number {
     if (!fechaNacimiento) return 0;
     const hoy = new Date();
@@ -858,9 +1077,8 @@ formatearTelefono(campo: string): void {
     return edad;
   }
 
-  /**
-   * Llena el formulario con datos de un paciente existente
-   */
+
+  // Llena el formulario con datos de un paciente existente
   llenarFormulario(paciente: Paciente): void {
     this.formularioPaciente.patchValue({
       nombres: paciente.nombres,
@@ -883,40 +1101,52 @@ formatearTelefono(campo: string): void {
     });
   }
 
-  /**
-   * Carga las fotos existentes de un paciente
-   */
-  cargarFotosExistentes(paciente: Paciente): void {
-    if (paciente.rutafotoperfil) {
-      this.fotoSeleccionada = this.servicioArchivo.getFileUrlFromPath(paciente.rutafotoperfil);
-    }
+
+//Carga las fotos existentes de un paciente
+cargarFotosExistentes(paciente: Paciente): void {
+  // Cargar foto del paciente
+  if (paciente.rutafotoperfil) {
+    this.fotoPacientePreview = this.archivoService.obtenerUrlPublica(paciente.rutafotoperfil);
+    this.fotoSeleccionada = this.fotoPacientePreview; // Compatibilidad
+  }
+  
+  // Cargar foto del encargado  
+  if (paciente.rutafotoencargado) {
+    this.fotoEncargadoPreview = this.archivoService.obtenerUrlPublica(paciente.rutafotoencargado);
+    this.fotoEncargadoSeleccionada = this.fotoEncargadoPreview; // Compatibilidad
+  }
+  
+  // Cargar carta de autorización
+  if (paciente.rutacartaautorizacion) {
+    this.cartaAutorizacionPreview = this.archivoService.obtenerUrlPublica(paciente.rutacartaautorizacion);
+    this.cartaSeleccionada = this.cartaAutorizacionPreview; // Compatibilidad
     
-    if (paciente.rutafotoencargado) {
-      this.fotoEncargadoSeleccionada = this.servicioArchivo.getFileUrlFromPath(paciente.rutafotoencargado);
-    }
+    // Determinar tipo de archivo por extensión
+    const extension = paciente.rutacartaautorizacion.toLowerCase().split('.').pop();
+    this.esCartaPDF = extension === 'pdf';
     
-    if (paciente.rutacartaautorizacion) {
-      this.cartaSeleccionada = this.servicioArchivo.getFileUrlFromPath(paciente.rutacartaautorizacion);
-      const extension = paciente.rutacartaautorizacion.toLowerCase().split('.').pop();
-      this.esCartaPDF = extension === 'pdf';
+    // Si es documento (no imagen), mostrar nombre del archivo
+    const esImagen = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(extension || '');
+    if (!esImagen) {
+      const nombreArchivo = paciente.rutacartaautorizacion.split('/').pop() || 'Documento';
+      this.cartaSeleccionada = nombreArchivo;
     }
   }
+}
+
 
   // ==========================================
   // VALIDACIONES DE FORMULARIO
   // ==========================================
 
-  /**
-   * Verifica si un campo específico es inválido
-   */
+  //Verifica si un campo específico es inválido
   esCampoInvalido(nombreCampo: string): boolean {
     const campo = this.formularioPaciente.get(nombreCampo);
     return !!(campo && campo.invalid && (campo.dirty || campo.touched));
   }
 
-  /**
-   * Obtiene el mensaje de error para un campo específico
-   */
+
+  //Obtiene el mensaje de error para un campo específico
   obtenerErrorCampo(nombreCampo: string): string {
     const campo = this.formularioPaciente.get(nombreCampo);
     
@@ -931,9 +1161,8 @@ formatearTelefono(campo: string): void {
     return '';
   }
 
-  /**
-   * Marca todos los campos del formulario como tocados
-   */
+  
+  // Marca todos los campos del formulario como tocados
   private marcarFormularioComoTocado(grupoFormulario: FormGroup): void {
     Object.keys(grupoFormulario.controls).forEach(clave => {
       const control = grupoFormulario.get(clave);
@@ -945,9 +1174,7 @@ formatearTelefono(campo: string): void {
 
 //  MÉTODOS DE PAGINACIÓN 
 
-  /**
-   * Actualiza la información de paginación
-   */
+  //Actualiza la información de paginación
   updatePagination(): void {
     this.totalItems = this.pacientesFiltrados.length;
     this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
@@ -962,18 +1189,14 @@ formatearTelefono(campo: string): void {
     this.updatePaginatedPacientes();
   }
 
-  /**
-   * Actualiza los pacientes que se muestran en la página actual
-   */
+  //Actualiza los pacientes que se muestran en la página actual
   updatePaginatedPacientes(): void {
     const startIndex = (this.currentPage - 1) * this.itemsPerPage;
     const endIndex = startIndex + this.itemsPerPage;
     this.paginatedPacientes = this.pacientesFiltrados.slice(startIndex, endIndex);
   }
 
-  /**
-   * Navega a una página específica
-   */
+  //Navega a una página específica
   goToPage(page: number): void {
     if (page >= 1 && page <= this.totalPages) {
       this.currentPage = page;
@@ -981,9 +1204,7 @@ formatearTelefono(campo: string): void {
     }
   }
 
-  /**
-   * Navega a la página siguiente
-   */
+  // Navega a la página siguiente
   nextPage(): void {
     if (this.currentPage < this.totalPages) {
       this.currentPage++;
@@ -991,9 +1212,7 @@ formatearTelefono(campo: string): void {
     }
   }
 
-  /**
-   * Navega a la página anterior
-   */
+  //Navega a la página anterior
   previousPage(): void {
     if (this.currentPage > 1) {
       this.currentPage--;
@@ -1001,9 +1220,7 @@ formatearTelefono(campo: string): void {
     }
   }
 
-  /**
-   * Genera array de páginas para mostrar en la paginación
-   */
+  // Genera array de páginas para mostrar en la paginación
   getPages(): number[] {
     if (this.totalPages <= 0) return [];
     
@@ -1024,9 +1241,7 @@ formatearTelefono(campo: string): void {
     return pages;
   }
 
-  /**
-   * Maneja el cambio de elementos por página
-   */
+   //Maneja el cambio de elementos por página
   onItemsPerPageChange(): void {
     // Asegurar que itemsPerPage sea un número
     this.itemsPerPage = Number(this.itemsPerPage);
@@ -1034,9 +1249,7 @@ formatearTelefono(campo: string): void {
     this.updatePagination();
   }
 
-  /**
-   * Obtiene el rango de elementos mostrados
-   */
+  // Obtiene el rango de elementos mostrados
   getDisplayRange(): string {
     if (this.totalItems === 0) return '0 - 0';
     const start = (this.currentPage - 1) * this.itemsPerPage + 1;
@@ -1044,16 +1257,12 @@ formatearTelefono(campo: string): void {
     return `${start} - ${end}`;
   }
 
-  /**
- * Navega al historial clínico de un paciente específico
- */
+  // Navega al historial clínico de un paciente específico
 verHistorialClinico(paciente: Paciente): void {
   if (!paciente.idpaciente) {
     this.servicioAlerta.alertaPreventiva('No se puede acceder al historial: ID de paciente no válido');
     return;
   }
-
-
   
   // Verificar si el paciente tiene al menos un expediente
   const informacionExpediente = this.obtenerInformacionExpedientePaciente(paciente);
@@ -1086,6 +1295,5 @@ verHistorialClinico(paciente: Paciente): void {
   // Navegar al historial clínico - CAMBIÉ ESTA LÍNEA:
   this.router.navigate(['/historial', paciente.idpaciente]);
 }
-
   
 }

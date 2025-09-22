@@ -1319,67 +1319,81 @@
     padding: 0 4px;
   }
 }
+/* 
+ELIMINA TODOS los estilos del menú de tres puntos de tu archivo actual 
+y REEMPLÁZALOS por SOLO estos estilos:
+*/
 
-/* Estilos para el menú de tres puntos */
-.columna-acciones {
-  position: relative;
-  width: 60px;
-  text-align: center;
+/* ========================================
+   MENÚ DE TRES PUNTOS - ESTILOS UNIFICADOS
+======================================== */
+
+/* Asegurar overflow visible en tabla */
+.contenedor-tabla,
+.tabla-datos,
+.tabla-datos tbody,
+.tabla-datos tr,
+.tabla-datos td {
+  overflow: visible !important;
 }
 
-.menu-tres-puntos {
-  position: relative;
-  display: inline-block;
-}
-
-.boton-tres-puntos {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  gap: 2px;
-}
 
 .boton-tres-puntos:hover {
-  background-color: #f8f9fa;
+  background-color: rgba(0, 0, 0, 0.08);
 }
 
-.boton-tres-puntos:active {
-  background-color: #e9ecef;
+.boton-tres-puntos:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
+/* Puntos del botón */
 .punto {
   width: 4px;
   height: 4px;
   background-color: #6c757d;
   border-radius: 50%;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease;
 }
 
 .boton-tres-puntos:hover .punto {
   background-color: #495057;
 }
 
-/* Menú contextual */
+/* Estado activo */
+.menu-tres-puntos.activo .boton-tres-puntos {
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+.menu-tres-puntos.activo .punto {
+  background-color: #007bff;
+}
+
+/* MENÚ CONTEXTUAL - POSICIONAMIENTO FIXED */
 .menu-contextual {
-  position: absolute;
-  top: 100%;
-  right: 0;
+  position: fixed;
   background: white;
   border: 1px solid #e0e0e0;
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-  z-index: 9999;
-  min-width: 280px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  min-width: 260px;
+  max-width: 300px;
+  max-height: 400px;
   overflow: hidden;
-  animation: menuSlideIn 0.2s ease-out;
+  z-index: 10000;
+  
+  /* Animación inicial */
+  opacity: 0;
+  transform: translateY(-10px) scale(0.95);
+  animation: menuAparece 0.2s ease-out forwards;
+}
+
+/* Animación de aparición */
+@keyframes menuAparece {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Header del menú */
@@ -1393,17 +1407,20 @@
   font-weight: 600;
   color: #2c6662;
   font-size: 14px;
-  display: block;
-  text-overflow: ellipsis;
   overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+  margin: 0;
+}
+
+/* Container de items */
+.menu-items {
+  padding: 8px 0;
+  max-height: 320px;
+  overflow-y: auto;
 }
 
 /* Items del menú */
-.menu-items {
-  padding: 8px 0;
-}
-
 .menu-item {
   display: flex;
   align-items: center;
@@ -1415,81 +1432,53 @@
   transition: all 0.15s ease;
   text-align: left;
   gap: 12px;
+  font-size: 14px;
 }
 
 .menu-item:hover {
   background-color: #f8f9fa;
 }
 
+.menu-item:focus {
+  outline: none;
+  background-color: #e9ecef;
+}
+
+/* Iconos de items */
 .item-icono {
-  font-size: 20px;
-  width: 32px;
-  height: 32px;
+  font-size: 18px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 6px;
   flex-shrink: 0;
+  transition: all 0.15s ease;
 }
 
+/* Texto de items */
 .item-texto {
   display: flex;
   flex-direction: column;
+  gap: 2px;
   flex: 1;
+  min-width: 0;
 }
 
 .item-titulo {
   font-weight: 500;
   color: #333;
   font-size: 14px;
-  margin-bottom: 2px;
+  line-height: 1.2;
+  margin: 0;
 }
 
 .item-desc {
   font-size: 12px;
   color: #6c757d;
-  line-height: 1.3;
-}
-
-/* Colores específicos para cada acción */
-.menu-item.historial:hover .item-icono {
-  background-color: rgba(111, 66, 193, 0.1);
-}
-
-.menu-item.historial:hover .item-titulo {
-  color: #6f42c1;
-}
-
-.menu-item.editar:hover .item-icono {
-  background-color: rgba(255, 193, 7, 0.1);
-}
-
-.menu-item.editar:hover .item-titulo {
-  color: #ffc107;
-}
-
-.menu-item.expediente:hover .item-icono {
-  background-color: rgba(40, 167, 69, 0.1);
-}
-
-.menu-item.expediente:hover .item-titulo {
-  color: #28a745;
-}
-
-.menu-item.eliminar:hover {
-  background-color: rgba(220, 53, 69, 0.05);
-}
-
-.menu-item.eliminar:hover .item-icono {
-  background-color: rgba(220, 53, 69, 0.1);
-}
-
-.menu-item.eliminar:hover .item-titulo {
-  color: #dc3545;
-}
-
-.menu-item.eliminar:hover .item-desc {
-  color: #dc3545;
+  line-height: 1.2;
+  margin: 0;
 }
 
 /* Separador */
@@ -1499,29 +1488,80 @@
   margin: 8px 16px;
 }
 
-/* Animación del menú */
-@keyframes menuSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+/* COLORES ESPECÍFICOS PARA CADA ACCIÓN */
+
+/* Historial Clínico */
+.menu-item.historial:hover {
+  background-color: rgba(111, 66, 193, 0.05);
 }
 
-/* Ajustes para pantallas pequeñas */
+.menu-item.historial:hover .item-icono {
+  background-color: rgba(111, 66, 193, 0.1);
+  color: #6f42c1;
+}
+
+.menu-item.historial:hover .item-titulo {
+  color: #6f42c1;
+}
+
+/* Editar */
+.menu-item.editar:hover {
+  background-color: rgba(255, 193, 7, 0.05);
+}
+
+.menu-item.editar:hover .item-icono {
+  background-color: rgba(255, 193, 7, 0.1);
+  color: #ffc107;
+}
+
+.menu-item.editar:hover .item-titulo {
+  color: #ffc107;
+}
+
+/* Expediente */
+.menu-item.expediente:hover {
+  background-color: rgba(40, 167, 69, 0.05);
+}
+
+.menu-item.expediente:hover .item-icono {
+  background-color: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+}
+
+.menu-item.expediente:hover .item-titulo {
+  color: #28a745;
+}
+
+/* Eliminar */
+.menu-item.eliminar:hover {
+  background-color: rgba(220, 53, 69, 0.05);
+}
+
+.menu-item.eliminar:hover .item-icono {
+  background-color: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+}
+
+.menu-item.eliminar:hover .item-titulo,
+.menu-item.eliminar:hover .item-desc {
+  color: #dc3545;
+}
+
+/* RESPONSIVE */
 @media (max-width: 768px) {
   .menu-contextual {
-    right: -50px;
-    min-width: 250px;
+    min-width: 240px;
+    max-width: 280px;
+  }
+  
+  .menu-item {
+    padding: 10px 12px;
   }
   
   .item-icono {
-    width: 28px;
-    height: 28px;
-    font-size: 18px;
+    width: 24px;
+    height: 24px;
+    font-size: 16px;
   }
   
   .item-titulo {
@@ -1531,28 +1571,267 @@
   .item-desc {
     font-size: 11px;
   }
-  
-  .menu-item {
-    padding: 10px 12px;
-  }
 }
 
 @media (max-width: 480px) {
   .menu-contextual {
     position: fixed;
-    top: auto;
     bottom: 20px;
     left: 20px;
     right: 20px;
+    top: auto;
     min-width: auto;
-    max-height: 70vh;
-    overflow-y: auto;
+    max-width: none;
+    transform: translateY(10px);
   }
   
-  .menu-header {
-    position: sticky;
-    top: 0;
-    background: white;
-    z-index: 1;
+  .menu-contextual {
+    animation: menuApareceMobile 0.2s ease-out forwards;
   }
+}
+
+@keyframes menuApareceMobile {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// ==========================================
+// ESTILOS PARA EL MODAL DE ACCIONES
+// ==========================================
+
+// Overlay del modal
+.modal-acciones-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+// Container principal del modal
+.modal-acciones-container {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  transform: translateY(0);
+  transition: transform 0.3s ease;
+}
+
+// Header del modal
+.modal-acciones-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid #e9ecef;
+  background: #f8f9fa;
+}
+
+.paciente-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.paciente-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.paciente-datos {
+  .paciente-nombre-modal {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #2c3e50;
+  }
+  
+  .paciente-cui {
+    margin: 0;
+    font-size: 14px;
+    color: #6c757d;
+  }
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: #e9ecef;
+    color: #495057;
+  }
+}
+
+// Contenido del modal
+.modal-acciones-content {
+  padding: 8px 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+// Botones de acción
+.accion-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border: none;
+  background: white;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: #f8f9fa;
+  }
+}
+
+.accion-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: white;
+}
+
+.accion-historial .accion-icon {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.accion-editar .accion-icon {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.accion-expediente .accion-icon {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.accion-eliminar .accion-icon {
+  background: linear-gradient(135deg, #ff8a80 0%, #ff5722 100%);
+}
+
+.accion-info {
+  flex: 1;
+  
+  .accion-titulo {
+    display: block;
+    font-weight: 600;
+    font-size: 16px;
+    color: #2c3e50;
+    margin-bottom: 2px;
+  }
+  
+  .accion-descripcion {
+    display: block;
+    font-size: 14px;
+    color: #6c757d;
+  }
+}
+
+.accion-arrow {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.accion-separador {
+  height: 1px;
+  background: #e9ecef;
+  margin: 8px 20px;
+}
+
+// Footer del modal
+.modal-acciones-footer {
+  padding: 16px 20px;
+  border-top: 1px solid #e9ecef;
+  background: #f8f9fa;
+}
+
+.btn-cancelar-modal {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #dee2e6;
+  background: white;
+  color: #6c757d;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: #e9ecef;
+  }
+}
+
+// Botón de tres puntos
+.boton-tres-puntos {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: #f8f9fa;
+  }
+  
+  .punto {
+    width: 4px;
+    height: 4px;
+    background: #6c757d;
+    border-radius: 50%;
+    transition: background 0.2s ease;
+  }
+  
+  &:hover .punto {
+    background: #495057;
+  }
+}
+
+.columna-acciones {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.contenedor-boton-acciones {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
