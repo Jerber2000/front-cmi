@@ -50,7 +50,46 @@ export const routes: Routes = [
       import('./components/historialMedico/historialMedico').then(m => m.HistorialMedicoComponent),
     canActivate: [authGuard],
   },
-  { path: 'agenda', component: AgendaComponent },
+  { 
+    path: 'agenda', component: AgendaComponent 
+  },
+  {
+    path: 'administracion',
+    loadComponent: () =>
+      import('./components/gestionclinica/gestionclinica').then(m => m.GestionClinicaComponent),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'educacion-inclusiva',
+    loadComponent: () =>
+      import('./components/gestionclinica/gestionclinica').then(m => m.GestionClinicaComponent),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'fisioterapia',
+    loadComponent: () =>
+      import('./components/gestionclinica/gestionclinica').then(m => m.GestionClinicaComponent),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'medicina-general',
+    loadComponent: () =>
+      import('./components/gestionclinica/gestionclinica').then(m => m.GestionClinicaComponent),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'nutricion',
+    loadComponent: () =>
+      import('./components/gestionclinica/gestionclinica').then(m => m.GestionClinicaComponent),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'psicologia',
+    loadComponent: () =>
+      import('./components/gestionclinica/gestionclinica').then(m => m.GestionClinicaComponent),
+    canActivate: [authGuard],
+  },
+
   {
     path: '',
     redirectTo: '/login',

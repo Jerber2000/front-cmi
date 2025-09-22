@@ -1,0 +1,199 @@
+<!-- gestionclinica.html - Template mejorado -->
+<div class="content-area" [class.sidebar-expanded]="sidebarExpanded">
+  <app-sidebar 
+    [userInfo]="userInfo"
+    (sidebarToggle)="onSidebarToggle($event)">
+  </app-sidebar>
+  
+  <div class="contenedor-menu">
+    <header class="encabezado">
+      <div class="contenido-encabezado">
+        <div class="izquierda-encabezado">
+          <div class="texto-encabezado">
+            <h1 class="titulo">
+              {{ (dashboardData$ | async)?.config?.title || 'GESTIÓN CLÍNICA' }}
+            </h1>
+          </div>
+          <img src="assets/img/LogoFraijanes.png" alt="Logo Fraijanes" class="logo">
+        </div>
+      </div>
+    </header>
+  </div>
+
+  <!-- Controles de información -->
+  <div class="tarjeta-control">
+    <div class="controles-busqueda">
+      <div class="contenedor-busqueda">
+        <div class="informacion-sistema">
+          <h2>{{ (dashboardData$ | async)?.config?.subtitle || 'Sistema de gestión' }}</h2>
+          <p>Módulo: {{ (currentModule$ | async) | titlecase }}</p>
+        </div>
+      </div>
+      
+      <div class="informacion-encabezado">
+        <div class="informacion-fecha">
+          Fecha: {{ formattedDate$ | async }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Estadísticas específicas del módulo -->
+    <div class="fila-estadisticas" 
+         *ngIf="(dashboardData$ | async)?.formattedStats as stats; else noStats">
+      <div class="tarjeta-estadistica" 
+           *ngFor="let stat of stats; trackBy: trackByStatLabel">
+        <div class="valor-estadistica" [class]="'stat-' + stat.color">
+          <i [class]="stat.icon" *ngIf="stat.icon"></i>
+          {{ stat.value }}
+        </div>
+        <div class="etiqueta-estadistica">{{ stat.label }}</div>
+      </div>
+    </div>
+    
+    <ng-template #noStats>
+      <div class="no-stats" *ngIf="hasStats((dashboardData$ | async)?.formattedStats || [])">
+        <p>No hay estadísticas disponibles</p>
+      </div>
+    </ng-template>
+  </div>
+
+  <!-- Dashboard Content -->
+  <div class="main-container">
+    <div class="dashboard-content">
+      <div class="dashboard-card">
+        
+        <!-- Módulos organizados en filas -->
+        <div class="modules-container" 
+             *ngIf="(dashboardData$ | async)?.activeModules as modules; else noModules">
+          
+          <!-- Primera fila de módulos (primeros 4) -->
+          <div class="icons-grid" *ngIf="modules.length > 0">
+            <div 
+              class="icon-item" 
+              *ngFor="let module of modules.slice(0, 4); trackBy: trackByModuleId" 
+              (click)="navigateTo(module.route)"
+              [attr.aria-label]="'Navegar a ' + module.name"
+              role="button"
+              tabindex="0"
+              (keydown.enter)="navigateTo(module.route)"
+              (keydown.space)="navigateTo(module.route)"
+            >
+              <div class="icon-circle" [ngClass]="module.color">
+                <i [class]="module.icon" [attr.aria-hidden]="true"></i>
+                <div class="notification-badge" 
+                     *ngIf="module.notification && module.notification > 0"
+                     [attr.aria-label]="module.notification + ' notificaciones'">
+                  {{ module.notification }}
+                </div>
+              </div>
+              <div class="icon-label">{{ module.name }}</div>
+              <div class="icon-description" *ngIf="module.description">
+                {{ module.description }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Divisor entre filas -->
+          <div class="divider" *ngIf="modules.length > 4"></div>
+
+          <!-- Segunda fila de módulos (módulos 5-8) -->
+          <div class="icons-grid" *ngIf="modules.length > 4">
+            <div 
+              class="icon-item" 
+              *ngFor="let module of modules.slice(4, 8); trackBy: trackByModuleId" 
+              (click)="navigateTo(module.route)"
+              [attr.aria-label]="'Navegar a ' + module.name"
+              role="button"
+              tabindex="0"
+              (keydown.enter)="navigateTo(module.route)"
+              (keydown.space)="navigateTo(module.route)"
+            >
+              <div class="icon-circle" [ngClass]="module.color">
+                <i [class]="module.icon" [attr.aria-hidden]="true"></i>
+                <div class="notification-badge" 
+                     *ngIf="module.notification && module.notification > 0"
+                     [attr.aria-label]="module.notification + ' notificaciones'">
+                  {{ module.notification }}
+                </div>
+              </div>
+              <div class="icon-label">{{ module.name }}</div>
+              <div class="icon-description" *ngIf="module.description">
+                {{ module.description }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Tercera fila si hay más de 8 módulos -->
+          <div class="divider" *ngIf="modules.length > 8"></div>
+          <div class="icons-grid" *ngIf="modules.length > 8">
+            <div 
+              class="icon-item" 
+              *ngFor="let module of modules.slice(8); trackBy: trackByModuleId" 
+              (click)="navigateTo(module.route)"
+              [attr.aria-label]="'Navegar a ' + module.name"
+              role="button"
+              tabindex="0"
+              (keydown.enter)="navigateTo(module.route)"
+              (keydown.space)="navigateTo(module.route)"
+            >
+              <div class="icon-circle" [ngClass]="module.color">
+                <i [class]="module.icon" [attr.aria-hidden]="true"></i>
+                <div class="notification-badge" 
+                     *ngIf="module.notification && module.notification > 0"
+                     [attr.aria-label]="module.notification + ' notificaciones'">
+                  {{ module.notification }}
+                </div>
+              </div>
+              <div class="icon-label">{{ module.name }}</div>
+              <div class="icon-description" *ngIf="module.description">
+                {{ module.description }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estado sin módulos configurados -->
+        <ng-template #noModules>
+          <div class="empty-state">
+            <i class="fas fa-cogs" aria-hidden="true"></i>
+            <h3>Módulo en configuración</h3>
+            <p>Este módulo está siendo configurado. Pronto estará disponible.</p>
+          </div>
+        </ng-template>
+
+        <!-- Acciones rápidas -->
+        <div class="quick-actions" 
+             *ngIf="(dashboardData$ | async)?.visibleActions as actions">
+          <div *ngIf="hasQuickActions(actions)">
+            <h3>Acciones Rápidas</h3>
+            <div class="action-buttons">
+              <button 
+                class="action-btn" 
+                *ngFor="let action of actions; trackBy: trackByActionId"
+                (click)="quickAction(action.action)"
+                [attr.aria-label]="'Ejecutar acción: ' + action.label"
+                [disabled]="loading$ | async"
+              >
+                <i [class]="action.icon" [attr.aria-hidden]="true"></i>
+                {{ action.label }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Debug info (solo en desarrollo) -->
+  <div class="debug-info" *ngIf="false">
+    <h4>Debug Info:</h4>
+    <p>Módulo actual: {{ currentModule$ | async }}</p>
+    <p>Total módulos: {{ (dashboardData$ | async)?.activeModules?.length || 0 }}</p>
+    <p>Total notificaciones: {{ (dashboardData$ | async)?.totalNotifications || 0 }}</p>
+    <p>Ruta actual: {{ router.url }}</p>
+    <p>Usuario: {{ userInfo.name }} ({{ userInfo.role }})</p>
+    <p>Permisos: {{ userInfo.permissions?.join(', ') || 'Ninguno' }}</p>
+  </div>
+</div>
