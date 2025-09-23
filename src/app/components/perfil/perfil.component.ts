@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { Usuario } from '../../services/usuario.service';
-import { PerfilService, PerfilFormData } from '../../services/perfil.services';
+import { PerfilService, PerfilFormData } from '../../services/perfil.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AlertaService } from '../../services/alerta.service';
 import { FormatoTelefonicoDirective } from '../../directives/numeroFormato';
@@ -60,34 +60,75 @@ export class PerfilComponent implements OnInit, OnDestroy {
 
   private createForm(): FormGroup {
     return this.fb.group({
-      password: [''],
+      password: ['', [Validators.minLength(8), Validators.maxLength(12)]],
       confirmPassword: [''],
       correo: ['', [Validators.required, Validators.email]],
       confirmCorreo: ['', [Validators.required, Validators.email]],
       telinstitucional: ['+502 ', [Validators.required]],
       extension: [''],
       telPersonal: ['+502 ', [Validators.required]]
-    });
+    }, { validators: this.passwordMatchValidator });
   }
 
-  private initializeComponent(): void {
-    this.loading = true;
-
-    this.perfilSubscription = this.perfilService.perfil$.subscribe({
-      next: (usuario) => {
-        this.usuario = usuario;
-        this.userInfo = this.perfilService.obtenerInfoSidebar();
-        this.photoPreview = usuario ? this.perfilService.getFotoPerfilUrl(usuario) : null;
-        this.populateForm();
-        this.loading = false;
-      },
-      error: (error) => {
-        console.error('Error al cargar perfil:', error);
-        this.alerta.alertaError('Error al cargar el perfil');
-        this.loading = false;
+  private passwordMatchValidator(form: FormGroup) {
+    const password = form.get('password');
+    const confirmPassword = form.get('confirmPassword');
+    
+    if (password?.value && confirmPassword?.value) {
+      if (password.value !== confirmPassword.value) {
+        confirmPassword?.setErrors({ passwordMismatch: true });
+        return { passwordMismatch: true };
       }
-    });
+    }
+    
+    if (confirmPassword?.hasError('passwordMismatch')) {
+      const errors = { ...confirmPassword.errors };
+      delete errors['passwordMismatch'];
+      confirmPassword.setErrors(Object.keys(errors).length ? errors : null);
+    }
+    
+    return null;
   }
+
+private initializeComponent(): void {
+  this.loading = true;
+  
+  // Suscribirse al BehaviorSubject para reactividad
+  this.perfilSubscription = this.perfilService.perfil$.subscribe({
+    next: (usuario) => {
+      this.usuario = usuario;
+      this.userInfo = this.perfilService.obtenerInfoSidebar();
+      this.photoPreview = usuario ? this.perfilService.getFotoPerfilUrl(usuario) : null;
+      this.populateForm();
+      this.loading = false;
+    },
+    error: (error) => {
+      console.error('Error al suscribirse al perfil:', error);
+      this.loading = false;
+    }
+  });
+  
+  // SIEMPRE cargar desde el backend (no importa si hay datos en localStorage)
+  this.cargarDesdeBackend();
+}
+
+/**
+ * Carga el perfil desde el backend - ÚNICA FUENTE DE DATOS
+ */
+private cargarDesdeBackend(): void {
+  this.perfilService.obtenerPerfilDesdeBackend().subscribe({
+    next: (usuario) => {
+      // El servicio ya actualiza el BehaviorSubject internamente
+      console.log('Perfil cargado desde backend:', usuario.nombres, usuario.apellidos);
+    },
+    error: (error) => {
+      this.loading = false;
+      console.error('Error al cargar perfil desde backend:', error);
+      this.alerta.alertaError('Error al cargar el perfil: ' + error.message);
+    }
+  });
+}
+
 
   private populateForm(): void {
     if (this.usuario) {
@@ -163,7 +204,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
     // Validar tipo de archivo
     if (!file.type.startsWith('image/')) {
       this.alerta.alertaError('Solo se permiten archivos de imagen');
-      event.target.value = ''; // Limpiar el input
+      event.target.value = '';
       return;
     }
 
@@ -224,6 +265,12 @@ export class PerfilComponent implements OnInit, OnDestroy {
       if (field.errors['minlength']) {
         return `${this.getFieldDisplayName(fieldName)} debe tener al menos ${field.errors['minlength'].requiredLength} caracteres`;
       }
+      if (field.errors['maxlength']) {
+        return `${this.getFieldDisplayName(fieldName)} debe tener máximo ${field.errors['maxlength'].requiredLength} caracteres`;
+      }
+      if (field.errors['passwordMismatch']) {
+        return 'Las contraseñas no coinciden';
+      }
       if (field.errors['pattern']) {
         return `El formato de ${this.getFieldDisplayName(fieldName).toLowerCase()} es inválido`;
       }
@@ -279,6 +326,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
 
     this.loading = true;
 
+    // Usar el PerfilService para actualizar
     this.perfilService.actualizarPerfil(
       this.usuario.idusuario,
       formData,
@@ -288,7 +336,12 @@ export class PerfilComponent implements OnInit, OnDestroy {
         this.loading = false;
         this.alerta.alertaExito('Perfil actualizado correctamente');
         this.closeEditModal();
+        
+        // Actualizar userInfo para el sidebar
         this.userInfo = this.perfilService.obtenerInfoSidebar();
+        
+        // Refrescar desde el backend para confirmar cambios
+        this.cargarDesdeBackend();
       },
       error: (error) => {
         this.loading = false;
