@@ -1,4 +1,4 @@
-// Variables
+//perfil/perfil.component.scss
 $primary: #2c6662;
 $primary-dark: #1f4540;
 $danger: #dc3545;
@@ -14,109 +14,184 @@ $white: #ffffff;
 $shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 $shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.2);
 
-// Header compacto
+// === LAYOUT PRINCIPAL CON SIDEBAR ===
+.content-area {
+  padding: 20px;
+  min-height: calc(100vh - 80px);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin-left: 70px; // Sidebar contraído por defecto
+  transition: margin-left 0.3s ease;
+  box-sizing: border-box;
+  width: calc(100% - 70px); // Ancho calculado para sidebar contraído
+}
+
+// Cuando el sidebar está expandido
+.content-area.sidebar-expanded {
+  margin-left: 280px;
+  width: calc(100% - 280px); // Ancho calculado para sidebar expandido
+}
+
+// === HEADER COMO EN USUARIOS ===
 .header {
-  background: $primary;
+  background-color: $primary;
   color: $white;
-  padding: 8px 20px; // Reducido para hacer más compacto
+  padding: 20px;
   display: flex;
   align-items: center;
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
   box-shadow: $shadow;
-  min-height: 50px; // Altura mínima controlada
-
-  .header-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-
-      .header-text {
-        .title {
-          font-size: 20px; // Reducido ligeramente
-          font-weight: 600;
-          margin: 0;
-          line-height: 1.2;
-        }
-      }
-
-      .logo {
-        height: 40px; // Reducido para ser más compacto
-        max-height: 40px;
-        width: auto;
-      }
-    }
-  }
 }
 
-// Perfil Container
-.perfil-container {
-  max-width: 900px;
-  margin: 20px auto;
+.header-content {
+  width: 100%;
+  position: relative;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.header-text {
+  flex: 1;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.logo {
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  height: 60px;
+  z-index: 10;
+}
+
+// === TARJETA DE CONTROLES ===
+.control-card {
+  background: rgba(240, 240, 240, 0.95);
+  border-radius: 15px;
   padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: $shadow;
+  backdrop-filter: blur(10px);
 }
 
-.perfil-header {
+.perfil-controls {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: $gray-light;
-  padding: 15px 20px;
-  border-radius: 10px;
-  box-shadow: $shadow;
-  margin-bottom: 20px;
+  gap: 20px;
+  flex-wrap: wrap;
+}
 
-  .perfil-icon {
-    font-size: 24px;
-    color: $primary;
+.perfil-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.perfil-icon {
+  background: $primary;
+  color: $white;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 4px 8px rgba($primary, 0.3);
+}
+
+.section-title {
+  background: $white;
+  color: #333;
+  padding: 10px 30px;
+  border-radius: 25px;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+}
+
+.header-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.date-info {
+  background: $white;
+  color: #666;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+}
+
+.btn-edit {
+  background: linear-gradient(135deg, $primary, $primary-dark);
+  color: $white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 8px rgba($primary, 0.3);
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, $primary-dark, #174239);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba($primary, 0.4);
   }
 
-  .perfil-date {
-    font-size: 14px;
-    color: $gray-text;
-    font-weight: 500;
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
-  .perfil-actions {
-    .btn-edit {
-      background: $primary;
-      color: $white;
-      border: none;
-      padding: 10px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s ease;
-
-      &:hover:not(:disabled) {
-        background: $primary-dark;
-        transform: translateY(-1px);
-      }
-
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-
-      i {
-        font-size: 12px;
-      }
-    }
+  i {
+    font-size: 12px;
   }
 }
 
-// Foto de perfil
+// === TARJETA PRINCIPAL ===
+.main-card {
+  background: $white;
+  border-radius: 15px;
+  padding: 25px;
+  box-shadow: $shadow;
+  backdrop-filter: blur(10px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+// === FOTO DE PERFIL ===
 .photo-section {
   text-align: center;
-  margin-bottom: 25px;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: $gray-light;
+  border-radius: 12px;
 
   .photo-container {
     display: inline-block;
@@ -186,55 +261,109 @@ $shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.2);
   }
 }
 
-// Perfil Card
-.perfil-card {
+// === INFORMACIÓN DEL USUARIO EN DOS COLUMNAS ===
+.info-section {
+  margin-top: 20px;
+}
+
+.info-grid-two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.info-column {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.info-card {
   background: $white;
-  padding: 25px;
   border-radius: 12px;
-  box-shadow: $shadow;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid $gray-medium;
+  transition: all 0.2s ease;
 
-  .info-section {
-    margin-top: 20px;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
-  .info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
+  .info-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: $gray-text;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    display: block;
   }
 
-  .info-item {
-    padding: 15px;
-    background: $gray-light;
-    border-radius: 8px;
-    border-left: 4px solid $primary;
+  .info-content {
+    font-size: 15px;
+    font-weight: 500;
+    color: $gray-dark;
+    word-break: break-word;
+    line-height: 1.4;
 
-    label {
-      font-size: 12px;
+    &.highlighted {
+      color: $primary;
       font-weight: 600;
-      color: $gray-text;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      display: block;
-      margin-bottom: 6px;
-    }
-
-    .info-value {
-      font-size: 15px;
-      font-weight: 500;
-      color: $gray-dark;
-      word-break: break-word;
-
-      &.highlighted {
-        color: $primary;
-        font-weight: 600;
-        font-size: 16px;
-      }
+      font-size: 16px;
     }
   }
 }
 
-// Modal Styles
+// Mantener el grid original como backup
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.info-item {
+  padding: 15px;
+  background: $gray-light;
+  border-radius: 10px;
+  border-left: 4px solid $primary;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow;
+  }
+
+  label {
+    font-size: 12px;
+    font-weight: 600;
+    color: $gray-text;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .info-value {
+    font-size: 15px;
+    font-weight: 500;
+    color: $gray-dark;
+    word-break: break-word;
+
+    &.highlighted {
+      color: $primary;
+      font-weight: 600;
+      font-size: 16px;
+    }
+  }
+}
+
+// === MODAL STYLES ===
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -244,6 +373,7 @@ $shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.2);
   align-items: center;
   z-index: 1000;
   backdrop-filter: blur(2px);
+  animation: fadeIn 0.3s ease-out;
 }
 
 .modal-content-large {
@@ -256,7 +386,7 @@ $shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: fadeInModal 0.3s ease-in-out;
+  animation: modalSlideIn 0.3s ease-out;
 }
 
 .modal-header {
@@ -367,7 +497,7 @@ $shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.2);
   }
 }
 
-// Form Styles
+// === FORM STYLES ===
 .readonly-section,
 .form-section {
   margin-bottom: 24px;
@@ -560,7 +690,7 @@ $shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.2);
   }
 }
 
-// Loading Overlay
+// === LOADING OVERLAY ===
 .loading-overlay {
   position: fixed;
   top: 0;
@@ -592,8 +722,19 @@ $shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.2);
   }
 }
 
-// Animations
-@keyframes fadeInModal {
+// === ANIMATIONS ===
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modalSlideIn {
   from {
     opacity: 0;
     transform: scale(0.9) translateY(-20px);
@@ -604,47 +745,101 @@ $shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.2);
   }
 }
 
-// Responsive Design
+// === RESPONSIVE DESIGN ===
+@media (max-width: 1200px) {
+  .perfil-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .perfil-info {
+    min-width: auto;
+    justify-content: center;
+  }
+  
+  .header-info {
+    justify-content: center;
+    gap: 15px;
+  }
+}
+
 @media (max-width: 768px) {
+  .content-area {
+    padding: 15px;
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
   .header {
-    padding: 6px 15px;
+    padding: 15px;
     
-    .header-content .header-left {
+    .header-left {
       gap: 8px;
       
-      .header-text .title {
-        font-size: 18px;
+      .title {
+        font-size: 20px;
       }
       
       .logo {
-        height: 35px;
+        height: 50px;
+        right: 15px;
       }
     }
   }
 
-  .perfil-container {
+  .control-card {
     padding: 15px;
-    margin: 15px auto;
   }
 
-  .perfil-header {
+  .perfil-controls {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+
+  .perfil-info {
+    justify-content: center;
+  }
+
+  .header-info {
     flex-direction: column;
     gap: 10px;
-    text-align: center;
 
-    .perfil-actions .btn-edit {
+    .btn-edit {
       width: 100%;
       justify-content: center;
     }
   }
 
-  .perfil-card {
+  .section-title,
+  .date-info {
+    font-size: 14px;
+    padding: 8px 16px;
+  }
+
+  .main-card {
     padding: 20px 15px;
   }
 
-  .info-grid {
+  .info-grid-two-columns {
     grid-template-columns: 1fr;
     gap: 15px;
+  }
+
+  .info-card {
+    padding: 15px 18px;
+
+    .info-label {
+      font-size: 11px;
+    }
+
+    .info-content {
+      font-size: 14px;
+
+      &.highlighted {
+        font-size: 15px;
+      }
+    }
   }
 
   .photo-section .photo-preview {
@@ -692,17 +887,72 @@ $shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.2);
 }
 
 @media (max-width: 480px) {
-  .header .header-content .header-left {
+  .header .header-left {
     flex-direction: column;
     gap: 4px;
     align-items: flex-start;
 
-    .header-text .title {
-      font-size: 16px;
+    .title {
+      font-size: 18px;
     }
 
     .logo {
-      height: 30px;
+      height: 40px;
+      position: relative;
+      right: auto;
+      top: auto;
+      transform: none;
+      margin-top: 5px;
     }
   }
+
+  .perfil-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+
+  .section-title {
+    font-size: 13px;
+    padding: 6px 14px;
+  }
+
+  .info-item {
+    padding: 12px;
+
+    label {
+      font-size: 11px;
+    }
+
+    .info-value {
+      font-size: 14px;
+
+      &.highlighted {
+        font-size: 15px;
+      }
+    }
+  }
+}
+
+// === MEJORAS PARA ACCESIBILIDAD ===
+.btn-edit:focus,
+.btn-photo:focus,
+.form-input:focus {
+  outline: 2px solid $primary;
+  outline-offset: 2px;
+}
+
+// === TRANSICIONES SUAVES ===
+* {
+  transition: all 0.2s ease;
+}
+
+// === MEJORAS ADICIONALES ===
+.control-card,
+.main-card {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.info-item:hover {
+  background: darken($gray-light, 2%);
 }

@@ -1,8 +1,9 @@
+<!-- perfil/perfil.component.html -->
 <div class="content-area" [class.sidebar-expanded]="sidebarExpanded" (keydown)="onKeydown($event)">
   
   <app-sidebar [userInfo]="userInfo"></app-sidebar>
   
-  <!-- Header -->
+  <!-- Header adaptado como en usuarios -->
   <div class="menu-container">
     <header class="header">
       <div class="header-content">
@@ -16,20 +17,21 @@
     </header>
   </div>
 
-  <!-- Tarjeta de perfil principal (Solo lectura) -->
-  <div class="perfil-container">
-    <!-- Card Header -->
-    <div class="perfil-header">
-      <div class="perfil-icon">
-        <i class="fas fa-user"></i>
+  <!-- Tarjeta de controles superiores -->
+  <div class="control-card">
+    <div class="perfil-controls">
+      <div class="perfil-info">
+        <div class="perfil-icon">
+          <i class="fas fa-user"></i>
+        </div>
+        <div class="section-title">Mi Perfil</div>
       </div>
       
-      <div class="perfil-date">
-        {{ currentDate | date:'dd/M/yyyy' }}
-      </div>
-      
-      <!-- Botón de editar -->
-      <div class="perfil-actions">
+      <!-- Fecha y acciones -->
+      <div class="header-info">
+        <div class="date-info">
+          Fecha: {{ currentDate | date:'dd/MM/yy' }}
+        </div>
         <button 
           class="btn-edit" 
           (click)="openEditModal()"
@@ -41,76 +43,82 @@
         </button>
       </div>
     </div>
+  </div>
 
-    <!-- Card Body - Vista de solo lectura -->
-    <div class="perfil-card">
-      
-      <!-- Sección de foto de perfil -->
-      <div class="photo-section">
-        <div class="photo-container">
-          <div class="photo-preview">
-            <img 
-              *ngIf="photoPreview" 
-              [src]="photoPreview" 
-              alt="Foto de perfil" 
-              class="photo-img"
-            >
-            <div *ngIf="!photoPreview" class="photo-placeholder">
-              <i class="fas fa-user-circle"></i>
-            </div>
+  <!-- Tarjeta principal del perfil -->
+  <div class="main-card">
+    
+    <!-- Sección de foto de perfil -->
+    <div class="photo-section">
+      <div class="photo-container">
+        <div class="photo-preview">
+          <img 
+            *ngIf="photoPreview" 
+            [src]="photoPreview" 
+            alt="Foto de perfil" 
+            class="photo-img"
+          >
+          <div *ngIf="!photoPreview" class="photo-placeholder">
+            <i class="fas fa-user-circle"></i>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Información del usuario -->
-      <div class="info-section">
-        <div class="info-grid">
-          <div class="info-item">
-            <label>Nombre completo</label>
-            <div class="info-value highlighted">
+    <!-- Información del usuario en dos columnas -->
+    <div class="info-section">
+      <div class="info-grid-two-columns">
+        <!-- Columna izquierda -->
+        <div class="info-column">
+          <div class="info-card">
+            <div class="info-label">Nombre completo</div>
+            <div class="info-content highlighted">
               {{ usuario?.nombres || '' }} {{ usuario?.apellidos || '' }}
             </div>
           </div>
 
-          <div class="info-item">
-            <label>Usuario</label>
-            <div class="info-value">
+          <div class="info-card">
+            <div class="info-label">Usuario</div>
+            <div class="info-content">
               {{ usuario?.usuario || 'No especificado' }}
             </div>
           </div>
 
-          <div class="info-item">
-            <label>Profesión</label>
-            <div class="info-value">
-              {{ usuario?.profesion || 'No especificada' }}
-            </div>
-          </div>
-
-          <div class="info-item">
-            <label>Correo institucional</label>
-            <div class="info-value">
-              {{ usuario?.correo || 'No especificado' }}
-            </div>
-          </div>
-
-          <div class="info-item">
-            <label>Teléfono institucional</label>
-            <div class="info-value">
+          <div class="info-card">
+            <div class="info-label">Teléfono institucional</div>
+            <div class="info-content">
               {{ usuario?.telinstitucional || 'No especificado' }}
             </div>
           </div>
 
-          <div class="info-item">
-            <label>Extensión</label>
-            <div class="info-value">
-              {{ usuario?.extension || 'No especificada' }}
+          <div class="info-card">
+            <div class="info-label">Teléfono personal</div>
+            <div class="info-content">
+              {{ usuario?.telefonopersonal || 'No especificado' }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna derecha -->
+        <div class="info-column">
+          <div class="info-card">
+            <div class="info-label">Profesión</div>
+            <div class="info-content">
+              {{ usuario?.profesion || 'No especificada' }}
             </div>
           </div>
 
-          <div class="info-item">
-            <label>Teléfono personal</label>
-            <div class="info-value">
-              {{ usuario?.telefonopersonal || 'No especificado' }}
+          <div class="info-card">
+            <div class="info-label">Correo institucional</div>
+            <div class="info-content">
+              {{ usuario?.correo || 'No especificado' }}
+            </div>
+          </div>
+
+          <div class="info-card">
+            <div class="info-label">Extensión</div>
+            <div class="info-content">
+              {{ usuario?.extension || 'No especificada' }}
             </div>
           </div>
         </div>
