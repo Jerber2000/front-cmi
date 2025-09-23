@@ -13,18 +13,12 @@ $border-radius: 15px;
 .content-area {
   padding: 20px;
   margin-left: 70px;
-  min-height: calc(100vh - 80px);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  transition: margin-left 0.3s ease;
+  width: calc(100vw - 70px);
+  transition: all 0.3s ease;
 
   &.sidebar-expanded {
     margin-left: 280px;
-  }
-
-  @media (max-width: 768px) {
-    margin-left: 0 !important;
-    padding: 15px;
+    width: calc(100vw - 280px);
   }
 }
 

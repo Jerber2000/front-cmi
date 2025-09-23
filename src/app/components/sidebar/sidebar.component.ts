@@ -34,7 +34,8 @@ export class SidebarComponent {
       label: 'Gestión de usuarios',
       icon: 'fas fa-users',
       children: [
-        { label: 'Usuarios', route: '/usuario' } 
+        { label: 'Usuarios', route: '/usuario' } ,
+        { label: 'Perfiles', route: '/perfil' } 
       ]
     },
     {
