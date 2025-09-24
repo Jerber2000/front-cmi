@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Observable, BehaviorSubject, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Usuario, UsuarioService } from './usuario.service';
 import { ArchivoService } from './archivo.service';
+import { environment } from '../../environments/environment';
 
 export interface PerfilFormData {
   password?: string;
@@ -32,29 +34,42 @@ export class PerfilService {
 
   constructor(
     private usuarioService: UsuarioService,
-    private archivoService: ArchivoService
+    private archivoService: ArchivoService,
+    private http: HttpClient
   ) {
-    this.loadPerfilFromStorage();
+    // NO cargar desde localStorage al inicializar
+    // Los datos siempre deben venir del backend
   }
 
   /**
-   * Carga el perfil desde localStorage
+   * Obtiene headers con token de autenticación
    */
-  private loadPerfilFromStorage(): void {
+  private getAuthHeaders(): HttpHeaders {
+    const token = localStorage.getItem('token');
+    return new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+  }
+
+  /**
+   * Obtiene el ID del usuario logueado desde localStorage
+   */
+  private getCurrentUserId(): number {
     try {
       const usuarioData = localStorage.getItem('usuario');
       if (usuarioData) {
         const usuario = JSON.parse(usuarioData);
-        this.perfilSubject.next(usuario);
+        return usuario.idusuario;
       }
     } catch (error) {
-      console.error('Error al cargar perfil desde localStorage:', error);
-      this.perfilSubject.next(null);
+      console.error('Error al obtener el ID del usuario desde localStorage:', error);
     }
+    return 1; // Valor por defecto
   }
 
   /**
-   * Obtiene el perfil actual del usuario logueado
+   * Obtiene el perfil actual del usuario logueado (solo del BehaviorSubject)
    */
   getPerfilActual(): Usuario | null {
     return this.perfilSubject.value;
@@ -84,10 +99,18 @@ export class PerfilService {
       if (formData.password.length < 8) {
         errores.push('La contraseña debe tener al menos 8 caracteres');
       }
+      if (formData.password.length > 12) {
+        errores.push('La contraseña debe tener máximo 12 caracteres');
+      }
       // Validar que tenga mayúsculas, minúsculas y números
       if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
         errores.push('La contraseña debe incluir mayúsculas, minúsculas y números');
       }
+    }
+
+    // Validar contraseñas requeridas juntas
+    if ((formData.password && !formData.confirmPassword) || (!formData.password && formData.confirmPassword)) {
+      errores.push('Debe completar ambos campos de contraseña o dejar ambos vacíos');
     }
 
     // Validar correos
@@ -131,6 +154,31 @@ export class PerfilService {
   }
 
   /**
+   * Obtiene el perfil desde el backend usando el endpoint de usuarios existente
+   */
+  obtenerPerfilDesdeBackend(): Observable<Usuario> {
+    const userId = this.getCurrentUserId();
+    
+    // Usar el endpoint existente de usuarios
+    return this.usuarioService.obtenerUsuarioPorId(userId).pipe(
+      map((response: any) => {
+        if (response && response.success) {
+          const usuario = response.data;
+          // Solo actualizar el BehaviorSubject, NO localStorage
+          this.perfilSubject.next(usuario);
+          return usuario;
+        } else {
+          throw new Error(response?.message || 'Error al obtener el perfil');
+        }
+      }),
+      catchError(error => {
+        console.error('Error al obtener perfil desde backend:', error);
+        return throwError(() => new Error(this.procesarErrorHttp(error)));
+      })
+    );
+  }
+
+  /**
    * Sube archivos de perfil (foto)
    */
   async subirArchivosPerfil(usuarioId: number, archivos: { foto?: File }): Promise<{ rutaFoto?: string }> {
@@ -146,7 +194,7 @@ export class PerfilService {
   }
 
   /**
-   * Actualiza el perfil del usuario
+   * Actualiza el perfil del usuario usando el endpoint de usuarios existente
    */
   actualizarPerfil(
     usuarioId: number, 
@@ -166,7 +214,7 @@ export class PerfilService {
   }
 
   /**
-   * Procesa la actualización del perfil (método privado)
+   * Procesa la actualización del perfil usando el endpoint de usuarios existente
    */
   private async procesarActualizacionPerfil(
     usuarioId: number,
@@ -182,74 +230,83 @@ export class PerfilService {
 
     // Subir nueva foto si se proporcionó
     if (nuevaFoto) {
-      const resultadoArchivos = await this.subirArchivosPerfil(usuarioId, { foto: nuevaFoto });
-      rutaFoto = resultadoArchivos.rutaFoto || rutaFoto;
+      try {
+        const resultadoArchivos = await this.subirArchivosPerfil(usuarioId, { foto: nuevaFoto });
+        rutaFoto = resultadoArchivos.rutaFoto || rutaFoto;
+      } catch (error) {
+        console.error('Error al subir foto:', error);
+        // Continuar sin la foto si hay error
+      }
     }
 
-    // Preparar datos para actualización
-    const userData: Omit<Usuario, 'idusuario'> = {
-      ...usuarioActual,
+    // Preparar datos para el backend usando la estructura esperada por el endpoint de usuarios
+    const updateData: any = {
+      fkrol: usuarioActual.fkrol, // Mantener el rol actual
+      usuario: usuarioActual.usuario, // Mantener el usuario actual
+      nombres: usuarioActual.nombres, // Mantener nombres
+      apellidos: usuarioActual.apellidos, // Mantener apellidos
+      fechanacimiento: usuarioActual.fechanacimiento, // Mantener fecha
       correo: formData.correo,
+      puesto: usuarioActual.puesto, // Mantener puesto
+      profesion: usuarioActual.profesion, // Mantener profesión
       telinstitucional: formData.telinstitucional,
-      extension: formData.extension || '',
       telefonopersonal: formData.telPersonal,
-      rutafotoperfil: rutaFoto,
-      usuariomodificacion: usuarioId.toString()
+      nombrecontactoemergencia: usuarioActual.nombrecontactoemergencia, // Mantener contacto
+      telefonoemergencia: usuarioActual.telefonoemergencia, // Mantener teléfono emergencia
+      observaciones: usuarioActual.observaciones, // Mantener observaciones
+      usuariomodificacion: usuarioId.toString(),
+      estado: usuarioActual.estado // Mantener estado actual
     };
 
-    // Solo actualizar contraseña si se proporcionó una nueva
+    // Solo incluir extensión si tiene valor
+    if (formData.extension && formData.extension.trim() !== '') {
+      updateData.extension = formData.extension.trim();
+    } else {
+      updateData.extension = usuarioActual.extension || '';
+    }
+
+    // Solo incluir contraseña si se proporcionó una nueva
     if (formData.password && formData.password.trim() !== '') {
-      userData.clave = formData.password;
+      updateData.clave = formData.password;
+    } else {
+      updateData.clave = usuarioActual.clave; // Mantener contraseña actual
+    }
+
+    // Solo incluir foto si se subió una nueva
+    if (rutaFoto !== usuarioActual.rutafotoperfil) {
+      updateData.rutafotoperfil = rutaFoto;
+    } else {
+      updateData.rutafotoperfil = usuarioActual.rutafotoperfil || '';
     }
 
     return new Promise((resolve, reject) => {
-      this.usuarioService.actualizarUsuario(usuarioId, userData).subscribe({
+      // Usar el endpoint existente de usuarios
+      this.usuarioService.actualizarUsuario(usuarioId, updateData).subscribe({
         next: (response) => {
-          if (response && response.success === false) {
-            reject(new Error(this.extraerMensajeError(response)));
-            return;
+          if (response.success) {
+            // Actualizar perfil solo en memoria (BehaviorSubject)
+            const perfilActualizado: Usuario = {
+              ...usuarioActual,
+              correo: formData.correo,
+              telinstitucional: formData.telinstitucional,
+              extension: formData.extension || '',
+              telefonopersonal: formData.telPersonal,
+              rutafotoperfil: rutaFoto
+            };
+
+            // SOLO actualizar BehaviorSubject - NO localStorage
+            this.perfilSubject.next(perfilActualizado);
+            resolve(response);
+          } else {
+            reject(new Error(response.message || 'Error al actualizar el perfil'));
           }
-
-          // Actualizar perfil en memoria y localStorage
-          const perfilActualizado: Usuario = {
-            ...usuarioActual,
-            ...userData,
-            idusuario: usuarioId
-          };
-
-          this.actualizarPerfilEnStorage(perfilActualizado);
-          resolve(response);
         },
         error: (error) => {
+          console.error('Error al actualizar perfil en backend:', error);
           reject(new Error(this.procesarErrorHttp(error)));
         }
       });
     });
-  }
-
-  /**
-   * Actualiza el perfil en localStorage y en el BehaviorSubject
-   */
-  private actualizarPerfilEnStorage(perfil: Usuario): void {
-    try {
-      localStorage.setItem('usuario', JSON.stringify(perfil));
-      this.perfilSubject.next(perfil);
-    } catch (error) {
-      console.error('Error al actualizar perfil en storage:', error);
-    }
-  }
-
-  /**
-   * Extrae mensaje de error de la respuesta del backend
-   */
-  private extraerMensajeError(response: any): string {
-    if (response.errors && Array.isArray(response.errors) && response.errors.length > 0) {
-      return response.errors[0].msg || response.errors[0].message || response.errors[0];
-    }
-    if (response.message) {
-      return response.message;
-    }
-    return 'Error de validación';
   }
 
   /**
@@ -301,26 +358,7 @@ export class PerfilService {
    * Refresca el perfil desde el servidor
    */
   refrescarPerfil(): Observable<Usuario> {
-    const usuarioActual = this.getPerfilActual();
-    if (!usuarioActual) {
-      return throwError(() => new Error('No hay usuario logueado'));
-    }
-
-    return this.usuarioService.obtenerUsuarios().pipe(
-      map(usuarios => {
-        const usuarioActualizado = usuarios.find(u => u.idusuario === usuarioActual.idusuario);
-        if (usuarioActualizado) {
-          this.actualizarPerfilEnStorage(usuarioActualizado);
-          return usuarioActualizado;
-        } else {
-          throw new Error('Usuario no encontrado');
-        }
-      }),
-      catchError(error => {
-        console.error('Error al refrescar perfil:', error);
-        return throwError(() => error);
-      })
-    );
+    return this.obtenerPerfilDesdeBackend();
   }
 
   /**
@@ -328,6 +366,12 @@ export class PerfilService {
    */
   limpiarPerfil(): void {
     this.perfilSubject.next(null);
-    localStorage.removeItem('usuario');
+  }
+
+  /**
+   * Inicializa el perfil cargando desde el backend
+   */
+  inicializarPerfil(): Observable<Usuario> {
+    return this.obtenerPerfilDesdeBackend();
   }
 }
