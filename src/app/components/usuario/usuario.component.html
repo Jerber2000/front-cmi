@@ -342,17 +342,25 @@
                   <span *ngIf="!isEditMode" class="required">*</span>
                   <span *ngIf="isEditMode" class="optional">(opcional)</span>
                 </label>
-                <input 
-                  type="password" 
-                  formControlName="password"
-                  class="form-input"
-                  [class.invalid]="isFieldInvalid('password')"
-                  [placeholder]="isEditMode ? 'Dejar vacío para mantener la actual' : 'Ingrese contraseña'"
-                  appInputValidator
-                  inputType="any"
-                >
-                <div class="error-message" *ngIf="isFieldInvalid('password')">
-                  {{ getFieldError('password') }}
+                <div class="input-with-icon password">
+                  <input 
+                    [type]="showPassword ? 'text' : 'password'"
+                    formControlName="password"
+                    class="form-input"
+                    [class.invalid]="isFieldInvalid('password')"
+                    placeholder="Ingrese nueva contraseña (opcional)"
+                  >
+                  <button 
+                    type="button" 
+                    class="toggle-password"
+                    (click)="togglePasswordVisibility()"
+                    title="{{ showPassword ? 'Ocultar' : 'Mostrar' }} contraseña"
+                  >
+                    <i class="fas" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
+                  </button>
+                  <div class="error-message" *ngIf="isFieldInvalid('password')">
+                    {{ getFieldError('password') }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -364,15 +372,23 @@
                   <span *ngIf="!isEditMode" class="required">*</span>
                   <span *ngIf="isEditMode" class="optional">(opcional)</span>
                 </label>
-                <input 
-                  type="password" 
-                  formControlName="confirmPassword"
-                  class="form-input"
-                  [class.invalid]="isFieldInvalid('confirmPassword')"
-                  [placeholder]="isEditMode ? 'Confirme nueva contraseña si la cambió' : 'Confirme la contraseña'"
-                  appInputValidator
-                  inputType="any"
-                >
+                <div class="input-with-icon">
+                  <input 
+                    [type]="showConfirmPassword ? 'text' : 'password'"
+                    formControlName="confirmPassword"
+                    class="form-input"
+                    [class.invalid]="isFieldInvalid('confirmPassword')"
+                    [placeholder]="isEditMode ? 'Confirme nueva contraseña si la cambió' : 'Confirme la contraseña'"
+                  >
+                  <button 
+                    type="button" 
+                    class="toggle-password"
+                    (click)="toggleConfirmPasswordVisibility()"
+                    title="{{ showConfirmPassword ? 'Ocultar' : 'Mostrar' }} contraseña"
+                  >
+                    <i class="fas" [class.fa-eye]="!showConfirmPassword" [class.fa-eye-slash]="showConfirmPassword"></i>
+                  </button>
+                </div>
                 <div class="error-message" *ngIf="isFieldInvalid('confirmPassword')">
                   {{ getFieldError('confirmPassword') }}
                 </div>

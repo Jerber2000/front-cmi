@@ -480,6 +480,96 @@
   box-shadow: none;
 }
 
+/* 🔒 ESTILOS PARA CAMPO DE CONTRASEÑA CON ÍCONO */
+.input-with-icon {
+  position: relative;
+  display: block; /* Cambiar de flex a block */
+  width: 100%;
+}
+
+.input-with-icon .form-input {
+  width: 100%;
+  padding-right: 50px; /* Aumenté de 45px a 50px para más espacio */
+  box-sizing: border-box;
+  display: block; /* Asegurar que sea block */
+}
+
+.toggle-password {
+  position: absolute;
+  right: 16px;
+  top: 14px; /* Cambio de 50% a píxeles fijos */
+  transform: none; /* Elimino el translateY */
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #6c757d;
+  font-size: 16px;
+  padding: 5px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  z-index: 10;
+  margin-top: 0;
+  margin-right: 0;
+}
+
+/* Asegurar alineación específica cuando el campo está en error */
+.input-with-icon .form-input.invalid + .toggle-password {
+  top: 14px; /* Misma posición fija */
+  transform: none;
+  right: 16px;
+}
+
+.toggle-password:hover {
+  color: #495057;
+  background: rgba(0, 0, 0, 0.05);
+  transform: scale(1.1); /* Solo escala, sin translateY */
+}
+
+.toggle-password:focus {
+  outline: 2px solid #2c6662;
+  outline-offset: 2px;
+  color: #2c6662;
+  transform: none; /* Sin transform en focus */
+}
+
+.toggle-password i {
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* Asegurar que el input mantenga los estilos base */
+.input-with-icon .form-input:focus {
+  outline: none;
+  border-color: #2c6662;
+  box-shadow: 0 0 0 3px rgba(44, 102, 98, 0.1);
+}
+
+/* IMPORTANTE: Remover el contorno azul del focus por defecto */
+.input-with-icon .form-input:focus {
+  outline: none !important;
+  border-color: #5ba892 !important; /* Usar el mismo color verde que otros campos */
+  box-shadow: 0 0 0 3px rgba(91, 168, 146, 0.1) !important; /* Mismo color que otros campos */
+}
+
+.input-with-icon .form-input.invalid {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+  background-color: rgba(220, 53, 69, 0.05); /* Fondo rojo pálido */
+}
+
+/* Asegurar que el mensaje de error se posicione correctamente */
+.form-group .input-with-icon + .error-message,
+.form-group .input-with-icon + .error-text {
+  margin-top: 6px;
+  display: block;
+  width: 100%;
+}
+
 /* RESPONSIVE MEJORADO */
 @media (max-width: 1200px) {
   .search-controls {
@@ -556,6 +646,22 @@
   
   .logo-corner img {
     max-width: 80px;
+  }
+
+  /* Responsive para el campo de contraseña */
+  .input-with-icon .form-input {
+    padding-right: 45px; /* Menos padding en móvil */
+  }
+  
+  .toggle-password {
+    right: 12px; /* Posición más ajustada en móvil */
+    top: 12px; /* Ajuste para móviles */
+    width: 24px;
+    height: 24px;
+  }
+  
+  .toggle-password i {
+    font-size: 12px;
   }
 }
 
@@ -951,6 +1057,7 @@
     padding: 12px 15px;
   }
 }
+
 /* 🆕 ESTILOS PARA PAGINACIÓN */
 .pagination-container {
   display: flex;
@@ -1094,4 +1201,248 @@
   .pagination-dots {
     padding: 0 4px;
   }
+}
+
+/* 🆕 ESTILOS ADICIONALES PARA CAMPOS DE FORMULARIO */
+
+/* Campo requerido y opcional */
+.required {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+.optional {
+  color: #6c757d;
+  font-style: italic;
+  font-weight: normal;
+}
+
+/* Mensaje de error */
+.error-message {
+  margin-top: 6px;
+  color: #dc3545;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.error-message::before {
+  content: '⚠';
+  font-size: 10px;
+}
+
+/* Campo inválido */
+.form-input.invalid {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1) !important;
+  background-color: rgba(220, 53, 69, 0.05) !important; /* Fondo rojo pálido */
+}
+
+.input-with-icon .form-input.invalid {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1) !important;
+  background-color: rgba(220, 53, 69, 0.05) !important; /* Fondo rojo pálido */
+}
+
+/* Campo vacío sin interacción - mantiene estado normal */
+.form-input:placeholder-shown:not(:focus):not(.invalid) {
+  border-color: #e1e5e9;
+  box-shadow: none;
+  background-color: white;
+}
+
+.input-with-icon .form-input:placeholder-shown:not(:focus):not(.invalid) {
+  border-color: #e1e5e9;
+  box-shadow: none;
+  background-color: white;
+}
+
+/* Estados de carga para botones */
+.btn-loading {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+}
+
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  margin-left: -8px;
+  margin-top: -8px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Mejoras para select y otros inputs */
+.form-select {
+  padding: 12px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: white;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: #2c6662;
+  box-shadow: 0 0 0 3px rgba(44, 102, 98, 0.1);
+}
+
+.form-select.invalid {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+/* Checkbox personalizado */
+.form-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.form-checkbox input[type="checkbox"] {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #e1e5e9;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.form-checkbox input[type="checkbox"]:checked {
+  background: #2c6662;
+  border-color: #2c6662;
+}
+
+.form-checkbox input[type="checkbox"]:checked::after {
+  content: '✓';
+  position: absolute;
+  top: -2px;
+  left: 2px;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.form-checkbox input[type="checkbox"]:focus {
+  outline: 2px solid #2c6662;
+  outline-offset: 2px;
+}
+
+.form-checkbox label {
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Tooltip personalizado */
+.tooltip {
+  position: relative;
+  display: inline-block;
+  cursor: help;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 200px;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 8px;
+  position: absolute;
+  z-index: 1000;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -100px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 12px;
+}
+
+.tooltip .tooltiptext::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #333 transparent transparent transparent;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Mejoras finales de accesibilidad */
+*:focus {
+  outline: 2px solid #2c6662;
+  outline-offset: 2px;
+}
+
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid #2c6662;
+  outline-offset: 2px;
+}
+
+/* Transiciones suaves globales */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
 }

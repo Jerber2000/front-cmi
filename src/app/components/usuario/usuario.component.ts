@@ -54,6 +54,8 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
   
   // Exponer Math para usar en el template
   Math = Math;
+  showPassword = false;
+  showConfirmPassword = false;
 
   private currentUserId: string = '1';
 
@@ -84,6 +86,14 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
       observaciones: [''],
       status: ['', [Validators.required]]
     });
+  }
+
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
+  }
+
+  toggleConfirmPasswordVisibility(): void {
+    this.showConfirmPassword = !this.showConfirmPassword;
   }
 
     /**

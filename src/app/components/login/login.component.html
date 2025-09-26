@@ -37,7 +37,7 @@
       <!-- FORMULARIO DE LOGIN -->
       <form *ngIf="!modoOlvidoClave" (ngSubmit)="onSubmitLogin()" class="form-container fade-in">
         
-        <!-- ✅ NOTIFICACIÓN PARA LOGIN -->
+        <!-- NOTIFICACIÓN PARA LOGIN -->
         <div class="notification-container" *ngIf="notification.show && !modoOlvidoClave" [class]="'notification-' + notification.type">
           <div class="notification-content">
             <i class="notification-icon" [class]="getNotificationIcon()"></i>
@@ -47,7 +47,26 @@
 
         <h3>Ingrese con usuario</h3>
         <input type="text" placeholder="Usuario" required [(ngModel)]="usuario" name="usuario" />
-        <input type="password" placeholder="Contraseña" required [(ngModel)]="clave" name="clave" />
+        
+        <!-- Campo de contraseña con ícono -->
+        <div class="input-with-icon">
+          <input 
+            [type]="showPassword ? 'text' : 'password'" 
+            placeholder="Contraseña" 
+            required 
+            [(ngModel)]="clave" 
+            name="clave" 
+          />
+          <button 
+            type="button" 
+            class="toggle-password"
+            (click)="togglePasswordVisibility()"
+            [title]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+          >
+            <i class="fas" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
+          </button>
+        </div>
+
         <button type="submit" class="primary-button">Iniciar Sesión</button>
         <p class="link" (click)="cambiarModo()">¿Olvidaste tu clave?</p>
 
@@ -63,7 +82,7 @@
       <!-- FORMULARIO DE RECUPERACIÓN -->
       <form *ngIf="modoOlvidoClave" (ngSubmit)="onSubmitReset()" class="form-container fade-in">
         
-        <!-- ✅ NOTIFICACIÓN PARA RECUPERACIÓN -->
+        <!-- NOTIFICACIÓN PARA RECUPERACIÓN -->
         <div class="notification-container" *ngIf="notification.show && modoOlvidoClave" [class]="'notification-' + notification.type">
           <div class="notification-content">
             <i class="notification-icon" [class]="getNotificationIcon()"></i>

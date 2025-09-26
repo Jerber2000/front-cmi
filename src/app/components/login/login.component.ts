@@ -27,6 +27,7 @@ export class LoginComponent {
   clave = '';
   correoRecuperacion = '';
   error = '';
+  showPassword = false;
 
   // ✅ AGREGAR esta propiedad
   notification: Notification = {
@@ -36,6 +37,10 @@ export class LoginComponent {
   };
 
   constructor(private authService: AuthService, private router: Router) {}
+
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
+  }
 
   // ✅ AGREGAR estos métodos
   showNotification(type: 'success' | 'error' | 'info', message: string) {
