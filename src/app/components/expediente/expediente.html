@@ -685,189 +685,239 @@
     </div>
   </div>
 
-  <!-- Vista de detalles -->
-  <div class="tarjeta-principal" *ngIf="vistaActual === 'detalle'">
-    <div class="encabezado-detalle">
+<!-- Vista de detalles - MODAL COMPLETO -->
+<div class="fondo-modal" *ngIf="vistaActual === 'detalle'" (click)="mostrarLista()">
+  <div class="contenido-modal-grande" (click)="$event.stopPropagation()">
+    
+    <!-- Encabezado del modal -->
+    <div class="encabezado-modal">
       <h3>Detalles del Expediente: {{ expedienteSeleccionado?.numeroexpediente }}</h3>
-      <div class="acciones-detalle">
-        <button class="boton-editar" (click)="editarExpediente(expedienteSeleccionado!)">
-          <i class="fas fa-edit"></i> Editar
-        </button>
-        <button class="boton-volver" (click)="mostrarLista()">
-          <i class="fas fa-arrow-left"></i> Volver a la Lista
-        </button>
-      </div>
+      <button class="cerrar-modal" (click)="mostrarLista()">
+        <i class="fas fa-times"></i>
+      </button>
     </div>
 
-    <div class="contenido-detalle" *ngIf="expedienteSeleccionado">
+    <!-- Cuerpo del modal con scroll -->
+    <div class="cuerpo-modal-scroll" *ngIf="expedienteSeleccionado">
       
-      <!-- Información básica -->
-      <div class="seccion-detalle">
-        <h4><i class="fas fa-file-medical"></i> Información del Expediente</h4>
-        <div class="grilla-detalle">
-          <div class="elemento-detalle">
+      <!-- Información básica del expediente -->
+      <div class="seccion-formulario">
+        <h4 class="titulo-seccion">
+          <i class="fas fa-file-medical"></i> Información del Expediente
+        </h4>
+        <div class="grilla-formulario">
+          <div class="grupo-formulario">
             <label>Número de Expediente:</label>
-            <span>{{ expedienteSeleccionado.numeroexpediente }}</span>
+            <div class="campo-lectura">{{ expedienteSeleccionado.numeroexpediente || 'N/A' }}</div>
           </div>
-          <div class="elemento-detalle">
+          <div class="grupo-formulario">
             <label>Fecha de Creación:</label>
-            <span>{{ expedienteSeleccionado.fechacreacion | date:'dd/MM/yyyy HH:mm' }}</span>
+            <div class="campo-lectura">{{ expedienteSeleccionado.fechacreacion | date:'dd/MM/yyyy HH:mm' }}</div>
           </div>
-          <div class="elemento-detalle">
+          <div class="grupo-formulario">
             <label>Usuario que Creó:</label>
-            <span>{{ expedienteSeleccionado.usuariocreacion }}</span>
+            <div class="campo-lectura">{{ expedienteSeleccionado.usuariocreacion || 'N/A' }}</div>
           </div>
-          <div class="elemento-detalle ancho-completo" *ngIf="expedienteSeleccionado.historiaenfermedad">
+          <div class="grupo-formulario ancho-completo" *ngIf="expedienteSeleccionado.historiaenfermedad">
             <label>Historia de Enfermedad:</label>
-            <span>{{ expedienteSeleccionado.historiaenfermedad }}</span>
+            <div class="campo-lectura">{{ expedienteSeleccionado.historiaenfermedad }}</div>
           </div>
         </div>
       </div>
 
       <!-- Paciente asignado -->
-      <div class="seccion-detalle" *ngIf="expedienteSeleccionado.paciente && expedienteSeleccionado.paciente.length > 0">
-        <h4><i class="fas fa-user"></i> Paciente Asignado</h4>
-        <div class="grilla-detalle">
-          <div class="elemento-detalle">
+      <div class="seccion-formulario" *ngIf="expedienteSeleccionado.paciente && expedienteSeleccionado.paciente.length > 0">
+        <h4 class="titulo-seccion">
+          <i class="fas fa-user"></i> Paciente Asignado
+        </h4>
+        <div class="grilla-formulario">
+          <div class="grupo-formulario">
             <label>Nombre Completo:</label>
-            <span>{{ expedienteSeleccionado.paciente[0].nombres }} {{ expedienteSeleccionado.paciente[0].apellidos }}</span>
+            <div class="campo-lectura">{{ expedienteSeleccionado.paciente[0].nombres }} {{ expedienteSeleccionado.paciente[0].apellidos }}</div>
           </div>
-          <div class="elemento-detalle">
+          <div class="grupo-formulario">
             <label>CUI:</label>
-            <span>{{ expedienteSeleccionado.paciente[0].cui }}</span>
+            <div class="campo-lectura">{{ expedienteSeleccionado.paciente[0].cui }}</div>
           </div>
         </div>
       </div>
 
       <!-- Antecedentes médicos -->
-      <div class="seccion-detalle" *ngIf="tieneAntecedentes()">
-        <h4><i class="fas fa-notes-medical"></i> Antecedentes Médicos</h4>
-        <div class="grilla-detalle">
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.antmedico">
+      <div class="seccion-formulario">
+        <h4 class="titulo-seccion">
+          <i class="fas fa-notes-medical"></i> Antecedentes Médicos
+        </h4>
+        <div class="grilla-formulario">
+          <div class="grupo-formulario">
             <label>Antecedentes Médicos:</label>
-            <span>{{ expedienteSeleccionado.antmedico }}</span>
+            <div class="campo-lectura">{{ expedienteSeleccionado.antmedico || 'No especificado' }}</div>
           </div>
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.antmedicamento">
-            <label>Medicamentos:</label>
-            <span>{{ expedienteSeleccionado.antmedicamento }}</span>
+          <div class="grupo-formulario">
+            <label>Antecedentes de Medicamentos:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.antmedicamento || 'No especificado' }}</div>
           </div>
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.anttraumaticos">
+          <div class="grupo-formulario">
             <label>Antecedentes Traumáticos:</label>
-            <span>{{ expedienteSeleccionado.anttraumaticos }}</span>
+            <div class="campo-lectura">{{ expedienteSeleccionado.anttraumaticos || 'No especificado' }}</div>
           </div>
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.antfamiliar">
+          <div class="grupo-formulario">
             <label>Antecedentes Familiares:</label>
-            <span>{{ expedienteSeleccionado.antfamiliar }}</span>
+            <div class="campo-lectura">{{ expedienteSeleccionado.antfamiliar || 'No especificado' }}</div>
           </div>
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.antalergico">
-            <label>Alergias:</label>
-            <span>{{ expedienteSeleccionado.antalergico }}</span>
+          <div class="grupo-formulario">
+            <label>Antecedentes Alérgicos:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.antalergico || 'No especificado' }}</div>
           </div>
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.antintolerantelactosa !== undefined">
+          <div class="grupo-formulario">
+            <label>Antecedentes de Sustancias:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.antsustancias || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
             <label>Intolerancia a Lactosa:</label>
-            <span>{{ obtenerTextoIntoleranciaLactosa(expedienteSeleccionado.antintolerantelactosa) }}</span>
+            <div class="campo-lectura">{{ obtenerTextoIntoleranciaLactosa(expedienteSeleccionado.antintolerantelactosa) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Antecedentes fisiológicos -->
+      <div class="seccion-formulario">
+        <h4 class="titulo-seccion">
+          <i class="fas fa-child"></i> Antecedentes Fisiológicos
+        </h4>
+        <div class="grilla-formulario">
+          <div class="grupo-formulario">
+            <label>Inmunizaciones:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.antfisoinmunizacion || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Crecimiento y Desarrollo:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.antfisocrecimiento || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Hábitos de Vida:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.antfisohabitos || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Hábitos Alimenticios:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.antfisoalimentos || 'No especificado' }}</div>
           </div>
         </div>
       </div>
 
       <!-- Antecedentes gineco-obstétricos -->
-      <div class="seccion-detalle" *ngIf="tieneAntecedentesGineObstetricos()">
-        <h4><i class="fas fa-female"></i> Antecedentes Gineco-Obstétricos</h4>
-        <div class="grilla-detalle">
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.gineobsgestas !== undefined">
-            <label>Gestas:</label>
-            <span>{{ expedienteSeleccionado.gineobsgestas }}</span>
+      <div class="seccion-formulario">
+        <h4 class="titulo-seccion">
+          <i class="fas fa-female"></i> Antecedentes Gineco-Obstétricos
+        </h4>
+        <div class="grilla-formulario">
+          <div class="grupo-formulario">
+            <label>Antecedentes Prenatales:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobsprenatales || 'No especificado' }}</div>
           </div>
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.gineobspartos !== undefined">
-            <label>Partos:</label>
-            <span>{{ expedienteSeleccionado.gineobspartos }}</span>
+          <div class="grupo-formulario">
+            <label>Antecedentes Natales:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobsnatales || 'No especificado' }}</div>
           </div>
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.gineobsabortos !== undefined">
-            <label>Abortos:</label>
-            <span>{{ expedienteSeleccionado.gineobsabortos }}</span>
+          <div class="grupo-formulario">
+            <label>Antecedentes Postnatales:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobspostnatales || 'No especificado' }}</div>
           </div>
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.gineobscesareas !== undefined">
-            <label>Cesáreas:</label>
-            <span>{{ expedienteSeleccionado.gineobscesareas }}</span>
+          <div class="grupo-formulario">
+            <label>Número de Gestas:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobsgestas ?? 'No especificado' }}</div>
           </div>
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.gineobsfur">
-            <label>Fecha de Última Regla:</label>
-            <span>{{ expedienteSeleccionado.gineobsfur | date:'dd/MM/yyyy' }}</span>
+          <div class="grupo-formulario">
+            <label>Número de Partos:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobspartos ?? 'No especificado' }}</div>
           </div>
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.gineobsmenarquia">
+          <div class="grupo-formulario">
+            <label>Número de Abortos:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobsabortos ?? 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Número de Cesáreas:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobscesareas ?? 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Fecha de Última Regla (FUR):</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobsfur ? (expedienteSeleccionado.gineobsfur | date:'dd/MM/yyyy') : 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Ciclos Menstruales:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobsciclos || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
             <label>Menarquia:</label>
-            <span>{{ expedienteSeleccionado.gineobsmenarquia }}</span>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobsmenarquia || 'No especificado' }}</div>
           </div>
         </div>
       </div>
 
       <!-- Examen físico -->
-      <div class="seccion-detalle" *ngIf="tieneExamenFisico()">
-        <h4><i class="fas fa-stethoscope"></i> Examen Físico y Signos Vitales</h4>
-        <div class="grilla-detalle">
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.examenfistc">
-            <label>Temperatura:</label>
-            <span>{{ expedienteSeleccionado.examenfistc }}°C</span>
+      <div class="seccion-formulario">
+        <h4 class="titulo-seccion">
+          <i class="fas fa-stethoscope"></i> Examen Físico y Signos Vitales
+        </h4>
+        <div class="grilla-formulario">
+          <div class="grupo-formulario">
+            <label>Temperatura Corporal (°C):</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.examenfistc || 'No especificado' }}</div>
           </div>
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.examenfispa">
-            <label>Presión Arterial:</label>
-            <span>{{ expedienteSeleccionado.examenfispa }} mmHg</span>
+          <div class="grupo-formulario">
+            <label>Presión Arterial (mmHg):</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.examenfispa || 'No especificado' }}</div>
           </div>
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.examenfisfc">
-            <label>Frecuencia Cardíaca:</label>
-            <span>{{ expedienteSeleccionado.examenfisfc }} lpm</span>
+          <div class="grupo-formulario">
+            <label>Frecuencia Cardíaca (lpm):</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.examenfisfc || 'No especificado' }}</div>
           </div>
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.examenfisfr">
-            <label>Frecuencia Respiratoria:</label>
-            <span>{{ expedienteSeleccionado.examenfisfr }} rpm</span>
+          <div class="grupo-formulario">
+            <label>Frecuencia Respiratoria (rpm):</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.examenfisfr || 'No especificado' }}</div>
           </div>
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.examenfissao2">
-            <label>Saturación de Oxígeno:</label>
-            <span>{{ expedienteSeleccionado.examenfissao2 }}%</span>
+          <div class="grupo-formulario">
+            <label>Saturación de Oxígeno (%):</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.examenfissao2 || 'No especificado' }}</div>
           </div>
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.examenfispeso">
-            <label>Peso:</label>
-            <span>{{ expedienteSeleccionado.examenfispeso }} kg</span>
+          <div class="grupo-formulario">
+            <label>Peso (kg):</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.examenfispeso || 'No especificado' }}</div>
           </div>
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.examenfistalla">
-            <label>Talla:</label>
-            <span>{{ expedienteSeleccionado.examenfistalla }} m</span>
+          <div class="grupo-formulario">
+            <label>Talla (metros):</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.examenfistalla || 'No especificado' }}</div>
           </div>
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.examenfisimc">
-            <label>Índice de Masa Corporal:</label>
-            <span>{{ expedienteSeleccionado.examenfisimc }} kg/m² ({{ obtenerCategoriaIMCDesdeValor(expedienteSeleccionado.examenfisimc) }})</span>
+          <div class="grupo-formulario">
+            <label>Índice de Masa Corporal (kg/m²):</label>
+            <div class="campo-lectura">
+              {{ expedienteSeleccionado.examenfisimc ? 
+                  (expedienteSeleccionado.examenfisimc + ' (' + obtenerCategoriaIMCDesdeValor(expedienteSeleccionado.examenfisimc) + ')') : 
+                  'No especificado' }}
+            </div>
           </div>
-          <div class="elemento-detalle ancho-completo" *ngIf="expedienteSeleccionado.examenfisgmt">
+          <div class="grupo-formulario ancho-completo">
             <label>Examen Físico General:</label>
-            <span>{{ expedienteSeleccionado.examenfisgmt }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Información de auditoría -->
-      <div class="seccion-detalle">
-        <h4><i class="fas fa-info-circle"></i> Información de Auditoría</h4>
-        <div class="grilla-detalle">
-          <div class="elemento-detalle">
-            <label>Estado:</label>
-            <span class="insignia-estado" 
-                  [class.estado-activo]="expedienteSeleccionado.estado === 1"
-                  [class.estado-inactivo]="expedienteSeleccionado.estado !== 1">
-              {{ expedienteSeleccionado.estado === 1 ? 'Activo' : 'Inactivo' }}
-            </span>
-          </div>
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.usuariomodificacion">
-            <label>Última Modificación por:</label>
-            <span>{{ expedienteSeleccionado.usuariomodificacion }}</span>
-          </div>
-          <div class="elemento-detalle" *ngIf="expedienteSeleccionado.fechamodificacion">
-            <label>Fecha de Modificación:</label>
-            <span>{{ expedienteSeleccionado.fechamodificacion | date:'dd/MM/yyyy HH:mm' }}</span>
+            <div class="campo-lectura">{{ expedienteSeleccionado.examenfisgmt || 'No especificado' }}</div>
           </div>
         </div>
       </div>
 
     </div>
+
+    <!-- Pie del modal fijo -->
+    <div class="pie-modal">
+      <button type="button" class="boton-pdf" (click)="descargarPDFExpediente(expedienteSeleccionado!)">
+        <i class="fas fa-file-pdf"></i> Descargar PDF
+      </button>
+      <button type="button" class="boton-editar" (click)="editarExpediente(expedienteSeleccionado!)">
+        <i class="fas fa-edit"></i> Editar Expediente
+      </button>
+      <button type="button" class="boton-cancelar" (click)="mostrarLista()">
+        <i class="fas fa-times"></i> Cerrar
+      </button>
+    </div>
+
   </div>
+</div>
 
 </div>

@@ -263,6 +263,41 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
    * Muestra los detalles de un expediente
    */
 verExpediente(expediente: Expediente): void {
+  this.expedienteSeleccionado = expediente;
+  this.vistaActual = 'detalle';
+}
+
+/**
+ * Ver detalles del expediente (método original)
+ */
+private verDetallesExpediente(expediente: Expediente): void {
+  this.expedienteSeleccionado = expediente;
+  this.vistaActual = 'detalle';
+}
+
+
+
+/**
+ * Descargar PDF del expediente
+ */
+descargarPDFExpediente(expediente: Expediente): void {
+  try {
+    const expedienteSeguro: any = Object.fromEntries(
+      Object.entries(expediente).map(([k, v]) => [k, v ?? ''])
+    );
+
+    this.pdfService.generarPDFExpediente(expedienteSeguro);
+    this.servicioAlerta.alertaExito('PDF generado exitosamente');
+  } catch (error) {
+    console.error('Error al generar PDF:', error);
+    this.servicioAlerta.alertaError('Error al generar el PDF del expediente');
+  }
+}
+
+/**
+ * Muestra opciones para ver o descargar expediente
+ */
+verExpedienteConOpciones(expediente: Expediente): void {
   // Mostrar opciones: ver detalles o descargar PDF
   Swal.fire({
     title: `Expediente: ${expediente.numeroexpediente}`,
@@ -284,7 +319,7 @@ verExpediente(expediente: Expediente): void {
     denyButtonText: '<i class="fas fa-file-pdf"></i> Descargar PDF',
     cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
     confirmButtonColor: '#2c6662',
-    denyButtonColor: '#dc3545', // Rojo para PDF
+    denyButtonColor: '#dc3545',
     cancelButtonColor: '#6c757d',
     customClass: {
       popup: 'swal-wide',
@@ -292,41 +327,12 @@ verExpediente(expediente: Expediente): void {
     }
   }).then((resultado) => {
     if (resultado.isConfirmed) {
-      // Opción 1: Ver detalles (comportamiento original)
-      this.verDetallesExpediente(expediente);
+      this.verExpediente(expediente);
     } else if (resultado.isDenied) {
-      // Opción 2: Descargar PDF
       this.descargarPDFExpediente(expediente);
     }
-    // Si es dismiss/cancel no hacer nada
   });
 }
-
-/**
- * Ver detalles del expediente (método original)
- */
-private verDetallesExpediente(expediente: Expediente): void {
-  this.expedienteSeleccionado = expediente;
-  this.vistaActual = 'detalle';
-}
-
-/**
- * Descargar PDF del expediente
- */
-descargarPDFExpediente(expediente: Expediente): void {
-  try {
-    const expedienteSeguro: any = Object.fromEntries(
-      Object.entries(expediente).map(([k, v]) => [k, v ?? ''])
-    );
-
-    this.pdfService.generarPDFExpediente(expedienteSeguro);
-    this.servicioAlerta.alertaExito('PDF generado exitosamente');
-  } catch (error) {
-    console.error('Error al generar PDF:', error);
-    this.servicioAlerta.alertaError('Error al generar el PDF del expediente');
-  }
-}
-
 
 /**
  * Obtiene el nombre del paciente de forma segura

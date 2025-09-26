@@ -467,7 +467,7 @@ private agregarPiePagina(doc: jsPDF): void {
     
     const fechaGeneracion = this.formatearFecha(new Date());
     doc.text(`Generado el ${fechaGeneracion}`, 20, 290);
-    doc.text(`Sistema de Expedientes Médicos - Fraijanes`, 105, 290, { align: 'center' });
+    doc.text(`CMI - Fraijanes`, 105, 290, { align: 'center' });
     doc.text(`Página ${i} de ${totalPages}`, 190, 290, { align: 'right' });
   }
 }

@@ -511,7 +511,7 @@
                   class="entrada-formulario"
                   placeholder="+502 4444-4444"
                   maxlength="14"
-                  (input)="formatearTelefono('telefonopersonal')"
+                  appPhoneFormat
                 >
               </div>
 
@@ -533,7 +533,7 @@
                   class="entrada-formulario"
                   placeholder="+502 4444-4444"
                   maxlength="14"
-                  (input)="formatearTelefono('telefonoemergencia')"
+                  appPhoneFormat
                 >
               </div>
             </div>
@@ -574,7 +574,7 @@
                   class="entrada-formulario"
                   placeholder="+502 4444-4444"
                   maxlength="14"
-                  (input)="formatearTelefono('telefonoencargado')"
+                  appPhoneFormat
                 >
               </div>
             </div>
@@ -638,7 +638,7 @@
               </div>
 
               <div class="grupo-formulario ancho-completo">
-                <label>Dirección Completa *</label>
+                <label>Completar Direccion *</label>
                 <textarea
                   formControlName="direccion"
                   class="area-texto-formulario"
@@ -677,52 +677,229 @@
     </div>
   </div>
 
-  <!-- Vista de detalles del paciente -->
-  <div class="tarjeta-principal" *ngIf="vistaActual === 'detalle'">
-    <div class="encabezado-detalle">
-      <h3>Información Completa del Paciente</h3>
-      <div class="acciones-detalle">
-        <button class="boton-editar" (click)="editarPaciente(pacienteSeleccionado!)">
+  <!-- ===== VISTA DE DETALLE MEJORADA CON FOTOS Y ARCHIVOS ===== -->
+  <div class="modal-backdrop-detalle" *ngIf="vistaActual === 'detalle'" (click)="mostrarLista()">
+    <div class="modal-detalle-paciente" (click)="$event.stopPropagation()">
+      
+      <!-- Header del modal detalle -->
+      <div class="modal-detalle-header">
+        <h3>Información Completa del Paciente</h3>
+        <div class="header-actions">
+          <button class="btn-cerrar-detalle" (click)="mostrarLista()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Cuerpo del modal con scroll -->
+      <div class="modal-detalle-body" *ngIf="pacienteSeleccionado">
+        
+        <!-- SECCIÓN DE FOTOS -->
+        <div class="detalle-section fotos-section">
+          <h4 class="section-title">
+            <i class="fas fa-images"></i> Fotografías
+          </h4>
+          
+          <div class="fotos-grid">
+            <!-- Foto del paciente -->
+            <div class="foto-card">
+              <div class="foto-preview">
+                <img 
+                  *ngIf="pacienteSeleccionado.rutafotoperfil" 
+                  [src]="archivoService.obtenerUrlPublica(pacienteSeleccionado.rutafotoperfil)" 
+                  [alt]="pacienteSeleccionado.nombres + ' ' + pacienteSeleccionado.apellidos"
+                  class="foto-imagen"
+                  (error)="onImageError($event)"
+
+                >
+                <div *ngIf="!pacienteSeleccionado.rutafotoperfil" class="foto-placeholder">
+                  <i class="fas fa-user"></i>
+                  <span>Sin foto</span>
+                </div>
+              </div>
+              <div class="foto-label">Foto del Paciente</div>
+            </div>
+
+            <!-- Foto del encargado -->
+            <div class="foto-card">
+              <div class="foto-preview">
+                <img 
+                  *ngIf="pacienteSeleccionado.rutafotoencargado" 
+                  [src]="archivoService.obtenerUrlPublica(pacienteSeleccionado.rutafotoencargado)" 
+                  [alt]="pacienteSeleccionado.nombreencargado || 'Encargado'"
+                  class="foto-imagen"
+                  (error)="onImageError($event)"
+
+                >
+                <div *ngIf="!pacienteSeleccionado.rutafotoencargado" class="foto-placeholder">
+                  <i class="fas fa-user-tie"></i>
+                  <span>Sin foto</span>
+                </div>
+              </div>
+              <div class="foto-label">Foto del Encargado</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN DE DOCUMENTOS -->
+        <div class="detalle-section documentos-section" *ngIf="pacienteSeleccionado.rutacartaautorizacion">
+          <h4 class="section-title">
+            <i class="fas fa-file-contract"></i> Documentos
+          </h4>
+          
+          <div class="documento-card">
+            <div class="documento-info">
+              <i class="fas fa-file" 
+                [class.fa-file-pdf]="esArchivoPDF(pacienteSeleccionado.rutacartaautorizacion)"
+                [class.fa-file-image]="esArchivoImagen(pacienteSeleccionado.rutacartaautorizacion)">
+              </i>
+              <div class="documento-detalles">
+                <span class="documento-nombre">{{ obtenerNombreArchivo(pacienteSeleccionado.rutacartaautorizacion) }}</span>
+                <span class="documento-tipo">Carta de Autorización</span>
+              </div>
+            </div>
+            <button 
+              class="btn-descargar-documento" 
+              (click)="descargarDocumento(pacienteSeleccionado.rutacartaautorizacion!)"
+              title="Descargar documento"
+            >
+              <i class="fas fa-download"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- INFORMACIÓN PERSONAL -->
+        <div class="detalle-section">
+          <h4 class="section-title">
+            <i class="fas fa-user"></i> Información Personal
+          </h4>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Nombres:</label>
+              <span>{{ pacienteSeleccionado.nombres }}</span>
+            </div>
+            <div class="info-item">
+              <label>Apellidos:</label>
+              <span>{{ pacienteSeleccionado.apellidos }}</span>
+            </div>
+            <div class="info-item">
+              <label>CUI:</label>
+              <span>{{ pacienteSeleccionado.cui }}</span>
+            </div>
+            <div class="info-item">
+              <label>Fecha de Nacimiento:</label>
+              <span>{{ formatearFecha(pacienteSeleccionado.fechanacimiento) }}</span>
+            </div>
+            <div class="info-item">
+              <label>Edad:</label>
+              <span>{{ calcularEdad(pacienteSeleccionado.fechanacimiento) }} años</span>
+            </div>
+            <div class="info-item">
+              <label>Género:</label>
+              <span>{{ pacienteSeleccionado.genero === 'M' ? 'Masculino' : 'Femenino' }}</span>
+            </div>
+            <div class="info-item">
+              <label>Tipo de Consulta:</label>
+              <span>{{ pacienteSeleccionado.tipoconsulta }}</span>
+            </div>
+            <div class="info-item">
+              <label>Tipo de Discapacidad:</label>
+              <span>{{ pacienteSeleccionado.tipodiscapacidad || 'Ninguna' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- INFORMACIÓN DE CONTACTO -->
+        <div class="detalle-section">
+          <h4 class="section-title">
+            <i class="fas fa-phone"></i> Información de Contacto
+          </h4>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Teléfono Personal:</label>
+              <span>{{ pacienteSeleccionado.telefonopersonal || 'No registrado' }}</span>
+            </div>
+            <div class="info-item">
+              <label>Contacto de Emergencia:</label>
+              <span>{{ pacienteSeleccionado.nombrecontactoemergencia || 'No registrado' }}</span>
+            </div>
+            <div class="info-item">
+              <label>Teléfono de Emergencia:</label>
+              <span>{{ pacienteSeleccionado.telefonoemergencia || 'No registrado' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- INFORMACIÓN DEL ENCARGADO -->
+        <div class="detalle-section">
+          <h4 class="section-title">
+            <i class="fas fa-user-friends"></i> Información del Encargado
+          </h4>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Nombre del Encargado:</label>
+              <span>{{ pacienteSeleccionado.nombreencargado || 'No registrado' }}</span>
+            </div>
+            <div class="info-item">
+              <label>DPI del Encargado:</label>
+              <span>{{ pacienteSeleccionado.dpiencargado || 'No registrado' }}</span>
+            </div>
+            <div class="info-item">
+              <label>Teléfono del Encargado:</label>
+              <span>{{ pacienteSeleccionado.telefonoencargado || 'No registrado' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- INFORMACIÓN DE UBICACIÓN -->
+        <div class="detalle-section">
+          <h4 class="section-title">
+            <i class="fas fa-map-marker-alt"></i> Información de Ubicación
+          </h4>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Municipio:</label>
+              <span>{{ pacienteSeleccionado.municipio }}</span>
+            </div>
+            <div class="info-item">
+              <label>Aldea/Zona/Colonia:</label>
+              <span>{{ pacienteSeleccionado.aldea || 'No especificado' }}</span>
+            </div>
+            <div class="info-item full-width">
+              <label>Completar Direccion:</label>
+              <span>{{ pacienteSeleccionado.direccion }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- INFORMACIÓN DE EXPEDIENTE -->
+        <div class="detalle-section" *ngIf="pacienteSeleccionado.expedientes && pacienteSeleccionado.expedientes.length > 0">
+          <h4 class="section-title">
+            <i class="fas fa-file-medical"></i> Información del Expediente
+          </h4>
+          <div class="expediente-info">
+            <div class="expediente-card" *ngFor="let expediente of pacienteSeleccionado.expedientes">
+              <div class="expediente-numero">
+                <i class="fas fa-file-medical-alt"></i>
+                <span>Expediente N°: {{ expediente.numeroexpediente }}</span>
+              </div>
+              <div class="expediente-historia" *ngIf="expediente.historiaenfermedad">
+                <label>Historia de la Enfermedad:</label>
+                <p>{{ expediente.historiaenfermedad }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer del modal -->
+      <div class="modal-detalle-footer">
+        <button class="btn-editar-footer" (click)="editarPaciente(pacienteSeleccionado!)">
           <i class="fas fa-edit"></i> Editar Información
         </button>
-        <button class="boton-volver" (click)="mostrarLista()">
-          <i class="fas fa-arrow-left"></i> Volver a la Lista
+        <button class="btn-cancelar-detalle" (click)="mostrarLista()">
+          <i></i> Cerrar
         </button>
-      </div>
-    </div>
-
-    <div class="grilla-detalle" *ngIf="pacienteSeleccionado">
-      <div class="elemento-detalle">
-        <label>Nombre Completo:</label>
-        <span>{{ pacienteSeleccionado.nombres }} {{ pacienteSeleccionado.apellidos }}</span>
-      </div>
-      <div class="elemento-detalle">
-        <label>CUI:</label>
-        <span>{{ pacienteSeleccionado.cui }}</span>
-      </div>
-      <div class="elemento-detalle">
-        <label>Edad:</label>
-        <span>{{ calcularEdad(pacienteSeleccionado.fechanacimiento) }} años</span>
-      </div>
-      <div class="elemento-detalle">
-        <label>Género:</label>
-        <span>{{ pacienteSeleccionado.genero === 'M' ? 'Masculino' : 'Femenino' }}</span>
-      </div>
-      <div class="elemento-detalle">
-        <label>Teléfono Personal:</label>
-        <span>{{ pacienteSeleccionado.telefonopersonal || 'No registrado' }}</span>
-      </div>
-      <div class="elemento-detalle">
-        <label>Tipo de Consulta:</label>
-        <span>{{ pacienteSeleccionado.tipoconsulta }}</span>
-      </div>
-      <div class="elemento-detalle">
-        <label>Municipio:</label>
-        <span>{{ pacienteSeleccionado.municipio }}</span>
-      </div>
-      <div class="elemento-detalle ancho-completo">
-        <label>Dirección Completa:</label>
-        <span>{{ pacienteSeleccionado.direccion }}</span>
       </div>
     </div>
   </div>
@@ -742,7 +919,7 @@
           [mostrarComoModal]="true"
           [datosPaciente]="datosExpedientePaciente"
           (cerrarModal)="cerrarModalExpediente()"
-          (expedienteCreado)="cerrarModalExpediente($event)">
+          (expedienteCreado)="cerrarModalExpediente()">
         </app-expediente-lista>
       </div>
     </div>
