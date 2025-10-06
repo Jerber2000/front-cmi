@@ -29,11 +29,11 @@
           <select 
             class="form-select form-select-sm"
             [(ngModel)]="selectedMedico"
-            (change)="filtrarPorMedico()"
+            
             title="Filtrar por médico">
             <option value="">Todos los médicos</option>
-            <option *ngFor="let medico of medicos" [value]="medico.id">
-              Dr. {{ medico.nombres }} {{ medico.apellidos }}
+            <option *ngFor="let medico of usuario" [value]="medico.idusuario">
+              {{ medico.nombres }} {{ medico.apellidos }} 
             </option>
           </select>
         </div>
@@ -111,7 +111,7 @@
       </div>
       
       <!-- FullCalendar -->
-      <full-calendar [options]="calendarOptions"></full-calendar>
+      <full-calendar #calendar [options]="calendarOptions"></full-calendar>
     </div>
 
     <!-- Leyenda de colores -->
@@ -164,10 +164,14 @@
             <div class="col-md-12">
               <div class="mb-3">
                 <label for="paciente" class="form-label">Paciente *</label>
-                <select class="form-select" id="paciente" formControlName="fkpaciente" required>
+                <select class="form-select" 
+                        id="paciente" 
+                        formControlName="fkpaciente" 
+                        (change)="onPacienteSeleccionado($event)"
+                        required>
                   <option value="">Seleccionar paciente</option>
-                  <option *ngFor="let paciente of pacientes" [value]="paciente.id">
-                    {{ paciente.nombres }} {{ paciente.apellidos }}
+                  <option *ngFor="let pac of paciente" [value]="pac.idpaciente">
+                    {{ pac.nombres }} {{ pac.apellidos }}
                   </option>
                 </select>
               </div>
@@ -194,8 +198,8 @@
                 <label for="medico" class="form-label">Nombre del Profesional *</label>
                 <select class="form-select" id="medico" formControlName="fkusuario" required>
                   <option value="">Seleccionar médico</option>
-                  <option *ngFor="let medico of medicos" [value]="medico.id">
-                    Dr. {{ medico.nombres }} {{ medico.apellidos }}
+                  <option *ngFor="let medico of usuario" [value]="medico.idusuario">
+                    {{ medico.nombres }} {{ medico.apellidos }}
                   </option>
                 </select>
               </div>
@@ -238,6 +242,12 @@
           <div class="row" *ngIf="citaForm.get('transporte')?.value">
             <div class="col-md-6">
               <div class="mb-3">
+                <label for="fechatransporte" class="form-label">Fecha Transporte</label>
+                <input type="date" class="form-control" id="fechatransporte" formControlName="fechatransporte">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
                 <label for="horaTransporte" class="form-label">Horario de transporte</label>
                 <input type="time" class="form-control" id="horaTransporte" formControlName="horariotransporte">
               </div>
@@ -245,7 +255,7 @@
 
             <div class="mb-3">
               <label for="direccionTransporte" class="form-label">Dirección de Transporte</label>
-              <textarea class="form-control" id="direccionTransporte" formControlName="direccionTransporte" rows="3"></textarea>
+              <textarea class="form-control" id="direccionTransporte" formControlName="direccion" rows="3"></textarea>
             </div>
           </div>
         </form>

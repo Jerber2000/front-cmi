@@ -1,7 +1,7 @@
 // src/app/services/paciente.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { catchError, map, Observable, of, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 /**
@@ -81,6 +81,22 @@ export class ServicioPaciente {
     }
 
     return this.http.get<RespuestaPaciente>(this.urlApi, { params: parametros });
+  }
+
+  obtenerListadoPacientes(){
+    const ruta = `${this.urlApi}/obtenerListado`;
+    return this.http.get<any>(ruta).pipe(
+      tap(response => {}),
+      map(response => {
+        if(response && response.exito && response.datos && Array.isArray(response.datos)){
+          return response.datos;
+        }
+        return[];
+      }),
+      catchError(error => {
+        return of([]);
+      })
+    )
   }
 
   /**

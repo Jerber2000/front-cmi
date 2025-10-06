@@ -1,11 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 
 // FullCalendar imports
 import { FullCalendarModule } from '@fullcalendar/angular';
+import { FullCalendarComponent } from '@fullcalendar/angular';
 import { CalendarOptions, EventClickArg, DateSelectArg } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -15,6 +16,10 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ArchivoService } from '../../services/archivo.service';
+import { UsuarioService, Usuario } from '../../services/usuario.service';
+import { AlertaService } from '../../services/alerta.service';
+import { Paciente, ServicioPaciente } from '../../services/paciente.service';
+import { AgendaService, CitaRequest } from '../../services/agenda.service';
 
 // Interfaces
 export interface Cita {
@@ -27,6 +32,7 @@ export interface Cita {
   transporte?: number;
   fechatransporte?: string;
   horariotransporte?: string;
+  direccion?: string;
   usuario: {
     nombres: string;
     apellidos: string;
@@ -59,15 +65,17 @@ export interface ApiResponse<T> {
   templateUrl: './agenda.component.html',
   styleUrls: ['./agenda.component.css']
 })
-export class AgendaComponent implements OnInit {
+export class AgendaComponent implements OnInit, AfterViewInit {
+
+  @ViewChild('calendar') calendarComponent!: FullCalendarComponent;
   
   // Configuración del calendario
   calendarOptions: CalendarOptions = {
     initialView: 'dayGridMonth',
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
-    headerToolbar: false, // Desactivar toolbar de FullCalendar
+    headerToolbar: false,
     locale: 'es',
-    firstDay: 1, // Lunes como primer día
+    firstDay: 1,
     height: 'auto',
     
     // Configuración de eventos
@@ -93,9 +101,7 @@ export class AgendaComponent implements OnInit {
     
     // Configuración de días
     weekends: true,
-    editable: false, // Deshabilitar edición por drag
-    
-    // Mostrar números de semana
+    editable: false,
     weekNumbers: false,
     
     // Configuración de slots de tiempo
@@ -118,6 +124,9 @@ export class AgendaComponent implements OnInit {
   tituloCalendario: string = '';
   sidebarExpanded: boolean = false;
   userInfo: any = {};
+  usuario: Usuario[] = [];
+  paciente: Paciente[] = [];
+  private calendarApi: any = null;
 
   // Datos para formularios
   medicos: any[] = [
@@ -143,10 +152,8 @@ export class AgendaComponent implements OnInit {
     { hora: '17:00:00' }
   ];
 
-  // Formulario reactivo
-  citaForm: any; // Aquí usarías FormBuilder en un proyecto real
+  citaForm!: FormGroup;
 
-  // Citas de ejemplo (en proyecto real vendrían del backend)
   citasEjemplo: Cita[] = [
     {
       idagenda: 1,
@@ -170,19 +177,36 @@ export class AgendaComponent implements OnInit {
     }
   ];
 
+  private currentUserId: string = '1';
+
   constructor(
-    private archivoService: ArchivoService
+    private archivoService: ArchivoService,
+    private UsuarioService: UsuarioService,
+    private PacienteService: ServicioPaciente,
+    private alerta: AlertaService,
+    private fb: FormBuilder,
+    private agendaService: AgendaService
   ) {
-    // En un proyecto real inicializarías FormBuilder aquí
     this.initForm();
     this.fechaActual = new Date().toLocaleDateString('es-ES');
     this.tituloCalendario = format(new Date(), 'MMMM yyyy', { locale: es });
-    
   }
 
   ngOnInit(): void {
+    this.currentUserId = this.getCurrentUserId();
     this.cargarCitas();
     this.loadUserInfo();
+    this.cargarUsuariosPorRol();
+    this.ListarPacientes();
+  }
+
+  ngAfterViewInit(): void {
+    setTimeout(() => {
+      this.detectSidebarState();
+      setTimeout(() => {
+        this.resizeCalendar();
+      }, 500);
+    }, 100);
   }
 
   loadUserInfo(): void {
@@ -195,7 +219,6 @@ export class AgendaComponent implements OnInit {
         this.userInfo = {
           name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim(),
           avatar: usuario.rutafotoperfil ? this.archivoService.obtenerUrlPublica(usuario.rutafotoperfil) : null
-          // role: usuario.fkrol || usuario.role || ''
         };
       } 
     } catch (error) {
@@ -203,16 +226,74 @@ export class AgendaComponent implements OnInit {
     }
   }
 
-  ngAfterViewInit(): void {
-    // Esperar a que el DOM esté completamente renderizado
-    setTimeout(() => {
-      this.detectSidebarState();
-      
-      // Resize inicial para asegurar que el calendario se muestre correctamente
-      setTimeout(() => {
-        this.resizeCalendar();
-      }, 500);
-    }, 100);
+  private getCurrentUserId(): string {
+    try {
+      const usuarioData = localStorage.getItem('usuario');
+      if (usuarioData) {
+        const usuario = JSON.parse(usuarioData);
+        const userId = usuario.idusuario;
+        if (userId) {
+          return userId.toString();
+        }
+      }
+    } catch (error) {
+      console.error('Error al obtener el ID del usuario desde localStorage:', error);
+    }
+    return '1';
+  }
+
+  private getCalendarApi(): any {
+    if (this.calendarComponent) {
+      return this.calendarComponent.getApi();
+    }
+    return null;
+  }
+
+  cargarUsuariosPorRol(): void {
+    this.UsuarioService.obtenerUsuariosPorRol(2).subscribe({
+      next: (usuariosPorRol) => {
+        this.usuario = usuariosPorRol;
+      },
+      error: (error) => {
+        console.error('Error al cargar los usuarios por roles: ', error);
+        this.alerta.alertaError('Error al cargar los usuarios por roles');
+      }
+    });
+  }
+
+  ListarPacientes(): void {
+    this.PacienteService.obtenerListadoPacientes().subscribe({
+      next: (listadoUsuario) => { 
+        this.paciente = listadoUsuario;
+      },
+      error: (error) => {
+        console.error('Error al cargar los pacientes: ', error);
+        this.alerta.alertaError('Error al cargar pacientes');
+      }
+    });
+  }
+
+  onPacienteSeleccionado(event: any): void {
+    const idPacienteSeleccionado = event.target.value;
+    
+    if (!idPacienteSeleccionado) {
+      this.citaForm.patchValue({
+        nombreEncargado: '',
+        contactoEncargado: ''
+      });
+      return;
+    }
+
+    const pacienteSeleccionado = this.paciente.find(
+      p => p.idpaciente == idPacienteSeleccionado
+    );
+
+    if (pacienteSeleccionado) {
+      this.citaForm.patchValue({
+        nombreEncargado: pacienteSeleccionado.nombreencargado || '',
+        contactoEncargado: pacienteSeleccionado.telefonoencargado || ''
+      });
+    }
   }
 
   detectSidebarState(): void {
@@ -222,27 +303,21 @@ export class AgendaComponent implements OnInit {
                     document.querySelector('[class*="sidebar"]');
       
       if (sidebar) {
-        const wasExpanded = this.sidebarExpanded;
         const isExpanded = sidebar.classList.contains('expanded') || 
                           sidebar.classList.contains('open') ||
                           sidebar.classList.contains('sidebar-expanded');
         
         if (this.sidebarExpanded !== isExpanded) {
           this.sidebarExpanded = isExpanded;
-          console.log('Sidebar state changed:', isExpanded); // Debug log
-          
-          // CRÍTICO: Forzar recalculo de FullCalendar después del cambio
           setTimeout(() => {
             this.resizeCalendar();
-          }, 400); // Aumentar tiempo para asegurar que termine la transición
+          }, 400);
         }
       }
     };
 
-    // Check inicial
     setTimeout(checkSidebar, 100);
     
-    // Observer mejorado para detectar cambios
     const observer = new MutationObserver((mutations) => {
       let shouldCheck = false;
       
@@ -264,97 +339,59 @@ export class AgendaComponent implements OnInit {
       }
     });
 
-    // Observar todo el body para capturar cambios del sidebar
     observer.observe(document.body, {
       attributes: true,
       attributeFilter: ['class', 'style'],
       subtree: true
     });
 
-    // También escuchar eventos de resize de ventana
     window.addEventListener('resize', () => {
       setTimeout(() => this.resizeCalendar(), 100);
     });
   }
 
-  // MEJORADO: Método más robusto para forzar resize del calendario
   private resizeCalendar(): void {
     try {
-      // Método 1: A través del elemento full-calendar
-      const fullCalendarElement = document.querySelector('full-calendar') as any;
-      if (fullCalendarElement && fullCalendarElement.getApi) {
-        const calendarApi = fullCalendarElement.getApi();
-        console.log('Resizing calendar via API...'); // Debug log
-        calendarApi.updateSize();
+      if (this.calendarComponent) {
+        const api = this.calendarComponent.getApi();
+        api.updateSize();
         return;
       }
-
-      // Método 2: A través de la instancia del componente (si está disponible)
-      const calendarComponent = document.querySelector('full-calendar ng-component') as any;
-      if (calendarComponent && calendarComponent.calendar) {
-        console.log('Resizing calendar via component...'); // Debug log
-        calendarComponent.calendar.updateSize();
-        return;
-      }
-
-      // Método 3: Forzar mediante event
       window.dispatchEvent(new Event('resize'));
-      console.log('Forced window resize event'); // Debug log
-
     } catch (error) {
       console.error('Error resizing calendar:', error);
-      // Fallback: forzar resize de ventana
-      window.dispatchEvent(new Event('resize'));
     }
   }
 
-  // NUEVO: Método para llamar desde el template si es necesario
   public forceCalendarResize(): void {
     this.resizeCalendar();
   }
 
-  // NUEVO: Método para debugging - puedes removerlo después
-  public debugCalendarSize(): void {
-    const calendarWrapper = document.querySelector('.calendar-wrapper') as HTMLElement;
-    const fullCalendar = document.querySelector('full-calendar') as HTMLElement;
-    
-    console.log('Calendar wrapper dimensions:', {
-      width: calendarWrapper?.clientWidth,
-      offsetWidth: calendarWrapper?.offsetWidth,
-      scrollWidth: calendarWrapper?.scrollWidth
-    });
-    
-    console.log('FullCalendar dimensions:', {
-      width: fullCalendar?.clientWidth,
-      offsetWidth: fullCalendar?.offsetWidth,
-      scrollWidth: fullCalendar?.scrollWidth
-    });
-    
-    console.log('Sidebar expanded:', this.sidebarExpanded);
-  }
-
   initForm(): void {
-    // Simulación de FormBuilder - en proyecto real usarías FormBuilder
-    this.citaForm = {
-      get: (field: string) => ({ value: '' }),
-      invalid: false,
-      reset: () => {},
-      patchValue: (values: any) => {}
-    };
+    this.citaForm = this.fb.group({
+      fkpaciente: ['', Validators.required],
+      fkusuario: ['', Validators.required],
+      fechaatencion: ['', Validators.required],
+      horaatencion: ['', Validators.required],
+      comentario: [''],
+      transporte: [0],
+      fechatransporte: [''],
+      horariotransporte: [''],
+      direccion: [''],
+      nombreEncargado: [{value: '', disabled: true}],
+      contactoEncargado: [{value: '', disabled: true}]
+    });
   }
 
   async cargarCitas(): Promise<void> {
     this.loading = true;
     try {
-      // Simular llamada al backend
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // En proyecto real: const response = await this.agendaService.getCitas(filtros).toPromise();
       const citas = this.selectedMedico 
         ? this.citasEjemplo.filter(c => c.fkusuario.toString() === this.selectedMedico)
         : this.citasEjemplo;
       
-      // Convertir citas a eventos de FullCalendar
       this.calendarOptions.events = citas.map(cita => ({
         id: cita.idagenda.toString(),
         title: `${cita.paciente.nombres} ${cita.paciente.apellidos}`,
@@ -371,11 +408,12 @@ export class AgendaComponent implements OnInit {
         }
       }));
       
-      // Forzar actualización del calendario
       this.calendarOptions = { ...this.calendarOptions };
       
-      // Forzar resize después de cargar datos
-      setTimeout(() => this.resizeCalendar(), 100);
+      setTimeout(() => {
+        this.getCalendarApi();
+        this.resizeCalendar();
+      }, 100);
     } catch (error) {
       console.error('Error cargando citas:', error);
     } finally {
@@ -391,7 +429,6 @@ export class AgendaComponent implements OnInit {
   }
 
   handleEventClick(clickInfo: EventClickArg): void {
-    const citaId = parseInt(clickInfo.event.id);
     this.modalMode = 'view';
     this.selectedCita = clickInfo.event.extendedProps['citaCompleta'];
     this.showModal = true;
@@ -402,10 +439,13 @@ export class AgendaComponent implements OnInit {
   }
 
   handleDatesSet(dateInfo: any): void {
-    // Actualizar título cuando cambian las fechas
-    this.tituloCalendario = format(dateInfo.start, 'MMMM yyyy', { locale: es });
+    // Obtener la fecha actual de la vista del calendario
+    const api = this.getCalendarApi();
+    if (api) {
+      const currentDate = api.getDate(); // Esta es la fecha real del calendario
+      this.tituloCalendario = format(currentDate, 'MMMM yyyy', { locale: es });
+    }
     
-    // Forzar resize cuando cambian las fechas
     setTimeout(() => this.resizeCalendar(), 100);
   }
 
@@ -427,23 +467,87 @@ export class AgendaComponent implements OnInit {
   cerrarModal(): void {
     this.showModal = false;
     this.selectedCita = null;
+    this.citaForm.reset();
   }
 
   editarCita(): void {
     this.modalMode = 'edit';
-    // Aquí cargarías los datos de la cita en el formulario
   }
 
-  async guardarCita(): Promise<void> {
-    // Aquí implementarías la lógica para guardar
-    console.log('Guardando cita...');
-    await this.cargarCitas();
-    this.cerrarModal();
+  guardarCita(): void {
+    if (this.citaForm.invalid) {
+      this.alerta.alertaError('Por favor complete todos los campos requeridos');
+      return;
+    }
+
+    this.loading = true;
+    const currentUserId = this.getCurrentUserId();
+
+    const horaSeleccionada = this.citaForm.get('horaatencion')?.value;
+    const horaFormateada = horaSeleccionada.includes(':00:00') 
+      ? horaSeleccionada 
+      : horaSeleccionada.length === 5 
+        ? `${horaSeleccionada}:00` 
+        : horaSeleccionada;
+
+    const transporteValue = this.citaForm.get('transporte')?.value;
+    const transporteNumero = transporteValue ? 1 : 0;
+    
+    const datosCita: CitaRequest = {
+      fkusuario: parseInt(this.citaForm.get('fkusuario')?.value),
+      fkpaciente: parseInt(this.citaForm.get('fkpaciente')?.value),
+      fechaatencion: this.citaForm.get('fechaatencion')?.value,
+      horaatencion: horaFormateada,
+      comentario: this.citaForm.get('comentario')?.value || '',
+      transporte: transporteNumero,
+      fechatransporte: this.citaForm.get('fechatransporte')?.value || null,
+      horariotransporte: this.citaForm.get('horariotransporte')?.value || null,
+      direccion: this.citaForm.get('direccion')?.value || null,
+      usuariocreacion: currentUserId,
+      estado: 1
+    };
+
+    if (this.modalMode === 'create') {
+      this.agendaService.crearCita(datosCita).subscribe({
+        next: (response) => {
+          if (response.exito || response.success) {
+            this.alerta.alertaExito('Cita creada exitosamente');
+            this.cargarCitas();
+            this.cerrarModal();
+          } else {
+            this.alerta.alertaError(response.mensaje || response.message || 'Error al crear la cita');
+          }
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('Error al crear cita:', error);
+          this.alerta.alertaError('Error interno del servidor');
+          this.loading = false;
+        }
+      });
+    } else if (this.modalMode === 'edit' && this.selectedCita) {
+      this.agendaService.actualizarCita(this.selectedCita.idagenda, datosCita).subscribe({
+        next: (response) => {
+          if (response.exito || response.success) {
+            this.alerta.alertaExito('Cita actualizada exitosamente');
+            this.cargarCitas();
+            this.cerrarModal();
+          } else {
+            this.alerta.alertaError(response.mensaje || response.message || 'Error al actualizar la cita');
+          }
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('Error al actualizar cita:', error);
+          this.alerta.alertaError('Error interno del servidor');
+          this.loading = false;
+        }
+      });
+    }
   }
 
   async eliminarCita(): Promise<void> {
     if (confirm('¿Está seguro de eliminar esta cita?')) {
-      // Aquí implementarías la lógica para eliminar
       console.log('Eliminando cita...');
       await this.cargarCitas();
       this.cerrarModal();
@@ -452,33 +556,32 @@ export class AgendaComponent implements OnInit {
 
   cambiarVista(vista: string): void {
     this.currentView = vista;
-    const calendarApi = (document.querySelector('full-calendar') as any)?.getApi();
-    if (calendarApi) {
-      calendarApi.changeView(vista);
-      // Forzar resize después de cambiar vista
+    if (this.calendarComponent) {
+      const api = this.calendarComponent.getApi();
+      api.changeView(vista);
       setTimeout(() => this.resizeCalendar(), 100);
     }
   }
 
   navegarMes(direccion: 'prev' | 'next'): void {
-    const calendarApi = (document.querySelector('full-calendar') as any)?.getApi();
-    if (calendarApi) {
-      if (direccion === 'prev') {
-        calendarApi.prev();
-      } else {
-        calendarApi.next();
-      }
-      // Forzar resize después de navegar
-      setTimeout(() => this.resizeCalendar(), 100);
+    if (!this.calendarComponent) {
+      console.error('Componente de calendario no disponible');
+      return;
+    }
+    
+    const api = this.calendarComponent.getApi();
+    
+    if (direccion === 'prev') {
+      api.prev();
+    } else {
+      api.next();
     }
   }
 
   irAHoy(): void {
-    const calendarApi = (document.querySelector('full-calendar') as any)?.getApi();
-    if (calendarApi) {
-      calendarApi.today();
-      // Forzar resize después de ir a hoy
-      setTimeout(() => this.resizeCalendar(), 100);
+    if (this.calendarComponent) {
+      const api = this.calendarComponent.getApi();
+      api.today();
     }
   }
 
@@ -487,7 +590,6 @@ export class AgendaComponent implements OnInit {
   }
 
   buscarCitas(): void {
-    // Implementar búsqueda de citas
     console.log('Buscando:', this.searchTerm);
   }
 }

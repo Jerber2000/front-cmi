@@ -92,6 +92,23 @@ export class UsuarioService{
         );
     }
 
+    obtenerUsuariosPorRol(rol: number): Observable<any>{
+        const ruta = `${this.apiUrl}/buscarPorRol/${rol}`;
+        return this.http.get<any>(ruta).pipe(
+            tap(response => {
+            }),
+            map(response =>{
+                if(response && response.success && response.data && Array.isArray(response.data)){
+                    return response.data;
+                }
+                return[];
+            }),
+            catchError(error =>{
+                return of([]);
+            })
+        );
+    }
+
     crearUsuario(usuario: Omit<Usuario, 'idusuario'>): Observable<any> {
         return this.http.post<any>(`${this.apiUrl}/crearUsuario`, usuario).pipe(
             tap(response => {
