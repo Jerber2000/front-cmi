@@ -1,3 +1,4 @@
+//directives/formatoInput.ts
 import { Directive, ElementRef, HostListener, Input, Renderer2 } from '@angular/core';
 import { NgControl } from '@angular/forms';
 

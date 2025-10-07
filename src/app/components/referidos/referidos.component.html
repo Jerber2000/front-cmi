@@ -1,0 +1,893 @@
+<!-- //referidos.component.html -->
+<div class="content-area" 
+     *ngIf="!pacienteExterno"
+     [class.sidebar-expanded]="sidebarExpanded">
+  <app-sidebar [userInfo]="userInfo"></app-sidebar>
+  
+  <!-- HEADER -->
+  <div class="menu-container">
+    <header class="header">
+      <div class="header-content">
+        <div class="header-left">
+          <div class="header-text">
+            <h1 class="title">Referidos</h1>
+          </div>
+          <img src="assets/img/LogoFraijanes.png" alt="Logo Fraijanes" class="logo">
+        </div>
+      </div>
+    </header>
+  </div>
+
+  <!-- FILTROS Y BÚSQUEDA -->
+  <div class="control-card">
+    <div class="filtros-container">
+      <div class="filtros-grupo">
+        <button 
+          class="btn-filtro" 
+          [class.active]="filtroActivo === 'pendientes'"
+          (click)="cambiarFiltro('pendientes')"
+        >
+          <i class="fas fa-clock"></i>
+          Pendientes
+          <span class="badge" *ngIf="contadores.pendientes > 0">{{ contadores.pendientes }}</span>
+        </button>
+        
+        <button 
+          class="btn-filtro" 
+          [class.active]="filtroActivo === 'enviados'"
+          (click)="cambiarFiltro('enviados')"
+        >
+          <i class="fas fa-paper-plane"></i>
+          Enviados
+        </button>
+        
+        <button 
+          class="btn-filtro" 
+          [class.active]="filtroActivo === 'recibidos'"
+          (click)="cambiarFiltro('recibidos')"
+        >
+          <i class="fas fa-inbox"></i>
+          Recibidos
+        </button>
+        
+        <button 
+          class="btn-filtro" 
+          [class.active]="filtroActivo === 'completados'"
+          (click)="cambiarFiltro('completados')"
+        >
+          <i class="fas fa-check-circle"></i>
+          Completados
+        </button>
+      </div>
+
+      <div class="busqueda-grupo">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input 
+            type="text" 
+            placeholder="Buscar por paciente (nombre, apellido o CUI)..."
+            [(ngModel)]="busqueda"
+            (input)="buscarReferidos()"
+          >
+          <button 
+            class="btn-clear" 
+            *ngIf="busqueda"
+            (click)="limpiarBusqueda()"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <button class="btn-nuevo-referido" (click)="abrirModalNuevoReferido()">
+          <i class="fas fa-plus"></i> Nuevo Referido
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA DE REFERIDOS -->
+  <div class="main-card">
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      Cargando referidos...
+    </div>
+
+    <div class="table-container" *ngIf="!loading">
+      <table class="referidos-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Paciente</th>
+            <th>De</th>
+            <th>Para</th>
+            <th>Clínica</th>
+            <th>Estado</th>
+            <th>Progreso</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let referido of referidosPaginados" class="referido-row">
+            <td class="fecha-cell">
+              {{ referidosService.formatearFecha(referido.fechacreacion) }}
+            </td>
+            
+            <td class="paciente-cell">
+              <div class="paciente-info">
+                <strong>{{ referido.paciente?.nombres }} {{ referido.paciente?.apellidos }}</strong>
+                <small>CUI: {{ referido.paciente?.cui }}</small>
+              </div>
+            </td>
+            
+            <td class="medico-cell">
+              <div class="medico-info">
+                <span>{{ referido.usuario?.nombres }} {{ referido.usuario?.apellidos }}</span>
+                <small>{{ referido.usuario?.profesion }}</small>
+              </div>
+            </td>
+            
+            <td class="medico-cell">
+              <div class="medico-info">
+                <span>{{ referido.usuarioDestino?.nombres }} {{ referido.usuarioDestino?.apellidos }}</span>
+                <small>{{ referido.usuarioDestino?.profesion }}</small>
+              </div>
+            </td>
+            
+            <td class="clinica-cell">
+              {{ referido.clinica?.nombreclinica }}
+            </td>
+            
+            <td class="estado-cell">
+              <span 
+                class="badge-estado" 
+                [class.completado]="referido.confirmacion4 === 1"
+                [class.en-proceso]="referido.confirmacion4 === 0"
+              >
+                {{ referidosService.obtenerEstadoReferido(referido) }}
+              </span>
+            </td>
+            
+            <td class="progreso-cell">
+              <div class="progress-bar-container">
+                <div 
+                  class="progress-bar-fill" 
+                  [style.width.%]="referidosService.obtenerProgresoReferido(referido)"
+                ></div>
+              </div>
+              <small>{{ referidosService.obtenerProgresoReferido(referido) }}%</small>
+            </td>
+            
+            <td class="acciones-cell">
+              <button 
+                class="btn-accion btn-ver" 
+                (click)="verDetalleReferido(referido)"
+                title="Ver detalle"
+              >
+                <i class="fas fa-eye"></i>
+              </button>
+              
+              <button 
+                *ngIf="puedeConfirmar(referido)"
+                class="btn-accion btn-confirmar" 
+                (click)="confirmarReferido(referido)"
+                title="Aprobar"
+              >
+                <i class="fas fa-check"></i>
+              </button>
+              
+              <button 
+                *ngIf="puedeEditar(referido)"
+                class="btn-accion btn-editar" 
+                (click)="editarReferido(referido)"
+                title="Editar"
+              >
+                <i class="fas fa-edit"></i>
+              </button>
+              
+              <button 
+                *ngIf="puedeEliminar(referido)"
+                class="btn-accion btn-eliminar" 
+                (click)="eliminarReferido(referido)"
+                title="Eliminar"
+              >
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+          
+          <tr *ngIf="referidos.length === 0">
+            <td colspan="8" class="empty-state">
+              <i class="fas fa-folder-open"></i>
+              <p>No hay referidos {{ filtroActivo }}</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PAGINACIÓN -->
+    <div class="pagination-container" *ngIf="totalItems > 0">
+      <!-- Navegación de páginas (solo si hay más de 1 página) -->
+      <div class="pagination" *ngIf="totalPages > 1">
+        <!-- Botón anterior -->
+        <button 
+          class="pagination-btn" 
+          [class.disabled]="currentPage === 1"
+          (click)="previousPage()"
+          [disabled]="currentPage === 1"
+        >
+          <i class="fas fa-chevron-left"></i>
+        </button>
+
+        <!-- Primera página -->
+        <button 
+          *ngIf="getPages()[0] > 1"
+          class="pagination-btn"
+          (click)="goToPage(1)"
+        >
+          1
+        </button>
+        
+        <!-- Puntos suspensivos -->
+        <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
+
+        <!-- Páginas visibles -->
+        <button 
+          *ngFor="let page of getPages()"
+          class="pagination-btn"
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)"
+        >
+          {{ page }}
+        </button>
+
+        <!-- Puntos suspensivos -->
+        <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
+
+        <!-- Última página -->
+        <button 
+          *ngIf="getPages()[getPages().length - 1] < totalPages"
+          class="pagination-btn"
+          (click)="goToPage(totalPages)"
+        >
+          {{ totalPages }}
+        </button>
+
+        <!-- Botón siguiente -->
+        <button 
+          class="pagination-btn" 
+          [class.disabled]="currentPage === totalPages"
+          (click)="nextPage()"
+          [disabled]="currentPage === totalPages"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <!-- Mensaje si solo hay una página -->
+      <div *ngIf="totalPages <= 1" class="pagination-single">
+        Página 1 de 1
+      </div>
+
+      <!-- Selector de elementos por página -->
+      <div class="items-per-page">
+        <label>Mostrar:</label>
+        <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
+          <option [value]="5">5</option>
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+        </select>
+        <span>por página</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- //referidos.component.html -->
+<div class="content-area" 
+     *ngIf="!pacienteExterno"
+     [class.sidebar-expanded]="sidebarExpanded">
+  <app-sidebar [userInfo]="userInfo"></app-sidebar>
+  
+  <!-- HEADER -->
+  <div class="menu-container">
+    <header class="header">
+      <div class="header-content">
+        <div class="header-left">
+          <div class="header-text">
+            <h1 class="title">Referidos</h1>
+          </div>
+          <img src="assets/img/LogoFraijanes.png" alt="Logo Fraijanes" class="logo">
+        </div>
+      </div>
+    </header>
+  </div>
+
+  <!-- FILTROS Y BÚSQUEDA -->
+  <div class="control-card">
+    <div class="filtros-container">
+      <div class="filtros-grupo">
+        <button 
+          class="btn-filtro" 
+          [class.active]="filtroActivo === 'pendientes'"
+          (click)="cambiarFiltro('pendientes')"
+        >
+          <i class="fas fa-clock"></i>
+          Pendientes
+          <span class="badge" *ngIf="contadores.pendientes > 0">{{ contadores.pendientes }}</span>
+        </button>
+        
+        <button 
+          class="btn-filtro" 
+          [class.active]="filtroActivo === 'enviados'"
+          (click)="cambiarFiltro('enviados')"
+        >
+          <i class="fas fa-paper-plane"></i>
+          Enviados
+        </button>
+        
+        <button 
+          class="btn-filtro" 
+          [class.active]="filtroActivo === 'recibidos'"
+          (click)="cambiarFiltro('recibidos')"
+        >
+          <i class="fas fa-inbox"></i>
+          Recibidos
+        </button>
+        
+        <button 
+          class="btn-filtro" 
+          [class.active]="filtroActivo === 'completados'"
+          (click)="cambiarFiltro('completados')"
+        >
+          <i class="fas fa-check-circle"></i>
+          Completados
+        </button>
+      </div>
+
+      <div class="busqueda-grupo">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input 
+            type="text" 
+            placeholder="Buscar por paciente (nombre, apellido o CUI)..."
+            [(ngModel)]="busqueda"
+            (input)="buscarReferidos()"
+          >
+          <button 
+            class="btn-clear" 
+            *ngIf="busqueda"
+            (click)="limpiarBusqueda()"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <button class="btn-nuevo-referido" (click)="abrirModalNuevoReferido()">
+          <i class="fas fa-plus"></i> Nuevo Referido
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA DE REFERIDOS -->
+  <div class="main-card">
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      Cargando referidos...
+    </div>
+
+    <div class="table-container" *ngIf="!loading">
+      <table class="referidos-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Paciente</th>
+            <th>De</th>
+            <th>Para</th>
+            <th>Clínica</th>
+            <th>Estado</th>
+            <th>Progreso</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let referido of referidosPaginados" class="referido-row">
+            <td class="fecha-cell">
+              {{ referidosService.formatearFecha(referido.fechacreacion) }}
+            </td>
+            
+            <td class="paciente-cell">
+              <div class="paciente-info">
+                <strong>{{ referido.paciente?.nombres }} {{ referido.paciente?.apellidos }}</strong>
+                <small>CUI: {{ referido.paciente?.cui }}</small>
+              </div>
+            </td>
+            
+            <td class="medico-cell">
+              <div class="medico-info">
+                <span>{{ referido.usuario?.nombres }} {{ referido.usuario?.apellidos }}</span>
+                <small>{{ referido.usuario?.profesion }}</small>
+              </div>
+            </td>
+            
+            <td class="medico-cell">
+              <div class="medico-info">
+                <span>{{ referido.usuarioDestino?.nombres }} {{ referido.usuarioDestino?.apellidos }}</span>
+                <small>{{ referido.usuarioDestino?.profesion }}</small>
+              </div>
+            </td>
+            
+            <td class="clinica-cell">
+              {{ referido.clinica?.nombreclinica }}
+            </td>
+            
+            <td class="estado-cell">
+              <span 
+                class="badge-estado" 
+                [class.completado]="referido.confirmacion4 === 1"
+                [class.en-proceso]="referido.confirmacion4 === 0"
+              >
+                {{ referidosService.obtenerEstadoReferido(referido) }}
+              </span>
+            </td>
+            
+            <td class="progreso-cell">
+              <div class="progress-bar-container">
+                <div 
+                  class="progress-bar-fill" 
+                  [style.width.%]="referidosService.obtenerProgresoReferido(referido)"
+                ></div>
+              </div>
+              <small>{{ referidosService.obtenerProgresoReferido(referido) }}%</small>
+            </td>
+            
+            <td class="acciones-cell">
+              <button 
+                class="btn-accion btn-ver" 
+                (click)="verDetalleReferido(referido)"
+                title="Ver detalle"
+              >
+                <i class="fas fa-eye"></i>
+              </button>
+              
+              <button 
+                *ngIf="puedeConfirmar(referido)"
+                class="btn-accion btn-confirmar" 
+                (click)="confirmarReferido(referido)"
+                title="Aprobar"
+              >
+                <i class="fas fa-check"></i>
+              </button>
+              
+              <button 
+                *ngIf="puedeEditar(referido)"
+                class="btn-accion btn-editar" 
+                (click)="editarReferido(referido)"
+                title="Editar"
+              >
+                <i class="fas fa-edit"></i>
+              </button>
+              
+              <button 
+                *ngIf="puedeEliminar(referido)"
+                class="btn-accion btn-eliminar" 
+                (click)="eliminarReferido(referido)"
+                title="Eliminar"
+              >
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+          
+          <tr *ngIf="referidos.length === 0">
+            <td colspan="8" class="empty-state">
+              <i class="fas fa-folder-open"></i>
+              <p>No hay referidos {{ filtroActivo }}</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PAGINACIÓN -->
+    <div class="pagination-container" *ngIf="totalItems > 0">
+      <!-- Navegación de páginas (solo si hay más de 1 página) -->
+      <div class="pagination" *ngIf="totalPages > 1">
+        <!-- Botón anterior -->
+        <button 
+          class="pagination-btn" 
+          [class.disabled]="currentPage === 1"
+          (click)="previousPage()"
+          [disabled]="currentPage === 1"
+        >
+          <i class="fas fa-chevron-left"></i>
+        </button>
+
+        <!-- Primera página -->
+        <button 
+          *ngIf="getPages()[0] > 1"
+          class="pagination-btn"
+          (click)="goToPage(1)"
+        >
+          1
+        </button>
+        
+        <!-- Puntos suspensivos -->
+        <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
+
+        <!-- Páginas visibles -->
+        <button 
+          *ngFor="let page of getPages()"
+          class="pagination-btn"
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)"
+        >
+          {{ page }}
+        </button>
+
+        <!-- Puntos suspensivos -->
+        <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
+
+        <!-- Última página -->
+        <button 
+          *ngIf="getPages()[getPages().length - 1] < totalPages"
+          class="pagination-btn"
+          (click)="goToPage(totalPages)"
+        >
+          {{ totalPages }}
+        </button>
+
+        <!-- Botón siguiente -->
+        <button 
+          class="pagination-btn" 
+          [class.disabled]="currentPage === totalPages"
+          (click)="nextPage()"
+          [disabled]="currentPage === totalPages"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <!-- Mensaje si solo hay una página -->
+      <div *ngIf="totalPages <= 1" class="pagination-single">
+        Página 1 de 1
+      </div>
+
+      <!-- Selector de elementos por página -->
+      <div class="items-per-page">
+        <label>Mostrar:</label>
+        <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
+          <option [value]="5">5</option>
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+        </select>
+        <span>por página</span>
+      </div>
+    </div>
+  </div>
+
+
+</div>
+  <!-- MODAL NUEVO REFERIDO -->
+  <div class="modal-backdrop" *ngIf="mostrarModalNuevo" (click)="cerrarModalNuevo()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Nuevo Referido</h3>
+        <button class="modal-close" (click)="cerrarModalNuevo()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <form [formGroup]="referidoForm" class="referido-form">
+          <div class="form-group">
+            <label class="form-label">Paciente *</label>
+            
+            <!-- Input con búsqueda -->
+            <div class="search-select-container">
+              <input 
+                type="text"
+                class="form-input search-input"
+                placeholder="Buscar paciente por nombre o CUI..."
+                [(ngModel)]="busquedaPaciente"
+                [ngModelOptions]="{standalone: true}"
+                (focus)="mostrarListaPacientes = true"
+                (input)="filtrarPacientes()"
+              >
+              <i class="fas fa-search search-icon"></i>
+              
+              <!-- Lista desplegable filtrada -->
+              <div class="options-list" *ngIf="mostrarListaPacientes && pacientesFiltrados.length > 0">
+                <div 
+                  class="option-item"
+                  *ngFor="let paciente of pacientesFiltrados"
+                  (click)="seleccionarPaciente(paciente)"
+                >
+                  <div class="option-content">
+                    <strong>{{ paciente.nombres }} {{ paciente.apellidos }}</strong>
+                    <small>CUI: {{ paciente.cui }}</small>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Mensaje si no hay resultados -->
+              <div class="options-list empty" *ngIf="mostrarListaPacientes && busquedaPaciente && pacientesFiltrados.length === 0">
+                <div class="option-item disabled">
+                  No se encontraron pacientes
+                </div>
+              </div>
+            </div>
+            
+            <div class="error-message" *ngIf="isFieldInvalid('fkpaciente')">
+              {{ getFieldError('fkpaciente') }}
+            </div>
+            
+            <!-- Paciente seleccionado -->
+            <div class="selected-info" *ngIf="pacienteSeleccionado">
+              <i class="fas fa-check-circle"></i>
+              <span>{{ pacienteSeleccionado.nombres }} {{ pacienteSeleccionado.apellidos }}</span>
+              <button type="button" class="btn-clear-selection" (click)="limpiarSeleccionPaciente()">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Expediente *</label>
+            <select 
+              formControlName="fkexpediente" 
+              class="form-select"
+              [class.invalid]="isFieldInvalid('fkexpediente')"
+              [disabled]="!expedientesDisponibles.length"
+            >
+              <option value="">Seleccione un expediente</option>
+              <option 
+                *ngFor="let expediente of expedientesDisponibles" 
+                [value]="expediente.idexpediente"
+              >
+                {{ expediente.numeroexpediente }}
+              </option>
+            </select>
+            <div class="error-message" *ngIf="isFieldInvalid('fkexpediente')">
+              {{ getFieldError('fkexpediente') }}
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Clínica Destino *</label>
+              <select 
+                formControlName="fkclinica" 
+                class="form-select"
+                [class.invalid]="isFieldInvalid('fkclinica')"
+              >
+                <option value="">Seleccione una clínica</option>
+                <option 
+                  *ngFor="let clinica of clinicas" 
+                  [value]="clinica.idclinica"
+                >
+                  {{ clinica.nombreclinica }}
+                </option>
+              </select>
+              <div class="error-message" *ngIf="isFieldInvalid('fkclinica')">
+                {{ getFieldError('fkclinica') }}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Médico Destino *</label>
+              <select 
+                formControlName="fkusuariodestino" 
+                class="form-select"
+                [class.invalid]="isFieldInvalid('fkusuariodestino')"
+              >
+                <option value="">Seleccione un médico</option>
+                <option 
+                  *ngFor="let medico of medicos" 
+                  [value]="medico.idusuario"
+                >
+                  {{ medico.nombres }} {{ medico.apellidos }} - {{ medico.profesion }}
+                </option>
+              </select>
+              <div class="error-message" *ngIf="isFieldInvalid('fkusuariodestino')">
+                {{ getFieldError('fkusuariodestino') }}
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Motivo del Referido *</label>
+            <textarea 
+              formControlName="comentario"
+              class="form-textarea"
+              rows="5"
+              placeholder="Describa el motivo por el cual está refiriendo al paciente..."
+              [class.invalid]="isFieldInvalid('comentario')"
+            ></textarea>
+            <div class="error-message" *ngIf="isFieldInvalid('comentario')">
+              {{ getFieldError('comentario') }}
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancelar" (click)="cerrarModalNuevo()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button 
+          class="btn-guardar" 
+          (click)="guardarReferido()"
+          [disabled]="referidoForm.invalid || guardando"
+        >
+          <span *ngIf="guardando">
+            <i class="fas fa-spinner fa-spin"></i> Guardando...
+          </span>
+          <span *ngIf="!guardando">
+            <i class="fas fa-save"></i> Crear Referido
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DETALLE REFERIDO -->
+  <div class="modal-backdrop" *ngIf="mostrarModalDetalle" (click)="cerrarModalDetalle()">
+    <div class="modal-content modal-detalle" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Detalle del Referido</h3>
+        <button class="modal-close" (click)="cerrarModalDetalle()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body" *ngIf="referidoSeleccionado">
+        <!-- Información del Paciente -->
+        <div class="detalle-section">
+          <h4><i class="fas fa-user"></i> Paciente</h4>
+          <div class="detalle-content">
+            <p><strong>Nombre:</strong> {{ referidoSeleccionado.paciente?.nombres }} {{ referidoSeleccionado.paciente?.apellidos }}</p>
+            <p><strong>CUI:</strong> {{ referidoSeleccionado.paciente?.cui }}</p>
+          </div>
+        </div>
+
+        <!-- Información del Referido -->
+        <div class="detalle-section">
+          <h4><i class="fas fa-exchange-alt"></i> Información del Referido</h4>
+          <div class="detalle-content">
+            <p><strong>De:</strong> {{ referidoSeleccionado.usuario?.nombres }} {{ referidoSeleccionado.usuario?.apellidos }}</p>
+            <p><strong>Para:</strong> {{ referidoSeleccionado.usuarioDestino?.nombres }} {{ referidoSeleccionado.usuarioDestino?.apellidos }}</p>
+            <p><strong>Clínica:</strong> {{ referidoSeleccionado.clinica?.nombreclinica }}</p>
+            <p><strong>Fecha:</strong> {{ referidosService.formatearFechaHora(referidoSeleccionado.fechacreacion) }}</p>
+          </div>
+        </div>
+
+        <!-- Motivo -->
+        <div class="detalle-section">
+          <h4><i class="fas fa-comment-medical"></i> Motivo del Referido</h4>
+          <div class="detalle-content">
+            <p class="comentario-text">{{ referidoSeleccionado.comentario }}</p>
+          </div>
+        </div>
+
+        <!-- Proceso de Aprobación -->
+        <div class="detalle-section">
+          <h4><i class="fas fa-tasks"></i> Proceso de Aprobación</h4>
+          <div class="aprobacion-timeline">
+            <div class="timeline-item" [class.completado]="referidoSeleccionado.confirmacion1 === 1">
+              <div class="timeline-icon">
+                <i class="fas fa-check-circle"></i>
+              </div>
+              <div class="timeline-content">
+                <h5>Médico Emisor</h5>
+                <p *ngIf="referidoSeleccionado.usuarioconfirma1">
+                  Aprobado por: {{ referidoSeleccionado.usuarioconfirma1 }}
+                </p>
+              </div>
+            </div>
+
+            <div class="timeline-item" [class.completado]="referidoSeleccionado.confirmacion2 === 1">
+              <div class="timeline-icon">
+                <i class="fas fa-user-shield"></i>
+              </div>
+              <div class="timeline-content">
+                <h5>Administrador 1</h5>
+                <p *ngIf="referidoSeleccionado.usuarioconfirma2">
+                  Aprobado por: {{ referidoSeleccionado.usuarioconfirma2 }}
+                </p>
+                <p *ngIf="!referidoSeleccionado.usuarioconfirma2" class="pendiente">Pendiente</p>
+              </div>
+            </div>
+
+            <div class="timeline-item" [class.completado]="referidoSeleccionado.confirmacion3 === 1">
+              <div class="timeline-icon">
+                <i class="fas fa-user-shield"></i>
+              </div>
+              <div class="timeline-content">
+                <h5>Administrador 2</h5>
+                <p *ngIf="referidoSeleccionado.usuarioconfirma3">
+                  Aprobado por: {{ referidoSeleccionado.usuarioconfirma3 }}
+                </p>
+                <p *ngIf="!referidoSeleccionado.usuarioconfirma3" class="pendiente">Pendiente</p>
+              </div>
+            </div>
+
+            <div class="timeline-item" [class.completado]="referidoSeleccionado.confirmacion4 === 1">
+              <div class="timeline-icon">
+                <i class="fas fa-user-md"></i>
+              </div>
+              <div class="timeline-content">
+                <h5>Médico Destino</h5>
+                <p *ngIf="referidoSeleccionado.usuarioconfirma4">
+                  Aprobado por: {{ referidoSeleccionado.usuarioconfirma4 }}
+                </p>
+                <p *ngIf="!referidoSeleccionado.usuarioconfirma4" class="pendiente">Pendiente</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancelar" (click)="cerrarModalDetalle()">
+          <i class="fas fa-times"></i> Cerrar
+        </button>
+        <button 
+          *ngIf="puedeConfirmar(referidoSeleccionado!)"
+          class="btn-confirmar-grande" 
+          (click)="confirmarDesdeDetalle()"
+        >
+          <i class="fas fa-check"></i> Aprobar Referido
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CONFIRMACIÓN -->
+  <div class="modal-backdrop" *ngIf="mostrarModalConfirmacion" (click)="cerrarModalConfirmacion()">
+    <div class="modal-content modal-confirmacion" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Confirmar Referido</h3>
+        <button class="modal-close" (click)="cerrarModalConfirmacion()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <p class="confirmacion-mensaje">
+          ¿Está seguro de aprobar este referido?
+        </p>
+        
+        <div class="form-group">
+          <label class="form-label">Comentario (Opcional)</label>
+          <textarea 
+            [(ngModel)]="comentarioConfirmacion"
+            class="form-textarea"
+            rows="4"
+            placeholder="Puede agregar un comentario adicional..."
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancelar" (click)="cerrarModalConfirmacion()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button 
+          class="btn-confirmar-grande" 
+          (click)="ejecutarConfirmacion()"
+          [disabled]="confirmando"
+        >
+          <span *ngIf="confirmando">
+            <i class="fas fa-spinner fa-spin"></i> Aprobando...
+          </span>
+          <span *ngIf="!confirmando">
+            <i class="fas fa-check"></i> Aprobar
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>

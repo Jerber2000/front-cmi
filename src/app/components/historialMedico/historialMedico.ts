@@ -16,12 +16,14 @@ import {
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AlertaService } from '../../services/alerta.service';
 import { ArchivoService } from '../../services/archivo.service';
+import { Paciente } from '../../services/paciente.service';
+import { ReferidosComponent } from '../referidos/referidos.component';
 
 
 @Component({
   selector: 'app-historial-medico',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent,ReferidosComponent],
   templateUrl: './historialMedico.html',
   styleUrls: ['./historialMedico.scss']
 })
@@ -29,6 +31,7 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit {
   currentView: 'historial' | 'nueva-sesion' | 'diagnostico' | 'notas-rapidas' = 'historial';
   sidebarExpanded = true;
   loading = false;
+  pacienteParaReferir: Paciente | null = null;
   
   idPaciente: number = 0;
   infoPaciente: InfoPaciente | null = null;
@@ -58,7 +61,7 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit {
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
-    private router: Router,
+    public router: Router,
     public historialService: HistorialMedicoService,
     public archivoService: ArchivoService,
     private alerta: AlertaService,
@@ -78,7 +81,36 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit {
     });
   }
 
-  // ✅ CORRECCIÓN 2: Agregar método público para formatear tamaño
+  //abrir modal de referido
+  abrirModalReferido(): void {
+    if (!this.infoPaciente) {
+      this.alerta.alertaError('No se encontró información del paciente');
+      return;
+    }
+
+    this.pacienteParaReferir = {
+      idpaciente: this.infoPaciente.idpaciente,
+      nombres: this.infoPaciente.nombres,
+      apellidos: this.infoPaciente.apellidos,
+      cui: this.infoPaciente.cui,
+      fechanacimiento: this.infoPaciente.fechanacimiento || '',
+      genero: '',
+      tipoconsulta: '',
+      municipio: '',
+      direccion: '',
+      expedientes: (this.infoPaciente.expedientes || []).map(exp => ({
+        ...exp,
+        idexpediente: (exp as any).idexpediente || 0
+      }))
+    };
+  }
+
+  // ✅ AGREGAR ESTE MÉTODO
+  onModalReferidoCerrado(): void {
+    this.pacienteParaReferir = null;
+  }
+
+  //  para formatear tamaño
     formatFileSize(size: number): string {
     return this.archivoService.formatearTamaño(size);
   }

@@ -43,7 +43,9 @@ export class SidebarComponent {
       icon: 'fas fa-hospital-user',
       children: [
         { label: 'Pacientes', route: '/pacientes' },
-        { label: 'Expedientes', route: '/expedientes' } 
+        { label: 'Expedientes', route: '/expedientes' },
+        { label: 'Referidos', route: '/referidos' },
+        { label: 'Inventario', route: '/inventario' }
     ]
   },
     {
@@ -51,7 +53,7 @@ export class SidebarComponent {
       icon: 'fas fa-hospital',
       children: [
         { label: 'Agenda', route: '/agenda' },
-        { label: 'Administración', route: '/administracion' }, 
+        { label: 'Administración', route: '/administracion' },
         { label: 'Educación Inclusiva', route: '/educacion-inclusiva' },
         { label: 'Fisioterapia', route: '/fisioterapia' },
         { label: 'Medicina General', route: '/medicina-general' },

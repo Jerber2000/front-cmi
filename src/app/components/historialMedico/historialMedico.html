@@ -50,9 +50,15 @@
     <div class="historial-header">
       <h3>Historial de Sesiones</h3>
       <div class="header-buttons">
+        <!-- ✅ NUEVO BOTÓN CREAR REFERIDO -->
+        <button class="btn-crear-referido" (click)="abrirModalReferido()">
+          <i class="fas fa-share"></i> Crear Referido
+        </button>
+        
         <button class="btn-notas-rapidas" (click)="mostrarNotasRapidas()">
           <i class="fas fa-sticky-note"></i> Notas Rápidas
         </button>
+        
         <button class="btn-nueva-sesion" (click)="mostrarNuevaSesion()">
           <i class="fas fa-plus"></i> Nueva Sesión
         </button>
@@ -456,7 +462,6 @@
           </div>
         </form>
       </div>
-
       <div class="modal-footer">
         <button type="button" class="btn-cancelar" (click)="mostrarHistorial()">
           Cancelar
@@ -476,7 +481,14 @@
           </span>
         </button>
       </div>
+      
     </div>
   </div>
-
 </div>
+
+  <!-- ✅ MODAL REFERIDOS -->
+  <app-referidos 
+    *ngIf="pacienteParaReferir && router.url !== '/referidos'"
+    [pacienteExterno]="pacienteParaReferir"
+    (modalCerrado)="onModalReferidoCerrado()"
+  ></app-referidos>
