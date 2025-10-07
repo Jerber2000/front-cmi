@@ -1,3 +1,4 @@
+// src/interceptors/auth.interceptor.ts
 import { HttpInterceptorFn, HttpResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { tap } from 'rxjs/operators';

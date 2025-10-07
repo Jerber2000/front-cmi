@@ -1,3 +1,4 @@
+// src/app/app.routes.ts
 import type { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { cambioClaveGuard } from './guards/cambioClave.guard';
@@ -48,20 +49,31 @@ export const routes: Routes = [
       import('./components/historialMedico/historialMedico').then(m => m.HistorialMedicoComponent),
     canActivate: [authGuard],
   },
- { 
-  path: 'agenda', 
-  loadComponent: () => import('./components/agenda/agenda.component').then(m => m.AgendaComponent),
-  canActivate: [authGuard]
-},
-{ 
+  { 
+    path: 'agenda', 
+    loadComponent: () => import('./components/agenda/agenda.component').then(m => m.AgendaComponent),
+    canActivate: [authGuard]
+  },
+  { 
      path: 'perfil', 
      loadComponent: () => import('./components/perfil/perfil.component').then(m => m.PerfilComponent),
+     canActivate: [authGuard]
+   },
+   { 
+     path: 'referidos', 
+     loadComponent: () => import('./components/referidos/referidos.component').then(m => m.ReferidosComponent),
      canActivate: [authGuard]
    },
   {
     path: 'administracion',
     loadComponent: () =>
       import('./components/gestionclinica/gestionclinica').then(m => m.GestionClinicaComponent),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'inventario',
+    loadComponent: () =>
+      import('./components/inventario/inventario.component').then(m => m.InventarioComponent),
     canActivate: [authGuard],
   },
   {
