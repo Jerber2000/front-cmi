@@ -16,14 +16,10 @@ import { ArchivoService } from '../../services/archivo.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AlertaService } from '../../services/alerta.service';
 
-
-
 interface Clinica {
   idclinica: number;
   nombreclinica: string;
 }
-
-
 
 @Component({
   selector: 'app-referidos',
@@ -32,9 +28,6 @@ interface Clinica {
   templateUrl: './referidos.component.html',
   styleUrls: ['./referidos.component.scss']
 })
-
-
-
 export class ReferidosComponent implements OnInit, AfterViewInit {
 
   @Input() pacienteExterno: Paciente | null = null;
@@ -78,8 +71,6 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
   };
   
   // Modales
-
-  
   mostrarModalNuevo = false;
   mostrarModalDetalle = false;
   mostrarModalConfirmacion = false;
@@ -91,13 +82,33 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
   referidoSeleccionado: Referido | null = null;
   comentarioConfirmacion = '';
 
-  //buscador en modal
+  // Modificación
+  mostrarModalEditar = false;
+  referidoEnEdicion: Referido | null = null;
+  referidoEditForm: FormGroup;
+
+  // Buscador en modal
   busquedaPaciente = '';
   pacientesFiltrados: Paciente[] = [];
   pacienteSeleccionado: Paciente | null = null;
   mostrarListaPacientes = false;
 
+  // Propiedades para manejo de documentos (simplificadas)
+  archivoDocumentoInicial: File | null = null;
+  archivoDocumentoFinal: File | null = null;
+  subiendoDocumento = false;
 
+  // URLs de documentos para previsualización
+  urlDocumentoInicial: string | null = null;
+  urlDocumentoFinal: string | null = null;
+  
+  // Paginación local
+  currentPage = 1;
+  itemsPerPage = 10;
+  totalPages = 0;
+  totalItems = 0;
+  referidosPaginados: Referido[] = [];
+  Math = Math;
   
   constructor(
     private fb: FormBuilder,
@@ -115,14 +126,13 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
       fkusuariodestino: ['', Validators.required],
       comentario: ['', [Validators.required, Validators.minLength(10)]]
     });
-  }
 
-  currentPage = 1;
-  itemsPerPage = 10;
-  totalPages = 0;
-  totalItems = 0;
-  referidosPaginados: Referido[] = [];
-  Math = Math;
+    this.referidoEditForm = this.fb.group({
+    fkclinica: ['', Validators.required],
+    fkusuariodestino: ['', Validators.required],
+    comentario: ['', [Validators.required, Validators.minLength(10)]]
+  });
+  }
 
   ngOnInit(): void {
     this.loadUserInfo();
@@ -138,9 +148,7 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
         this.mostrarModalNuevo = true;
       }, 100);
     }
-  
   }
-  
 
   ngAfterViewInit(): void {
     this.detectSidebarState();
@@ -160,6 +168,7 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
         this.esAdmin = this.usuarioActual.fkrol === 1;
       }
     } catch (error) {
+      console.error('Error loading user info:', error);
     }
   }
 
@@ -184,6 +193,10 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
     }
   }
 
+  // ============================================================================
+  // CARGA DE DATOS
+  // ============================================================================
+
   async cargarDatosIniciales(): Promise<void> {
     this.loading = true;
     try {
@@ -199,136 +212,176 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
   }
 
   cargarReferidos(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    this.referidosService.obtenerReferidos(
-      this.filtroActivo || undefined,
-      this.busqueda || undefined,
-      this.pagination.page,
-      this.pagination.limit
-    ).subscribe({
-      next: (response) => {
-        this.referidos = response.data;
-        this.pagination = response.pagination;
-        this.actualizarContadores();
-        
-        // NUEVO: Actualizar paginación local
-        this.currentPage = 1;
-        this.updatePagination();
-        
-        resolve();
-      },
-      error: (error) => {
-        reject(error);
-      }
+    return new Promise((resolve, reject) => {
+      this.referidosService.obtenerReferidos(
+        this.filtroActivo || undefined,
+        this.busqueda || undefined,
+        this.pagination.page,
+        this.pagination.limit
+      ).subscribe({
+        next: (response) => {
+          this.referidos = response.data;
+          this.pagination = response.pagination;
+          this.actualizarContadores();
+          
+          this.currentPage = 1;
+          this.updatePagination();
+          
+          resolve();
+        },
+        error: (error) => {
+          reject(error);
+        }
+      });
     });
-  });
-}
-  
-  // Actualizar paginación local
-updatePagination(): void {
-  this.totalItems = this.referidos.length;
-  this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
-  
-  if (this.currentPage > this.totalPages && this.totalPages > 0) {
-    this.currentPage = Math.max(1, this.totalPages);
-  } else if (this.currentPage < 1) {
+  }
+
+  cargarPacientes(): Promise<void> {
+    return new Promise((resolve) => {
+      this.servicioPaciente.obtenerTodosLosPacientes(1, 1000).subscribe({
+        next: (response: any) => {
+          if (response.exito && response.datos) {
+            const pacientesArray = Array.isArray(response.datos) ? response.datos : [response.datos];
+            
+            this.pacientes = pacientesArray.map((p: any) => ({
+              idpaciente: p.idpaciente!,
+              nombres: p.nombres,
+              apellidos: p.apellidos,
+              cui: p.cui,
+              fechanacimiento: p.fechanacimiento,
+              genero: p.genero,
+              tipoconsulta: p.tipoconsulta,
+              municipio: p.municipio,
+              direccion: p.direccion,
+              expedientes: p.expedientes || []
+            }));
+
+            this.pacientesFiltrados = this.pacientes;
+            resolve();
+          } else {
+            this.pacientes = [];
+            this.pacientesFiltrados = [];
+            resolve();
+          }
+        },
+        error: (error: any) => {
+          this.pacientes = [];
+          this.pacientesFiltrados = [];
+          resolve();
+        }
+      });
+    });
+  }
+
+  cargarClinicas(): Promise<void> {
+    return new Promise((resolve) => {
+      this.clinicas = [
+        { idclinica: 1, nombreclinica: 'Medicina General' },
+        { idclinica: 2, nombreclinica: 'Psicología' },
+        { idclinica: 3, nombreclinica: 'Fisioterapia' },
+        { idclinica: 4, nombreclinica: 'Nutrición' },
+        { idclinica: 5, nombreclinica: 'Educación Inclusiva' }
+      ];
+      resolve();
+    });
+  }
+
+  cargarMedicos(): Promise<void> {
+    return new Promise((resolve) => {
+      this.usuarioService.obtenerUsuarios().subscribe({
+        next: (usuarios: any) => {
+          this.medicos = usuarios.filter((u: any) => u.estado === 1);
+          resolve();
+        },
+        error: (error: any) => {
+          this.medicos = [];
+          resolve();
+        }
+      });
+    });
+  }
+
+  // ============================================================================
+  // PAGINACIÓN
+  // ============================================================================
+
+  updatePagination(): void {
+    this.totalItems = this.referidos.length;
+    this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
+    
+    if (this.currentPage > this.totalPages && this.totalPages > 0) {
+      this.currentPage = Math.max(1, this.totalPages);
+    } else if (this.currentPage < 1) {
+      this.currentPage = 1;
+    }
+    
+    this.updatePaginatedReferidos();
+  }
+
+  updatePaginatedReferidos(): void {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = startIndex + this.itemsPerPage;
+    this.referidosPaginados = this.referidos.slice(startIndex, endIndex);
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.updatePaginatedReferidos();
+    }
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.updatePaginatedReferidos();
+    }
+  }
+
+  previousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.updatePaginatedReferidos();
+    }
+  }
+
+  getPages(): number[] {
+    if (this.totalPages <= 0) return [];
+    
+    const pages: number[] = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(this.totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
+  }
+
+  onItemsPerPageChange(): void {
+    this.itemsPerPage = Number(this.itemsPerPage);
     this.currentPage = 1;
+    this.updatePagination();
   }
-  
-  this.updatePaginatedReferidos();
-}
 
-updatePaginatedReferidos(): void {
-  const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-  const endIndex = startIndex + this.itemsPerPage;
-  this.referidosPaginados = this.referidos.slice(startIndex, endIndex);
-}
-
-goToPage(page: number): void {
-  if (page >= 1 && page <= this.totalPages) {
-    this.currentPage = page;
-    this.updatePaginatedReferidos();
+  getDisplayRange(): string {
+    if (this.totalItems === 0) return '0 - 0';
+    const start = (this.currentPage - 1) * this.itemsPerPage + 1;
+    const end = Math.min(this.currentPage * this.itemsPerPage, this.totalItems);
+    return `${start} - ${end}`;
   }
-}
 
-nextPage(): void {
-  if (this.currentPage < this.totalPages) {
-    this.currentPage++;
-    this.updatePaginatedReferidos();
-  }
-}
-
-previousPage(): void {
-  if (this.currentPage > 1) {
-    this.currentPage--;
-    this.updatePaginatedReferidos();
-  }
-}
-
-getPages(): number[] {
-  if (this.totalPages <= 0) return [];
-  
-  const pages: number[] = [];
-  const maxVisiblePages = 5;
-  let startPage = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
-  let endPage = Math.min(this.totalPages, startPage + maxVisiblePages - 1);
-  
-  if (endPage - startPage + 1 < maxVisiblePages) {
-    startPage = Math.max(1, endPage - maxVisiblePages + 1);
-  }
-  
-  for (let i = startPage; i <= endPage; i++) {
-    pages.push(i);
-  }
-  
-  return pages;
-}
-
-onItemsPerPageChange(): void {
-  this.itemsPerPage = Number(this.itemsPerPage);
-  this.currentPage = 1;
-  this.updatePagination();
-}
-
-getDisplayRange(): string {
-  if (this.totalItems === 0) return '0 - 0';
-  const start = (this.currentPage - 1) * this.itemsPerPage + 1;
-  const end = Math.min(this.currentPage * this.itemsPerPage, this.totalItems);
-  return `${start} - ${end}`;
-}
-
-
-cargarClinicas(): Promise<void> {
-  return new Promise((resolve) => {
-    this.clinicas = [
-      { idclinica: 1, nombreclinica: 'Medicina General' },
-      { idclinica: 2, nombreclinica: 'Psicología' },
-      { idclinica: 3, nombreclinica: 'Fisioterapia' },
-      { idclinica: 4, nombreclinica: 'Nutrición' },
-      { idclinica: 5, nombreclinica: 'Educación Inclusiva' }
-    ];
-    resolve();
-  });
-}
-
-cargarMedicos(): Promise<void> {
-  return new Promise((resolve) => {
-    this.usuarioService.obtenerUsuarios().subscribe({
-      next: (usuarios: any) => {
-        this.medicos = usuarios.filter((u: any) => u.estado === 1);
-        resolve();
-      },
-      error: (error: any) => {
-        this.medicos = [];
-        resolve();
-      }
-    });
-  });
-}
-
+  // ============================================================================
+  // FILTROS Y BÚSQUEDA
+  // ============================================================================
 
   actualizarContadores(): void {
-    // Cargar contadores de cada tipo
     ['pendientes', 'enviados', 'recibidos', 'completados'].forEach(tipo => {
       this.referidosService.obtenerReferidos(tipo as any, undefined, 1, 1)
         .subscribe({
@@ -360,90 +413,46 @@ cargarMedicos(): Promise<void> {
     this.cargarReferidos();
   }
 
+  // ============================================================================
   // MODAL NUEVO REFERIDO
+  // ============================================================================
 
-filtrarPacientes(): void {
-  const busqueda = this.busquedaPaciente.toLowerCase().trim();
-  
-  if (!busqueda) {
-    this.pacientesFiltrados = this.pacientes;
-    return;
+  filtrarPacientes(): void {
+    const busqueda = this.busquedaPaciente.toLowerCase().trim();
+    
+    if (!busqueda) {
+      this.pacientesFiltrados = this.pacientes;
+      return;
+    }
+    
+    this.pacientesFiltrados = this.pacientes.filter(p => 
+      p.nombres.toLowerCase().includes(busqueda) ||
+      p.apellidos.toLowerCase().includes(busqueda) ||
+      p.cui.includes(busqueda)
+    );
   }
-  
-  this.pacientesFiltrados = this.pacientes.filter(p => 
-    p.nombres.toLowerCase().includes(busqueda) ||
-    p.apellidos.toLowerCase().includes(busqueda) ||
-    p.cui.includes(busqueda)
-  );
-  
-}
 
-seleccionarPaciente(paciente: Paciente): void {
-  this.pacienteSeleccionado = paciente;
-  this.busquedaPaciente = `${paciente.nombres} ${paciente.apellidos}`;
-  this.mostrarListaPacientes = false;
-  this.referidoForm.patchValue({ fkpaciente: paciente.idpaciente });
-  this.onPacienteChange();
-}
+  seleccionarPaciente(paciente: Paciente): void {
+    this.pacienteSeleccionado = paciente;
+    this.busquedaPaciente = `${paciente.nombres} ${paciente.apellidos}`;
+    this.mostrarListaPacientes = false;
+    this.referidoForm.patchValue({ fkpaciente: paciente.idpaciente });
+    this.onPacienteChange();
+  }
 
-limpiarSeleccionPaciente(): void {
-  this.pacienteSeleccionado = null;
-  this.busquedaPaciente = '';
-  this.pacientesFiltrados = this.pacientes;
-  this.referidoForm.patchValue({ fkpaciente: '' });
-  this.expedientesDisponibles = [];
-}
-
-cargarPacientes(): Promise<void> {
-  return new Promise((resolve) => {
-    this.servicioPaciente.obtenerTodosLosPacientes(1, 1000).subscribe({
-      next: (response: any) => {
-        
-        if (response.exito && response.datos) {
-          const pacientesArray = Array.isArray(response.datos) ? response.datos : [response.datos];
-          
-          this.pacientes = pacientesArray.map((p: any) => ({
-            idpaciente: p.idpaciente!,
-            nombres: p.nombres,
-            apellidos: p.apellidos,
-            cui: p.cui,
-            fechanacimiento: p.fechanacimiento,
-            genero: p.genero,
-            tipoconsulta: p.tipoconsulta,
-            municipio: p.municipio,
-            direccion: p.direccion,
-            expedientes: p.expedientes || []
-          }));
-
-          this.pacientesFiltrados = this.pacientes; 
-          resolve();
-        } else {
-          this.pacientes = [];
-          this.pacientesFiltrados = []; // ← IMPORTANTE
-          resolve();
-        }
-      },
-      error: (error: any) => {
-        this.pacientes = [];
-        this.pacientesFiltrados = []; // ← IMPORTANTE
-        resolve();
-      }
-    });
-  });
-}
+  limpiarSeleccionPaciente(): void {
+    this.pacienteSeleccionado = null;
+    this.busquedaPaciente = '';
+    this.pacientesFiltrados = this.pacientes;
+    this.referidoForm.patchValue({ fkpaciente: '' });
+    this.expedientesDisponibles = [];
+  }
 
   abrirModalNuevoReferido(): void {
     this.referidoForm.reset();
     this.expedientesDisponibles = [];
+    this.archivoDocumentoInicial = null;
     this.mostrarModalNuevo = true;
-  }
-
-  cerrarModalNuevo(): void {
-    this.mostrarModalNuevo = false;
-    this.referidoForm.reset();
-    this.pacienteSeleccionado = null;
-    this.busquedaPaciente = '';
-    this.modalCerrado.emit(); 
   }
 
   onPacienteChange(): void {
@@ -463,77 +472,139 @@ cargarPacientes(): Promise<void> {
     this.referidoForm.patchValue({ fkexpediente: '' });
   }
 
-  guardarReferido(): void {
-  // Validar formulario
-  if (!this.referidoForm.valid) {
-    this.marcarFormularioComoTocado();
+  // GUARDAR REFERIDO (usando lógica de usuarios)
+  // src/app/components/referidos/referidos.component.ts
+
+  async guardarReferido(): Promise<void> {
+    if (!this.referidoForm.valid) {
+      this.marcarFormularioComoTocado();
+      this.alerta.alertaError('Por favor complete todos los campos requeridos');
+      return;
+    }
+
+    if (!this.pacienteSeleccionado) {
+      this.alerta.alertaError('Debe seleccionar un paciente');
+      return;
+    }
+
+    this.guardando = true;
+    
+    const fkpaciente = parseInt(this.referidoForm.value.fkpaciente);
+    const fkexpediente = parseInt(this.referidoForm.value.fkexpediente);
+    const fkclinica = parseInt(this.referidoForm.value.fkclinica);
+    const fkusuariodestino = parseInt(this.referidoForm.value.fkusuariodestino);
+    const comentario = this.referidoForm.value.comentario?.trim();
+
+    if (isNaN(fkpaciente) || isNaN(fkexpediente) || isNaN(fkclinica) || isNaN(fkusuariodestino)) {
+      this.alerta.alertaError('Error en los datos del formulario');
+      this.guardando = false;
+      return;
+    }
+
+    if (!comentario || comentario.length < 10) {
+      this.alerta.alertaError('El motivo del referido debe tener al menos 10 caracteres');
+      this.guardando = false;
+      return;
+    }
+
+    try {
+      // ✅ CORRECTO: Subir documento usando el método del service
+      let rutaDocumentoInicial = '';
+      
+      if (this.archivoDocumentoInicial) {
+        const resultado = await this.referidosService.subirDocumentoInicial(
+          0, // Temporal
+          this.archivoDocumentoInicial
+        );
+        rutaDocumentoInicial = resultado.rutadocumentoinicial;
+      }
+
+      // 2. Crear referido con la ruta del documento
+      const datos: CrearReferidoRequest = {
+        fkpaciente,
+        fkexpediente,
+        fkclinica,
+        fkusuariodestino,
+        comentario,
+        rutadocumentoinicial: rutaDocumentoInicial || undefined
+      };
+
+      this.referidosService.crearReferido(datos).subscribe({
+        next: (referidoCreado) => {
+          this.alerta.alertaExito('Referido creado exitosamente');
+          this.cerrarModalNuevo();
+          this.cargarReferidos();
+          this.guardando = false;
+        },
+        error: (error) => {
+          let mensajeError = 'Error al crear el referido';
+          
+          if (error.error?.mensaje) mensajeError = error.error.mensaje;
+          else if (error.error?.message) mensajeError = error.error.message;
+          else if (error.message) mensajeError = error.message;
+          
+          this.alerta.alertaError(mensajeError);
+          this.guardando = false;
+        }
+      });
+
+    } catch (error: any) {
+      this.alerta.alertaError(error.message || 'Error al procesar el referido');
+      this.guardando = false;
+    }
+  }
+  cerrarModalNuevo(): void {
+    this.mostrarModalNuevo = false;
+    this.referidoForm.reset();
+    this.pacienteSeleccionado = null;
+    this.busquedaPaciente = '';
+    this.archivoDocumentoInicial = null;
+    this.modalCerrado.emit(); 
+  }
+
+  // ============================================================================
+// MODAL EDITAR REFERIDO
+// ============================================================================
+
+
+
+cerrarModalEditar(): void {
+  this.mostrarModalEditar = false;
+  this.referidoEnEdicion = null;
+  this.referidoEditForm.reset();
+}
+
+guardarEdicion(): void {
+  if (!this.referidoEditForm.valid || !this.referidoEnEdicion) {
+    this.marcarFormularioComoTocadoEdit();
     this.alerta.alertaError('Por favor complete todos los campos requeridos');
     return;
   }
 
-  // Validar que haya paciente seleccionado
-  if (!this.pacienteSeleccionado) {
-    this.alerta.alertaError('Debe seleccionar un paciente');
-    return;
-  }
-
   this.guardando = true;
-  
-  // Obtener y validar valores
-  const fkpaciente = parseInt(this.referidoForm.value.fkpaciente);
-  const fkexpediente = parseInt(this.referidoForm.value.fkexpediente);
-  const fkclinica = parseInt(this.referidoForm.value.fkclinica);
-  const fkusuariodestino = parseInt(this.referidoForm.value.fkusuariodestino);
-  const comentario = this.referidoForm.value.comentario?.trim();
 
-  // Validar que ningún valor sea NaN
-  if (isNaN(fkpaciente) || isNaN(fkexpediente) || isNaN(fkclinica) || isNaN(fkusuariodestino)) {
-    this.alerta.alertaError('Error en los datos del formulario');
-    this.guardando = false;
-    return;
-  }
-
-  // Validar comentario
-  if (!comentario || comentario.length < 10) {
-    this.alerta.alertaError('El motivo del referido debe tener al menos 10 caracteres');
-    this.guardando = false;
-    return;
-  }
-
-  const datos: CrearReferidoRequest = {
-    fkpaciente,
-    fkexpediente,
-    fkclinica,
-    fkusuariodestino,
-    comentario
+  const datosActualizar = {
+    fkclinica: parseInt(this.referidoEditForm.value.fkclinica),
+    fkusuariodestino: parseInt(this.referidoEditForm.value.fkusuariodestino),
+    comentario: this.referidoEditForm.value.comentario.trim()
   };
 
-  // Log para debug (puedes eliminarlo después
-
-  this.referidosService.crearReferido(datos).subscribe({
-    next: (referido) => {
-      this.alerta.alertaExito('Referido creado exitosamente');
-      this.cerrarModalNuevo();
+  this.referidosService.actualizarReferido(
+    this.referidoEnEdicion.idrefpaciente,
+    datosActualizar
+  ).subscribe({
+    next: (referidoActualizado) => {
+      this.alerta.alertaExito('Referido actualizado exitosamente');
+      this.cerrarModalEditar();
       this.cargarReferidos();
       this.guardando = false;
     },
     error: (error) => {
+      let mensajeError = 'Error al actualizar el referido';
       
-      let mensajeError = 'Error al crear el referido';
-      
-      if (error.error) {
-        if (typeof error.error === 'string') {
-          mensajeError = error.error;
-        } else if (error.error.mensaje) {
-          mensajeError = error.error.mensaje;
-        } else if (error.error.message) {
-          mensajeError = error.error.message;
-        } else if (error.error.error) {
-          mensajeError = error.error.error;
-        }
-      } else if (error.message) {
-        mensajeError = error.message;
-      }
+      if (error.error?.mensaje) mensajeError = error.error.mensaje;
+      else if (error.error?.message) mensajeError = error.error.message;
+      else if (error.message) mensajeError = error.message;
       
       this.alerta.alertaError(mensajeError);
       this.guardando = false;
@@ -541,11 +612,46 @@ cargarPacientes(): Promise<void> {
   });
 }
 
+// ============================================================================
+// VALIDACIÓN DE FORMULARIO DE EDICIÓN
+// ============================================================================
+
+private marcarFormularioComoTocadoEdit(): void {
+  Object.keys(this.referidoEditForm.controls).forEach(key => {
+    const control = this.referidoEditForm.get(key);
+    if (control) {
+      control.markAsTouched();
+    }
+  });
+}
+
+isFieldInvalidEdit(fieldName: string): boolean {
+  const field = this.referidoEditForm.get(fieldName);
+  return !!(field && field.invalid && (field.dirty || field.touched));
+}
+
+getFieldErrorEdit(fieldName: string): string {
+  const field = this.referidoEditForm.get(fieldName);
+  if (field && field.errors && (field.dirty || field.touched)) {
+    if (field.errors['required']) {
+      return `${this.getFieldDisplayName(fieldName)} es requerido`;
+    }
+    if (field.errors['minlength']) {
+      return `Mínimo ${field.errors['minlength'].requiredLength} caracteres`;
+    }
+  }
+  return '';
+}
+
+  // ============================================================================
   // MODAL DETALLE
+  // ============================================================================
+
   verDetalleReferido(referido: Referido): void {
     this.referidosService.obtenerReferidoPorId(referido.idrefpaciente).subscribe({
       next: (detalle) => {
         this.referidoSeleccionado = detalle;
+        this.actualizarUrlsDocumentos();
         this.mostrarModalDetalle = true;
       },
       error: (error) => {
@@ -559,7 +665,10 @@ cargarPacientes(): Promise<void> {
     this.referidoSeleccionado = null;
   }
 
+  // ============================================================================
   // CONFIRMACIÓN
+  // ============================================================================
+
   confirmarReferido(referido: Referido): void {
     this.referidoSeleccionado = referido;
     this.comentarioConfirmacion = '';
@@ -600,13 +709,29 @@ cargarPacientes(): Promise<void> {
     });
   }
 
-  // EDITAR
-  editarReferido(referido: Referido): void {
-    // TODO: Implementar modal de edición
-    this.alerta.alertaInfo('Funcionalidad de edición en desarrollo');
-  }
+  // ============================================================================
+  // EDITAR Y ELIMINAR
+  // ============================================================================
 
-  // ELIMINAR
+  editarReferido(referido: Referido): void {
+  this.referidosService.obtenerReferidoPorId(referido.idrefpaciente).subscribe({
+    next: (detalle) => {
+      this.referidoEnEdicion = detalle;
+      
+      this.referidoEditForm.patchValue({
+        fkclinica: detalle.fkclinica,
+        fkusuariodestino: detalle.fkusuariodestino,
+        comentario: detalle.comentario
+      });
+      
+      this.mostrarModalEditar = true;
+    },
+    error: (error) => {
+      this.alerta.alertaError('Error al cargar los datos del referido');
+    }
+  });
+}
+
   eliminarReferido(referido: Referido): void {
     this.alerta.alertaConfirmacion(
       '¿Eliminar referido?',
@@ -628,24 +753,267 @@ cargarPacientes(): Promise<void> {
     });
   }
 
+  // ============================================================================
+  // GESTIÓN DE DOCUMENTOS
+  // ============================================================================
+
+  // Seleccionar archivo documento inicial (al crear)
+  onDocumentoInicialSeleccionado(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      
+      const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+      if (!tiposPermitidos.includes(file.type)) {
+        this.alerta.alertaError('Solo se permiten imágenes (JPG, PNG, WebP) o archivos PDF');
+        input.value = '';
+        return;
+      }
+      
+      if (file.size > 10 * 1024 * 1024) {
+        this.alerta.alertaError('El archivo no puede superar los 10MB');
+        input.value = '';
+        return;
+      }
+      
+      this.archivoDocumentoInicial = file;
+    }
+  }
+
+  // Seleccionar archivo documento final
+  onDocumentoFinalSeleccionado(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      
+      const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+      if (!tiposPermitidos.includes(file.type)) {
+        this.alerta.alertaError('Solo se permiten imágenes (JPG, PNG, WebP) o archivos PDF');
+        input.value = '';
+        return;
+      }
+      
+      if (file.size > 10 * 1024 * 1024) {
+        this.alerta.alertaError('El archivo no puede superar los 10MB');
+        input.value = '';
+        return;
+      }
+      
+      this.archivoDocumentoFinal = file;
+    }
+  }
+
+  // ✅ Subir documento inicial (desde detalle)
+  async subirDocumentoInicial(): Promise<void> {
+    if (!this.referidoSeleccionado || !this.archivoDocumentoInicial) {
+      this.alerta.alertaError('No hay archivo seleccionado');
+      return;
+    }
+
+    this.subiendoDocumento = true;
+
+    try {
+      // Subir usando ArchivoService
+      const resultado = await this.referidosService.subirDocumentoInicial(
+        this.referidoSeleccionado.idrefpaciente,
+        this.archivoDocumentoInicial
+      );
+
+      // Actualizar referido con la ruta
+      this.referidosService.actualizarReferido(
+        this.referidoSeleccionado.idrefpaciente,
+        { rutadocumentoinicial: resultado.rutadocumentoinicial }
+      ).subscribe({
+        next: (referidoActualizado) => {
+          this.alerta.alertaExito('Documento inicial subido correctamente');
+          this.referidoSeleccionado = referidoActualizado;
+          this.archivoDocumentoInicial = null;
+          this.actualizarUrlsDocumentos();
+          this.cargarReferidos();
+          this.subiendoDocumento = false;
+          
+          const input = document.getElementById('inputDocumentoInicial') as HTMLInputElement;
+          if (input) input.value = '';
+        },
+        error: (error) => {
+          this.alerta.alertaError(error.error?.mensaje || 'Error al actualizar referido');
+          this.subiendoDocumento = false;
+        }
+      });
+
+    } catch (error: any) {
+      this.alerta.alertaError(error.message || 'Error al subir documento');
+      this.subiendoDocumento = false;
+    }
+  }
+
+  // ✅ Subir documento final
+  async subirDocumentoFinal(): Promise<void> {
+    if (!this.referidoSeleccionado || !this.archivoDocumentoFinal) {
+      this.alerta.alertaError('No hay archivo seleccionado');
+      return;
+    }
+
+    this.subiendoDocumento = true;
+
+    try {
+      const resultado = await this.referidosService.subirDocumentoFinal(
+        this.referidoSeleccionado.idrefpaciente,
+        this.archivoDocumentoFinal
+      );
+
+      this.referidosService.actualizarReferido(
+        this.referidoSeleccionado.idrefpaciente,
+        { rutadocumentofinal: resultado.rutadocumentofinal } as any
+      ).subscribe({
+        next: (referidoActualizado) => {
+          this.alerta.alertaExito('Documento final subido correctamente');
+          this.referidoSeleccionado = referidoActualizado;
+          this.archivoDocumentoFinal = null;
+          this.actualizarUrlsDocumentos();
+          this.cargarReferidos();
+          this.subiendoDocumento = false;
+          
+          const input = document.getElementById('inputDocumentoFinal') as HTMLInputElement;
+          if (input) input.value = '';
+        },
+        error: (error) => {
+          this.alerta.alertaError(error.error?.mensaje || 'Error al actualizar referido');
+          this.subiendoDocumento = false;
+        }
+      });
+
+    } catch (error: any) {
+      this.alerta.alertaError(error.message || 'Error al subir documento');
+      this.subiendoDocumento = false;
+    }
+  }
+
+  // Eliminar documento inicial
+  async eliminarDocumentoInicial(): Promise<void> {
+  if (!this.referidoSeleccionado || !this.referidoSeleccionado.rutadocumentoinicial) return;
+
+  const confirmado = await this.alerta.alertaConfirmacion(
+    '¿Eliminar documento inicial?',
+    'Esta acción no se puede deshacer',
+    'Sí, eliminar',
+    'Cancelar'
+  );
+
+  if (confirmado) {
+    try {
+      // Eliminar archivo físico
+      await this.archivoService.eliminarArchivo(this.referidoSeleccionado.rutadocumentoinicial);
+      
+      // Actualizar BD (quitar ruta)
+      this.referidosService.actualizarReferido(
+        this.referidoSeleccionado.idrefpaciente,
+        { rutadocumentoinicial: '' } as any
+      ).subscribe({
+        next: (referidoActualizado) => {
+          this.alerta.alertaExito('Documento eliminado correctamente');
+          this.referidoSeleccionado = referidoActualizado;
+          this.actualizarUrlsDocumentos();
+          this.cargarReferidos();
+        },
+        error: (error) => {
+          this.alerta.alertaError('Error al actualizar referido');
+        }
+      });
+    } catch (error: any) {
+      this.alerta.alertaError(error.message || 'Error al eliminar documento');
+    }
+  }
+}
+
+  // Eliminar documento final
+  async eliminarDocumentoFinal(): Promise<void> {
+    if (!this.referidoSeleccionado || !this.referidoSeleccionado.rutadocumentofinal) return;
+
+    const confirmado = await this.alerta.alertaConfirmacion(
+      '¿Eliminar documento final?',
+      'Esta acción no se puede deshacer',
+      'Sí, eliminar',
+      'Cancelar'
+    );
+
+    if (confirmado) {
+      try {
+        await this.archivoService.eliminarArchivo(this.referidoSeleccionado.rutadocumentofinal);
+        
+        this.referidosService.actualizarReferido(
+          this.referidoSeleccionado.idrefpaciente,
+          { rutadocumentofinal: '' } as any
+        ).subscribe({
+          next: (referidoActualizado) => {
+            this.alerta.alertaExito('Documento eliminado correctamente');
+            this.referidoSeleccionado = referidoActualizado;
+            this.actualizarUrlsDocumentos();
+            this.cargarReferidos();
+          },
+          error: (error) => {
+            this.alerta.alertaError('Error al actualizar referido');
+          }
+        });
+      } catch (error: any) {
+        this.alerta.alertaError(error.message || 'Error al eliminar documento');
+      }
+    }
+  }
+
+  // Descargar documento
+  descargarDocumento(url: string, nombreArchivo: string): void {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nombreArchivo;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // Actualizar URLs de documentos
+  actualizarUrlsDocumentos(): void {
+    if (this.referidoSeleccionado) {
+      this.urlDocumentoInicial = this.referidosService.obtenerUrlDocumento(
+        this.referidoSeleccionado.rutadocumentoinicial
+      );
+      this.urlDocumentoFinal = this.referidosService.obtenerUrlDocumento(
+        this.referidoSeleccionado.rutadocumentofinal
+      );
+    }
+  }
+
+  // Limpiar archivo
+  limpiarArchivoInicial(): void {
+    this.archivoDocumentoInicial = null;
+    const input = document.getElementById('inputDocumentoCrear') as HTMLInputElement;
+    if (input) input.value = '';
+  }
+
+  // Obtener nombre del archivo
+  obtenerNombreArchivo(ruta: string | undefined): string {
+    if (!ruta) return '';
+    return ruta.split('/').pop() || '';
+  }
+
+  // ============================================================================
   // PERMISOS
+  // ============================================================================
+
   puedeConfirmar(referido: Referido): boolean {
     if (!referido || !this.usuarioActual) return false;
 
-    // Si ya está completado, no se puede confirmar
     if (referido.confirmacion4 === 1) return false;
 
-    // Confirmación 2: Admin
     if (referido.confirmacion2 === 0 && referido.confirmacion1 === 1) {
       return this.esAdmin;
     }
 
-    // Confirmación 3: Admin diferente
     if (referido.confirmacion3 === 0 && referido.confirmacion2 === 1) {
       return this.esAdmin && referido.usuarioconfirma2 !== this.usuarioActual.usuario;
     }
 
-    // Confirmación 4: Médico destino
     if (referido.confirmacion4 === 0 && referido.confirmacion3 === 1) {
       return referido.fkusuariodestino === this.usuarioActual.idusuario;
     }
@@ -655,22 +1023,36 @@ cargarPacientes(): Promise<void> {
 
   puedeEditar(referido: Referido): boolean {
     if (!referido || !this.usuarioActual) return false;
-    
-    // No se puede editar si está completado
     if (referido.confirmacion4 === 1) return false;
-    
-    // Solo el creador o admin pueden editar
     return this.esAdmin || referido.fkusuario === this.usuarioActual.idusuario;
   }
 
   puedeEliminar(referido: Referido): boolean {
     if (!referido || !this.usuarioActual) return false;
-    
-    // Solo el creador o admin pueden eliminar
     return this.esAdmin || referido.fkusuario === this.usuarioActual.idusuario;
   }
 
+  puedeSubirDocumentoInicial(): boolean {
+    if (!this.referidoSeleccionado || !this.usuarioActual) return false;
+    return this.referidosService.puedeSubirDocumentoInicial(
+      this.referidoSeleccionado,
+      this.usuarioActual,
+      this.esAdmin
+    );
+  }
+
+  puedeSubirDocumentoFinal(): boolean {
+    if (!this.referidoSeleccionado || !this.usuarioActual) return false;
+    return this.referidosService.puedeSubirDocumentoFinal(
+      this.referidoSeleccionado,
+      this.usuarioActual
+    );
+  }
+
+  // ============================================================================
   // VALIDACIÓN DE FORMULARIOS
+  // ============================================================================
+
   private marcarFormularioComoTocado(): void {
     Object.keys(this.referidoForm.controls).forEach(key => {
       const control = this.referidoForm.get(key);

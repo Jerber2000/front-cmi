@@ -4,6 +4,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { ArchivoService } from './archivo.service'; 
 
 export interface Referido {
   idrefpaciente: number;
@@ -23,6 +24,8 @@ export interface Referido {
   usuarioconfirma4?: string;
   fechacreacion: string;
   estado: number;
+  rutadocumentoinicial?: string; 
+  rutadocumentofinal?: string; 
   paciente?: {
     idpaciente: number;
     nombres: string;
@@ -54,6 +57,7 @@ export interface CrearReferidoRequest {
   fkclinica: number;
   fkusuariodestino: number;
   comentario: string;
+  rutadocumentoinicial?: string; // ← AGREGADO
 }
 
 export interface ConfirmarReferidoRequest {
@@ -79,7 +83,10 @@ export interface ApiResponse<T> {
 export class ReferidosService {
   private apiUrl = `${environment.apiUrl}/referir`;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private archivoService: ArchivoService
+  ) {}
 
   private getHeaders(): HttpHeaders {
     const token = localStorage.getItem('token');
@@ -88,6 +95,10 @@ export class ReferidosService {
       'Content-Type': 'application/json'
     });
   }
+
+  // ============================================================================
+  // MÉTODOS CRUD PRINCIPALES
+  // ============================================================================
 
   // Crear nuevo referido
   crearReferido(datos: CrearReferidoRequest): Observable<Referido> {
@@ -184,8 +195,97 @@ export class ReferidosService {
       map(response => response.data || [])
     );
   }
+// ============================================================================
+// MÉTODOS DE GESTIÓN DE DOCUMENTOS (USANDO ArchivoService)
+// ============================================================================
 
-  // Métodos auxiliares
+/**
+ * Subir documento inicial usando ArchivoService
+ */
+async subirDocumentoInicial(
+  idReferido: number, 
+  archivo: File
+): Promise<{ rutadocumentoinicial: string }> {
+  const resultado = await this.archivoService.subirArchivos(
+    'referidos',  
+    idReferido,   
+    { documento: archivo }
+  );
+  
+  return {
+    rutadocumentoinicial: resultado.rutaDocumento || ''
+  };
+}
+
+/**
+ * Subir documento final usando ArchivoService
+ */
+async subirDocumentoFinal(
+  idReferido: number,
+  archivo: File
+): Promise<{ rutadocumentofinal: string }> {
+  const resultado = await this.archivoService.subirArchivos(
+    'referidos',
+    idReferido,
+    { documento: archivo }
+  );
+  
+  return {
+    rutadocumentofinal: resultado.rutaDocumento || ''
+  };
+}
+
+/**
+ * Obtener URL pública de un documento
+ */
+obtenerUrlDocumento(rutaDocumento: string | null | undefined): string | null {
+  if (!rutaDocumento || typeof rutaDocumento !== 'string') {
+    return null;
+  }
+  
+  return this.archivoService.obtenerUrlPublica(rutaDocumento);
+}
+
+  // ============================================================================
+  // MÉTODOS DE PERMISOS Y VALIDACIONES
+  // ============================================================================
+
+  /**
+   * Verifica si el usuario puede subir documento inicial
+   */
+  puedeSubirDocumentoInicial(referido: Referido, usuarioActual: any, esAdmin: boolean): boolean {
+    if (!referido || !usuarioActual) return false;
+    
+    // No se puede si está completado
+    if (referido.confirmacion4 === 1) return false;
+    
+    // Puede subir: creador o admin (si ya pasó confirmacion1)
+    const esCreador = referido.fkusuario === usuarioActual.idusuario;
+    const adminPuedeSubir = esAdmin && referido.confirmacion1 === 1 && referido.confirmacion4 === 0;
+    
+    return esCreador || adminPuedeSubir;
+  }
+
+  /**
+   * Verifica si el usuario puede subir documento final
+   */
+  puedeSubirDocumentoFinal(referido: Referido, usuarioActual: any): boolean {
+    if (!referido || !usuarioActual) return false;
+    
+    // Debe estar en etapa final (confirmacion3 completada)
+    if (referido.confirmacion3 !== 1) return false;
+    
+    // Solo médico destino
+    return referido.fkusuariodestino === usuarioActual.idusuario;
+  }
+
+  // ============================================================================
+  // MÉTODOS AUXILIARES Y FORMATEO
+  // ============================================================================
+
+  /**
+   * Obtiene el estado del referido en texto legible
+   */
   obtenerEstadoReferido(referido: Referido): string {
     if (referido.confirmacion4 === 1) return 'Completado';
     if (referido.confirmacion3 === 1) return 'Pendiente médico destino';
@@ -194,6 +294,9 @@ export class ReferidosService {
     return 'En proceso';
   }
 
+  /**
+   * Calcula el progreso del referido en porcentaje
+   */
   obtenerProgresoReferido(referido: Referido): number {
     let confirmaciones = 0;
     if (referido.confirmacion1 === 1) confirmaciones++;
@@ -203,6 +306,9 @@ export class ReferidosService {
     return (confirmaciones / 4) * 100;
   }
 
+  /**
+   * Formatea fecha a formato local
+   */
   formatearFecha(fecha: string): string {
     if (!fecha) return '';
     const date = new Date(fecha);
@@ -213,6 +319,9 @@ export class ReferidosService {
     });
   }
 
+  /**
+   * Formatea fecha y hora a formato local
+   */
   formatearFechaHora(fecha: string): string {
     if (!fecha) return '';
     const date = new Date(fecha);

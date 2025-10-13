@@ -1,0 +1,850 @@
+<!-- reporteria.component.html -->
+<div class="content-area" [class.sidebar-expanded]="sidebarExpanded">
+  <app-sidebar [userInfo]="userInfo"></app-sidebar>
+  
+  <!-- HEADER -->
+  <div class="menu-container">
+    <header class="header">
+      <div class="header-content">
+        <div class="header-left">
+          <div class="header-text">
+            <h1 class="title">Reportería</h1>
+          </div>
+          <img src="assets/img/LogoFraijanes.png" alt="Logo Fraijanes" class="logo">
+        </div>
+      </div>
+    </header>
+  </div>
+
+  <!-- FILTROS DE TIPO DE REPORTE -->
+  <div class="control-card">
+    <div class="filtros-container">
+      <div class="filtros-grupo">
+        <button 
+          class="btn-filtro" 
+          [class.active]="tipoReporteActivo === 'dashboard'"
+          (click)="cambiarTipoReporte('dashboard')"
+        >
+          <i class="fas fa-chart-line"></i>
+          Dashboard
+        </button>
+        
+        <button 
+          class="btn-filtro" 
+          [class.active]="tipoReporteActivo === 'pacientes'"
+          (click)="cambiarTipoReporte('pacientes')"
+        >
+          <i class="fas fa-users"></i>
+          Pacientes
+        </button>
+        
+        <button 
+          class="btn-filtro" 
+          [class.active]="tipoReporteActivo === 'consultas'"
+          (click)="cambiarTipoReporte('consultas')"
+        >
+          <i class="fas fa-stethoscope"></i>
+          Consultas
+        </button>
+        
+        <button 
+          class="btn-filtro" 
+          [class.active]="tipoReporteActivo === 'inventario'"
+          (click)="cambiarTipoReporte('inventario')"
+        >
+          <i class="fas fa-pills"></i>
+          Inventario
+        </button>
+        
+        <button 
+          class="btn-filtro" 
+          [class.active]="tipoReporteActivo === 'agenda'"
+          (click)="cambiarTipoReporte('agenda')"
+        >
+          <i class="fas fa-calendar-alt"></i>
+          Agenda
+        </button>
+        
+        <button 
+          class="btn-filtro" 
+          [class.active]="tipoReporteActivo === 'referencias'"
+          (click)="cambiarTipoReporte('referencias')"
+        >
+          <i class="fas fa-exchange-alt"></i>
+          Referencias
+        </button>
+      </div>
+
+      <!-- BOTONES DE EXPORTACIÓN -->
+      <div class="exportacion-grupo" *ngIf="tipoReporteActivo !== 'dashboard'">
+        <button class="btn-exportar btn-pdf" (click)="exportarPDF()" [disabled]="generandoPDF">
+          <i class="fas" [class.fa-file-pdf]="!generandoPDF" [class.fa-spinner]="generandoPDF" [class.fa-spin]="generandoPDF"></i>
+          {{ generandoPDF ? 'Generando...' : 'Exportar PDF' }}
+        </button>
+        
+        <button class="btn-exportar btn-excel" (click)="exportarExcel()" [disabled]="generandoExcel">
+          <i class="fas" [class.fa-file-excel]="!generandoExcel" [class.fa-spinner]="generandoExcel" [class.fa-spin]="generandoExcel"></i>
+          {{ generandoExcel ? 'Generando...' : 'Exportar Excel' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- DASHBOARD -->
+  <!-- ============================================ -->
+  <div class="main-card" *ngIf="tipoReporteActivo === 'dashboard'">
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      Cargando dashboard...
+    </div>
+
+    <div *ngIf="!loading && dashboardData" class="dashboard-container">
+      <!-- Tarjetas de estadísticas -->
+      <div class="stats-grid">
+        <!-- Pacientes -->
+        <div class="stat-card pacientes">
+          <div class="stat-icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="stat-content">
+            <h3>Pacientes</h3>
+            <div class="stat-number">{{ dashboardData.pacientes.total }}</div>
+            <div class="stat-details">
+              <span class="detail-item">
+                <i class="fas fa-check-circle"></i> {{ dashboardData.pacientes.activos }} Activos
+              </span>
+              <span class="detail-item">
+                <i class="fas fa-user-plus"></i> {{ dashboardData.pacientes.nuevosMes }} Nuevos (mes)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Consultas -->
+        <div class="stat-card consultas">
+          <div class="stat-icon">
+            <i class="fas fa-stethoscope"></i>
+          </div>
+          <div class="stat-content">
+            <h3>Consultas</h3>
+            <div class="stat-number">{{ dashboardData.consultas.totalMes }}</div>
+            <div class="stat-details">
+              <span class="detail-item">
+                <i class="fas fa-calendar-alt"></i> Este mes
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inventario -->
+        <div class="stat-card inventario">
+          <div class="stat-icon">
+            <i class="fas fa-pills"></i>
+          </div>
+          <div class="stat-content">
+            <h3>Inventario</h3>
+            <div class="stat-number">{{ dashboardData.inventario.total }}</div>
+            <div class="stat-details">
+              <span class="detail-item alert" *ngIf="dashboardData.inventario.alertasStockBajo > 0">
+                <i class="fas fa-exclamation-triangle"></i> {{ dashboardData.inventario.alertasStockBajo }} Stock bajo
+              </span>
+              <span class="detail-item">
+                <i class="fas fa-check-circle"></i> Activo
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Referencias -->
+        <div class="stat-card referencias">
+          <div class="stat-icon">
+            <i class="fas fa-exchange-alt"></i>
+          </div>
+          <div class="stat-content">
+            <h3>Referencias</h3>
+            <div class="stat-number">{{ dashboardData.referencias.total }}</div>
+            <div class="stat-details">
+              <span class="detail-item">
+                <i class="fas fa-clock"></i> {{ dashboardData.referencias.pendientes }} Pendientes
+              </span>
+              <span class="detail-item">
+                <i class="fas fa-check"></i> {{ dashboardData.referencias.completadas }} Completadas
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- REPORTE DE PACIENTES -->
+  <!-- ============================================ -->
+  <div class="main-card" *ngIf="tipoReporteActivo === 'pacientes'">
+    <!-- Filtros -->
+    <div class="filtros-reporte">
+      <form [formGroup]="filtrosPacientesForm" class="filtros-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Desde</label>
+            <input type="date" formControlName="desde" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Hasta</label>
+            <input type="date" formControlName="hasta" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Género</label>
+            <select formControlName="genero" class="form-select">
+              <option value="">Todos</option>
+              <option value="M">Masculino</option>
+              <option value="F">Femenino</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Municipio</label>
+            <input type="text" formControlName="municipio" class="form-input" placeholder="Buscar municipio...">
+          </div>
+        </div>
+        <div class="filtros-actions">
+          <button type="button" class="btn-aplicar" (click)="cargarReporte()">
+            <i class="fas fa-search"></i> Buscar
+          </button>
+          <button type="button" class="btn-limpiar" (click)="limpiarFiltros()">
+            <i class="fas fa-eraser"></i> Limpiar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Resumen -->
+    <div class="resumen-card" *ngIf="resumenReporte">
+      <div class="resumen-item">
+        <span class="resumen-label">Total:</span>
+        <span class="resumen-valor">{{ resumenReporte.totalPacientes }}</span>
+      </div>
+      <div class="resumen-item">
+        <span class="resumen-label">Masculinos:</span>
+        <span class="resumen-valor">{{ resumenReporte.porGenero?.masculino || 0 }}</span>
+      </div>
+      <div class="resumen-item">
+        <span class="resumen-label">Femeninos:</span>
+        <span class="resumen-valor">{{ resumenReporte.porGenero?.femenino || 0 }}</span>
+      </div>
+      <div class="resumen-item">
+        <span class="resumen-label">Con Expediente:</span>
+        <span class="resumen-valor">{{ resumenReporte.conExpediente || 0 }}</span>
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-container" *ngIf="!loadingReporte">
+      <table class="reporte-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>CUI</th>
+            <th>Género</th>
+            <th>Edad</th>
+            <th>Municipio</th>
+            <th>Expediente</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of datosPaginados">
+            <td>{{ item.nombres }} {{ item.apellidos }}</td>
+            <td>{{ item.cui }}</td>
+            <td>{{ item.genero === 'M' ? 'Masculino' : 'Femenino' }}</td>
+            <td>{{ calcularEdad(item.fechanacimiento) }} años</td>
+            <td>{{ item.municipio || 'N/A' }}</td>
+            <td>
+              <span class="badge-estado" [class.completado]="item.tieneExpediente">
+                {{ item.tieneExpediente ? 'Sí' : 'No' }}
+              </span>
+            </td>
+          </tr>
+          <tr *ngIf="datosPaginados.length === 0">
+            <td colspan="6" class="empty-state">
+              <i class="fas fa-folder-open"></i>
+              <p>No hay datos para mostrar</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loadingReporte" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      Cargando reporte...
+    </div>
+
+    <!-- Paginación -->
+    <div class="pagination-container" *ngIf="totalItems > 0">
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button class="pagination-btn" [class.disabled]="currentPage === 1" (click)="previousPage()" [disabled]="currentPage === 1">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button *ngIf="getPages()[0] > 1" class="pagination-btn" (click)="goToPage(1)">1</button>
+        <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
+        <button *ngFor="let page of getPages()" class="pagination-btn" [class.active]="page === currentPage" (click)="goToPage(page)">{{ page }}</button>
+        <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
+        <button *ngIf="getPages()[getPages().length - 1] < totalPages" class="pagination-btn" (click)="goToPage(totalPages)">{{ totalPages }}</button>
+        <button class="pagination-btn" [class.disabled]="currentPage === totalPages" (click)="nextPage()" [disabled]="currentPage === totalPages">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+      <div *ngIf="totalPages <= 1" class="pagination-single">Página 1 de 1</div>
+      <div class="items-per-page">
+        <label>Mostrar:</label>
+        <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+          <option [value]="100">100</option>
+        </select>
+        <span>por página</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- REPORTE DE CONSULTAS -->
+  <!-- ============================================ -->
+  <div class="main-card" *ngIf="tipoReporteActivo === 'consultas'">
+    <!-- Filtros -->
+    <div class="filtros-reporte">
+      <form [formGroup]="filtrosConsultasForm" class="filtros-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Desde</label>
+            <input type="date" formControlName="desde" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Hasta</label>
+            <input type="date" formControlName="hasta" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Médico</label>
+            <input type="number" formControlName="medico" class="form-input" placeholder="ID Médico">
+          </div>
+          <div class="form-group">
+            <label>Diagnóstico</label>
+            <input type="text" formControlName="diagnostico" class="form-input" placeholder="Buscar diagnóstico...">
+          </div>
+        </div>
+        <div class="filtros-actions">
+          <button type="button" class="btn-aplicar" (click)="cargarReporte()">
+            <i class="fas fa-search"></i> Buscar
+          </button>
+          <button type="button" class="btn-limpiar" (click)="limpiarFiltros()">
+            <i class="fas fa-eraser"></i> Limpiar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Resumen -->
+    <div class="resumen-card" *ngIf="resumenReporte">
+      <div class="resumen-item">
+        <span class="resumen-label">Total Consultas:</span>
+        <span class="resumen-valor">{{ resumenReporte.totalConsultas }}</span>
+      </div>
+      <div class="resumen-item">
+        <span class="resumen-label">Con Diagnóstico:</span>
+        <span class="resumen-valor">{{ resumenReporte.conDiagnostico || 0 }}</span>
+      </div>
+      <div class="resumen-item">
+        <span class="resumen-label">Con Archivos:</span>
+        <span class="resumen-valor">{{ resumenReporte.conArchivos || 0 }}</span>
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-container" *ngIf="!loadingReporte">
+      <table class="reporte-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Paciente</th>
+            <th>Médico</th>
+            <th>Motivo Consulta</th>
+            <th>Diagnóstico</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of datosPaginados">
+            <td>{{ reporteriaService.formatearFecha(item.fecha) }}</td>
+            <td>{{ item.paciente?.nombres }} {{ item.paciente?.apellidos }}</td>
+            <td>{{ item.usuario?.nombres }} {{ item.usuario?.apellidos }}</td>
+            <td>{{ item.motivoconsulta || 'N/A' }}</td>
+            <td>{{ item.diagnosticotratamiento || 'Sin diagnóstico' }}</td>
+          </tr>
+          <tr *ngIf="datosPaginados.length === 0">
+            <td colspan="5" class="empty-state">
+              <i class="fas fa-folder-open"></i>
+              <p>No hay datos para mostrar</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loadingReporte" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      Cargando reporte...
+    </div>
+
+    <!-- Paginación -->
+    <div class="pagination-container" *ngIf="totalItems > 0">
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button class="pagination-btn" [class.disabled]="currentPage === 1" (click)="previousPage()" [disabled]="currentPage === 1">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button *ngIf="getPages()[0] > 1" class="pagination-btn" (click)="goToPage(1)">1</button>
+        <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
+        <button *ngFor="let page of getPages()" class="pagination-btn" [class.active]="page === currentPage" (click)="goToPage(page)">{{ page }}</button>
+        <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
+        <button *ngIf="getPages()[getPages().length - 1] < totalPages" class="pagination-btn" (click)="goToPage(totalPages)">{{ totalPages }}</button>
+        <button class="pagination-btn" [class.disabled]="currentPage === totalPages" (click)="nextPage()" [disabled]="currentPage === totalPages">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+      <div *ngIf="totalPages <= 1" class="pagination-single">Página 1 de 1</div>
+      <div class="items-per-page">
+        <label>Mostrar:</label>
+        <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+          <option [value]="100">100</option>
+        </select>
+        <span>por página</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- REPORTE DE INVENTARIO -->
+  <!-- ============================================ -->
+  <div class="main-card" *ngIf="tipoReporteActivo === 'inventario'">
+    <!-- Filtros -->
+    <div class="filtros-reporte">
+      <form [formGroup]="filtrosInventarioForm" class="filtros-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Estado</label>
+            <select formControlName="estado" class="form-select">
+              <option value="">Todos</option>
+              <option value="activo">Activos</option>
+              <option value="inactivo">Inactivos</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Stock Mínimo</label>
+            <input type="number" formControlName="stockMinimo" class="form-input" placeholder="Ej: 10">
+          </div>
+          <div class="form-group">
+            <label>Próximos a vencer (días)</label>
+            <input type="number" formControlName="proximosVencer" class="form-input" placeholder="Ej: 30">
+          </div>
+        </div>
+        <div class="filtros-actions">
+          <button type="button" class="btn-aplicar" (click)="cargarReporte()">
+            <i class="fas fa-search"></i> Buscar
+          </button>
+          <button type="button" class="btn-limpiar" (click)="limpiarFiltros()">
+            <i class="fas fa-eraser"></i> Limpiar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Alertas -->
+    <div class="alertas-card" *ngIf="alertasReporte">
+      <div class="alerta-item danger" *ngIf="alertasReporte.stockBajo > 0">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>{{ alertasReporte.stockBajo }} medicamentos con stock bajo</span>
+      </div>
+      <div class="alerta-item warning" *ngIf="alertasReporte.proximosVencer > 0">
+        <i class="fas fa-clock"></i>
+        <span>{{ alertasReporte.proximosVencer }} medicamentos próximos a vencer</span>
+      </div>
+      <div class="alerta-item error" *ngIf="alertasReporte.vencidos > 0">
+        <i class="fas fa-times-circle"></i>
+        <span>{{ alertasReporte.vencidos }} medicamentos vencidos</span>
+      </div>
+    </div>
+
+    <!-- Resumen -->
+    <div class="resumen-card" *ngIf="resumenReporte">
+      <div class="resumen-item">
+        <span class="resumen-label">Total Medicamentos:</span>
+        <span class="resumen-valor">{{ resumenReporte.totalMedicamentos }}</span>
+      </div>
+      <div class="resumen-item">
+        <span class="resumen-label">Valor Total:</span>
+        <span class="resumen-valor">{{ reporteriaService.formatearMoneda(resumenReporte.valorTotalInventario || 0) }}</span>
+      </div>
+      <div class="resumen-item">
+        <span class="resumen-label">Unidades Totales:</span>
+        <span class="resumen-valor">{{ resumenReporte.unidadesTotales || 0 }}</span>
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-container" *ngIf="!loadingReporte">
+      <table class="reporte-table">
+        <thead>
+          <tr>
+            <th>Medicamento</th>
+            <th>Unidades</th>
+            <th>Precio</th>
+            <th>Fecha Ingreso</th>
+            <th>Fecha Vencimiento</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of datosPaginados">
+            <td>
+              <strong>{{ item.nombre }}</strong>
+              <small *ngIf="item.descripcion" style="display: block; color: #6c757d;">{{ item.descripcion }}</small>
+            </td>
+            <td>
+              <span [class.text-danger]="item.unidades <= 10">{{ item.unidades }}</span>
+            </td>
+            <td>{{ reporteriaService.formatearMoneda(item.precio || 0) }}</td>
+            <td>{{ reporteriaService.formatearFecha(item.fechaingreso) }}</td>
+            <td>{{ reporteriaService.formatearFecha(item.fechaegreso) }}</td>
+            <td>
+              <span class="badge-estado" [class.completado]="item.estado === 1" [class.en-proceso]="item.estado === 0">
+                {{ item.estado === 1 ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+          </tr>
+          <tr *ngIf="datosPaginados.length === 0">
+            <td colspan="6" class="empty-state">
+              <i class="fas fa-folder-open"></i>
+              <p>No hay datos para mostrar</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loadingReporte" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      Cargando reporte...
+    </div>
+
+    <!-- Paginación -->
+    <div class="pagination-container" *ngIf="totalItems > 0">
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button class="pagination-btn" [class.disabled]="currentPage === 1" (click)="previousPage()" [disabled]="currentPage === 1">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button *ngIf="getPages()[0] > 1" class="pagination-btn" (click)="goToPage(1)">1</button>
+        <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
+        <button *ngFor="let page of getPages()" class="pagination-btn" [class.active]="page === currentPage" (click)="goToPage(page)">{{ page }}</button>
+        <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
+        <button *ngIf="getPages()[getPages().length - 1] < totalPages" class="pagination-btn" (click)="goToPage(totalPages)">{{ totalPages }}</button>
+        <button class="pagination-btn" [class.disabled]="currentPage === totalPages" (click)="nextPage()" [disabled]="currentPage === totalPages">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+      <div *ngIf="totalPages <= 1" class="pagination-single">Página 1 de 1</div>
+      <div class="items-per-page">
+        <label>Mostrar:</label>
+        <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+          <option [value]="100">100</option>
+        </select>
+        <span>por página</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- REPORTE DE AGENDA -->
+  <!-- ============================================ -->
+  <div class="main-card" *ngIf="tipoReporteActivo === 'agenda'">
+    <!-- Filtros -->
+    <div class="filtros-reporte">
+      <form [formGroup]="filtrosAgendaForm" class="filtros-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Desde</label>
+            <input type="date" formControlName="desde" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Hasta</label>
+            <input type="date" formControlName="hasta" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Mes</label>
+            <select formControlName="mes" class="form-select">
+              <option value="">Todos</option>
+              <option *ngFor="let mes of mesesDisponibles" [value]="mes.valor">{{ mes.nombre }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Año</label>
+            <select formControlName="anio" class="form-select">
+              <option value="">Todos</option>
+              <option *ngFor="let anio of aniosDisponibles" [value]="anio">{{ anio }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Transporte</label>
+            <select formControlName="transporte" class="form-select">
+              <option value="">Todos</option>
+              <option value="1">Con transporte</option>
+              <option value="0">Sin transporte</option>
+            </select>
+          </div>
+        </div>
+        <div class="filtros-actions">
+          <button type="button" class="btn-aplicar" (click)="cargarReporte()">
+            <i class="fas fa-search"></i> Buscar
+          </button>
+          <button type="button" class="btn-limpiar" (click)="limpiarFiltros()">
+            <i class="fas fa-eraser"></i> Limpiar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Resumen -->
+    <div class="resumen-card" *ngIf="resumenReporte">
+      <div class="resumen-item">
+        <span class="resumen-label">Total Citas:</span>
+        <span class="resumen-valor">{{ resumenReporte.totalCitas }}</span>
+      </div>
+      <div class="resumen-item">
+        <span class="resumen-label">Con Transporte:</span>
+        <span class="resumen-valor">{{ resumenReporte.conTransporte || 0 }}</span>
+      </div>
+      <div class="resumen-item">
+        <span class="resumen-label">Sin Transporte:</span>
+        <span class="resumen-valor">{{ resumenReporte.sinTransporte || 0 }}</span>
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-container" *ngIf="!loadingReporte">
+      <table class="reporte-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Hora</th>
+            <th>Paciente</th>
+            <th>Médico</th>
+            <th>Transporte</th>
+            <th>Comentario</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of datosPaginados">
+            <td>{{ reporteriaService.formatearFecha(item.fechaatencion) }}</td>
+            <td>{{ item.horaatencion }}</td>
+            <td>{{ item.paciente?.nombres }} {{ item.paciente?.apellidos }}</td>
+            <td>{{ item.usuario?.nombres }} {{ item.usuario?.apellidos }}</td>
+            <td>
+              <span class="badge-estado" [class.completado]="item.transporte === 1">
+                {{ item.transporte === 1 ? 'Sí' : 'No' }}
+              </span>
+            </td>
+            <td>{{ item.comentario || 'N/A' }}</td>
+          </tr>
+          <tr *ngIf="datosPaginados.length === 0">
+            <td colspan="6" class="empty-state">
+              <i class="fas fa-folder-open"></i>
+              <p>No hay datos para mostrar</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loadingReporte" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      Cargando reporte...
+    </div>
+
+    <!-- Paginación -->
+    <div class="pagination-container" *ngIf="totalItems > 0">
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button class="pagination-btn" [class.disabled]="currentPage === 1" (click)="previousPage()" [disabled]="currentPage === 1">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button *ngIf="getPages()[0] > 1" class="pagination-btn" (click)="goToPage(1)">1</button>
+        <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
+        <button *ngFor="let page of getPages()" class="pagination-btn" [class.active]="page === currentPage" (click)="goToPage(page)">{{ page }}</button>
+        <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
+        <button *ngIf="getPages()[getPages().length - 1] < totalPages" class="pagination-btn" (click)="goToPage(totalPages)">{{ totalPages }}</button>
+        <button class="pagination-btn" [class.disabled]="currentPage === totalPages" (click)="nextPage()" [disabled]="currentPage === totalPages">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+      <div *ngIf="totalPages <= 1" class="pagination-single">Página 1 de 1</div>
+      <div class="items-per-page">
+        <label>Mostrar:</label>
+        <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+          <option [value]="100">100</option>
+        </select>
+        <span>por página</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- REPORTE DE REFERENCIAS -->
+  <!-- ============================================ -->
+  <div class="main-card" *ngIf="tipoReporteActivo === 'referencias'">
+    <!-- Filtros -->
+    <div class="filtros-reporte">
+      <form [formGroup]="filtrosReferenciasForm" class="filtros-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo</label>
+            <select formControlName="tipo" class="form-select">
+              <option value="">Todos</option>
+              <option value="enviadas">Enviadas</option>
+              <option value="recibidas">Recibidas</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Estado</label>
+            <select formControlName="estado" class="form-select">
+              <option value="">Todos</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="proceso">En Proceso</option>
+              <option value="completado">Completado</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Desde</label>
+            <input type="date" formControlName="desde" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Hasta</label>
+            <input type="date" formControlName="hasta" class="form-input">
+          </div>
+        </div>
+        <div class="filtros-actions">
+          <button type="button" class="btn-aplicar" (click)="cargarReporte()">
+            <i class="fas fa-search"></i> Buscar
+          </button>
+          <button type="button" class="btn-limpiar" (click)="limpiarFiltros()">
+            <i class="fas fa-eraser"></i> Limpiar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Resumen -->
+    <div class="resumen-card" *ngIf="resumenReporte">
+      <div class="resumen-item">
+        <span class="resumen-label">Total:</span>
+        <span class="resumen-valor">{{ resumenReporte.total }}</span>
+      </div>
+      <div class="resumen-item">
+        <span class="resumen-label">Enviadas:</span>
+        <span class="resumen-valor">{{ resumenReporte.enviadas || 0 }}</span>
+      </div>
+      <div class="resumen-item">
+        <span class="resumen-label">Recibidas:</span>
+        <span class="resumen-valor">{{ resumenReporte.recibidas || 0 }}</span>
+      </div>
+      <div class="resumen-item">
+        <span class="resumen-label">Pendientes:</span>
+        <span class="resumen-valor">{{ resumenReporte.pendientes || 0 }}</span>
+      </div>
+      <div class="resumen-item">
+        <span class="resumen-label">Completadas:</span>
+        <span class="resumen-valor">{{ resumenReporte.completadas || 0 }}</span>
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-container" *ngIf="!loadingReporte">
+      <table class="reporte-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Paciente</th>
+            <th>De</th>
+            <th>Para</th>
+            <th>Clínica</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of datosPaginados">
+            <td>{{ reporteriaService.formatearFecha(item.fechacreacion) }}</td>
+            <td>{{ item.paciente?.nombres }} {{ item.paciente?.apellidos }}</td>
+            <td>{{ item.usuario?.nombres }} {{ item.usuario?.apellidos }}</td>
+            <td>{{ item.usuarioDestino?.nombres }} {{ item.usuarioDestino?.apellidos }}</td>
+            <td>{{ item.clinica?.nombreclinica }}</td>
+            <td>
+              <span class="badge-estado" [class.completado]="item.confirmacion4 === 1" [class.en-proceso]="item.confirmacion4 === 0">
+                {{ item.confirmacion4 === 1 ? 'Completado' : 'Pendiente' }}
+              </span>
+            </td>
+          </tr>
+          <tr *ngIf="datosPaginados.length === 0">
+            <td colspan="6" class="empty-state">
+              <i class="fas fa-folder-open"></i>
+              <p>No hay datos para mostrar</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loadingReporte" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      Cargando reporte...
+    </div>
+
+    <!-- Paginación -->
+    <div class="pagination-container" *ngIf="totalItems > 0">
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button class="pagination-btn" [class.disabled]="currentPage === 1" (click)="previousPage()" [disabled]="currentPage === 1">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button *ngIf="getPages()[0] > 1" class="pagination-btn" (click)="goToPage(1)">1</button>
+        <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
+        <button *ngFor="let page of getPages()" class="pagination-btn" [class.active]="page === currentPage" (click)="goToPage(page)">{{ page }}</button>
+        <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
+        <button *ngIf="getPages()[getPages().length - 1] < totalPages" class="pagination-btn" (click)="goToPage(totalPages)">{{ totalPages }}</button>
+        <button class="pagination-btn" [class.disabled]="currentPage === totalPages" (click)="nextPage()" [disabled]="currentPage === totalPages">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+      <div *ngIf="totalPages <= 1" class="pagination-single">Página 1 de 1</div>
+      <div class="items-per-page">
+        <label>Mostrar:</label>
+        <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+          <option [value]="100">100</option>
+        </select>
+        <span>por página</span>
+      </div>
+    </div>
+  </div>
+
+</div>

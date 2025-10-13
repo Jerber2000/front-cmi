@@ -53,6 +53,7 @@ export class SidebarComponent {
       icon: 'fas fa-hospital',
       children: [
         { label: 'Agenda', route: '/agenda' },
+        { label: 'Reporteria', route: '/reporteria' },
         { label: 'Administración', route: '/administracion' },
         { label: 'Educación Inclusiva', route: '/educacion-inclusiva' },
         { label: 'Fisioterapia', route: '/fisioterapia' },

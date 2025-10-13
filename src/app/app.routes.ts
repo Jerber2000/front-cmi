@@ -71,6 +71,12 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+  path: 'reporteria',
+  loadComponent: () =>
+    import('./components/reporteria/reporteria.component').then(m => m.ReporteriaComponent),
+  canActivate: [authGuard],
+  },
+  {
     path: 'inventario',
     loadComponent: () =>
       import('./components/inventario/inventario.component').then(m => m.InventarioComponent),
