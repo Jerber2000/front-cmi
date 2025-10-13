@@ -128,6 +128,7 @@ export class AlertaService {
         title: titulo
     });
   }
+
   alertaConfirmacion(titulo: string, textoIni: string, tituloBtnCon: string, tituloBtnCan: string): Promise<boolean> {
     const swalWithBootstrapButtons = Swal.mixin({
       customClass: {
@@ -141,7 +142,7 @@ export class AlertaService {
     return swalWithBootstrapButtons.fire({
       title: titulo,
       text: textoIni,
-      icon: "warning",
+      icon: "question",
       showCancelButton: true,
       confirmButtonText: tituloBtnCon,
       cancelButtonText: tituloBtnCan,

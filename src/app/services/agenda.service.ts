@@ -1,10 +1,12 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { catchError, Observable, of, tap } from 'rxjs';
+import { catchError, map, Observable, of, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { response } from 'express';
 
 // Interfaz para crear/actualizar citas (sin datos anidados)
 export interface CitaRequest {
+  idagenda?: number;
   fkusuario: number;
   fkpaciente: number;
   fechaatencion: string;
@@ -13,9 +15,22 @@ export interface CitaRequest {
   transporte?: number;
   fechatransporte?: string | null;
   horariotransporte?: string | null;
-  direccion: string | null;
-  usuariocreacion: string;
-  estado: number;
+  direccion?: string;
+  usuariocreacion?: string;
+  usuariomodificacion?: string;
+  estado?: number;
+  usuario?: {
+    idusuario?: number;
+    nombres: string;
+    apellidos: string;
+  };
+  paciente?: {
+    idpaciente?: number;
+    nombres: string;
+    apellidos: string;
+    nombreencargado?: string;
+    telefonoencargado?: string;
+  };
 }
 
 // Interfaz completa de Cita (como viene del backend)
@@ -70,16 +85,9 @@ export class AgendaService {
     return this.http.get<ApiResponse<Cita[]>>(this.apiUrl, { params });
   }
 
-  // Obtener cita por ID
-  getCitaPorId(id: number): Observable<ApiResponse<Cita>> {
-    return this.http.get<ApiResponse<Cita>>(`${this.apiUrl}/${id}`);
-  }
-
-  // Crear nueva cita - USA CitaRequest, no Cita completa
   crearCita(cita: CitaRequest): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/crearCita`, cita).pipe(
       tap(response => {
-        console.log('Respuesta crear cita:', response);
       }),
       catchError((error: HttpErrorResponse) => {
         if ((error.status === 400 || error.status === 422) && error.error) {
@@ -88,13 +96,28 @@ export class AgendaService {
         throw error;
       })
     );
+  }
+
+  obtenerCitas(): Observable<CitaRequest[]>{
+    const ruta = `${this.apiUrl}/obtenerCitas`;
+    return this.http.get<any>(ruta).pipe(
+      tap(response =>{}),
+      map(response =>{
+        if(response && response.success && response.data && Array.isArray(response.data)){
+          return response.data;
+        }
+        return[];
+      }),
+      catchError(error =>{
+        return of([]);
+      })
+    )
   }
 
   // Actualizar cita - USA CitaRequest
   actualizarCita(id: number, cita: CitaRequest): Observable<any> {
     return this.http.put<any>(`${this.apiUrl}/actualizarCita/${id}`, cita).pipe(
       tap(response => {
-        console.log('Respuesta actualizar cita:', response);
       }),
       catchError((error: HttpErrorResponse) => {
         if ((error.status === 400 || error.status === 422) && error.error) {
@@ -105,11 +128,11 @@ export class AgendaService {
     );
   }
 
-  // Eliminar cita
-  eliminarCita(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/eliminarCita/${id}`).pipe(
+  eliminarCita(id: number, usuarioModificacion: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/eliminarCita/${id}`, {
+      usuariomodificacion: usuarioModificacion
+    }).pipe(
       tap(response => {
-        console.log('Respuesta eliminar cita:', response);
       }),
       catchError((error: HttpErrorResponse) => {
         if ((error.status === 400 || error.status === 422) && error.error) {
@@ -120,12 +143,9 @@ export class AgendaService {
     );
   }
 
-  // Obtener disponibilidad
-  getDisponibilidad(fkusuario: number, fecha: string): Observable<ApiResponse<any[]>> {
-    const params = new HttpParams()
-      .set('fkusuario', fkusuario.toString())
-      .set('fecha', fecha);
-    
-    return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}/disponibilidad`, { params });
+  obtenerCitasConTransporte(fecha: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/transporte`, {
+      params: { fecha }
+    });
   }
 }
