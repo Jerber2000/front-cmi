@@ -2,7 +2,7 @@ import { Component, OnInit, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms'; 
-import { UsuarioService, Usuario, Rol } from '../../services/usuario.service';
+import { UsuarioService, Usuario, Rol, Clinica } from '../../services/usuario.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AlertaService } from '../../services/alerta.service';
 import { FormatoTelefonicoDirective } from '../../directives/numeroFormato';
@@ -40,6 +40,7 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
   sidebarExpanded = true;
   userInfo: any = {};
   roles: Rol[] = [];
+  clinicas: Clinica[] = [];
 
   selectedPhoto: File | null = null;
   selectedDocument: File | null = null;
@@ -84,7 +85,8 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
       fechaNacimiento: [''],
       role: ['', [Validators.required]],
       observaciones: [''],
-      status: ['', [Validators.required]]
+      status: ['', [Validators.required]],
+      clinica: ['', Validators.required]
     });
   }
 
@@ -213,6 +215,7 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
     this.loadUserInfo();
     this.loadUsers();
     this.loadRoles();
+    this.cargarClinicas();
   }
 
   ngAfterViewInit(): void {
@@ -267,6 +270,18 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
       error: (error) => {
         console.error('Error loading roles:', error);
         this.alerta.alertaError('Error al cargar los roles');
+      }
+    });
+  }
+
+  cargarClinicas(): void{
+    this.UsuarioService.obtenerClinicas().subscribe({
+      next: (clinicas) => {
+        this.clinicas = clinicas;
+      },
+      error: (error) => {
+        console.log('Error al cargar clinicas: ', error);
+        this.alerta.alertaError('Error al cargar las clinicas');
       }
     });
   }
@@ -391,7 +406,8 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
       fechaNacimiento: user.fechanacimiento ? this.formatDateForInput(user.fechanacimiento) : '',
       role: user.fkrol?.toString() || '',
       observaciones: user.observaciones || '',
-      status: user.estado?.toString() || ''
+      status: user.estado?.toString() || '',
+      clinica: user.fkclinica ? user.fkclinica.toString() : ''
     });
 
     if (user.rutafotoperfil) {
@@ -490,7 +506,8 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
       fechaNacimiento: user.fechanacimiento ? this.formatDateForInput(user.fechanacimiento) : '',
       role: user.fkrol?.toString() || '',
       observaciones: user.observaciones || '',
-      status: user.estado?.toString() || ''
+      status: user.estado?.toString() || '',
+      clinica: user.fkclinica ? user.fkclinica.toString() : ''
     });
     
     if (user.rutafotoperfil) {
@@ -639,6 +656,7 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
     this.userForm.patchValue({ 
       status: '',
       role: '',
+      clinica: '',
       telinstitucional: '+502 ', 
       telPersonal: '+502 ', 
       telEmergencia: '+502 '
@@ -697,6 +715,7 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
 
         const userData: Omit<Usuario, 'idusuario'> = {
           fkrol: parseInt(formData.role),
+          fkclinica: parseInt(formData.clinica),
           usuario: formData.usuario,
           clave: (this.isEditMode && (!formData.password || formData.password.trim() === '')) 
             ? this.selectedUser!.clave

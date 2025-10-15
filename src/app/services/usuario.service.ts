@@ -26,11 +26,17 @@ export interface Usuario {
     usuariocreacion:          string;
     usuariomodificacion?:     string;
     estado:                   number;
+    fkclinica:                number;
 }
 
 export interface Rol {
   idrol: number;
   nombre: string;
+}
+
+export interface Clinica{
+    idclinica:     number;
+    nombreclinica: string;
 }
 
 @Injectable({
@@ -157,5 +163,21 @@ export class UsuarioService{
                 throw error;
             })
         );
+    }
+
+    obtenerClinicas(): Observable<Clinica[]>{
+        const ruta = `${this.apiUrl}/clinicas`;
+        return this.http.get<any>(ruta).pipe(
+            tap(response => {}),
+            map(response => {
+                if(response && response.success && response.data && Array.isArray(response.data)){
+                    return response.data;
+                }
+                return[];
+            }),
+            catchError(error => {
+                return of([]);
+            })
+        )
     }
 }

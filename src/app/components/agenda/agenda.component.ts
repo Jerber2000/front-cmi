@@ -355,6 +355,28 @@ export class AgendaComponent implements OnInit, AfterViewInit {
       nombreEncargado: [{value: '', disabled: true}],
       contactoEncargado: [{value: '', disabled: true}]
     });
+
+    // Listener para sincronizar fecha de transporte cuando cambia fecha de atención
+    this.citaForm.get('fechaatencion')?.valueChanges.subscribe(nuevaFecha => {
+      if (nuevaFecha) {
+        const transporteValue = this.citaForm.get('transporte')?.value;
+        // Solo actualizar si el checkbox de transporte está marcado
+        if (transporteValue) {
+          this.citaForm.get('fechatransporte')?.setValue(nuevaFecha, { emitEvent: false });
+        }
+      }
+    });
+
+    // Listener para cuando se marque/desmarque el checkbox de transporte
+    this.citaForm.get('transporte')?.valueChanges.subscribe(transporte => {
+      if (transporte) {
+        // Si se marca transporte y hay una fecha de atención, copiarla
+        const fechaAtencion = this.citaForm.get('fechaatencion')?.value;
+        if (fechaAtencion) {
+          this.citaForm.get('fechatransporte')?.setValue(fechaAtencion, { emitEvent: false });
+        }
+      }
+    });
   }
 
   async cargarCitas(): Promise<void> {
@@ -565,6 +587,18 @@ export class AgendaComponent implements OnInit, AfterViewInit {
 
     const transporteValue = this.citaForm.get('transporte')?.value;
     const transporteNumero = transporteValue ? 1 : 0;
+
+    if (transporteNumero === 1) {
+      const fechaTransporte = this.citaForm.get('fechatransporte')?.value;
+      const horarioTransporte = this.citaForm.get('horariotransporte')?.value;
+      const direccion = this.citaForm.get('direccion')?.value;
+
+      if (!fechaTransporte || !horarioTransporte || !direccion || direccion.trim() === '') {
+        this.alerta.alertaError('Cuando se solicita transporte, debe completar la fecha, hora y dirección del transporte');
+        this.loading = false;
+        return;
+      }
+    }
     
     const datosCita: CitaRequest = {
       fkusuario:         parseInt(this.citaForm.get('fkusuario')?.value),

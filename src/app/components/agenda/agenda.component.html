@@ -29,7 +29,7 @@
           <select 
             class="form-select form-select-sm"
             [(ngModel)]="selectedMedico"
-            
+            (change)="filtrarPorMedico()"
             title="Filtrar por médico">
             <option value="">Todos los profesionales</option>
             <option *ngFor="let medico of usuario" [value]="medico.idusuario">
@@ -464,13 +464,6 @@
               [disabled]="loadingReporte">
               <i class="fas fa-search me-2"></i>
               Buscar
-            </button>
-            <button 
-              class="btn btn-success"
-              (click)="exportarReporteExcel()"
-              [disabled]="reporteTransportes.length === 0">
-              <i class="fas fa-file-excel me-2"></i>
-              Exportar Excel
             </button>
             <button 
               class="btn btn-danger"
