@@ -1,5 +1,4 @@
-
-<!-- //referidos.component.html -->
+<!-- referidos.component.html -->
 <div class="content-area" 
      *ngIf="!pacienteExterno"
      [class.sidebar-expanded]="sidebarExpanded">
@@ -99,9 +98,8 @@
           <tr>
             <th>Fecha</th>
             <th>Paciente</th>
-            <th>De</th>
-            <th>Para</th>
-            <th>Clínica</th>
+            <th>Médico Origen</th>
+            <th>Clínica Destino</th>
             <th>Estado</th>
             <th>Progreso</th>
             <th>Acciones</th>
@@ -124,13 +122,6 @@
               <div class="medico-info">
                 <span>{{ referido.usuario?.nombres }} {{ referido.usuario?.apellidos }}</span>
                 <small>{{ referido.usuario?.profesion }}</small>
-              </div>
-            </td>
-            
-            <td class="medico-cell">
-              <div class="medico-info">
-                <span>{{ referido.usuarioDestino?.nombres }} {{ referido.usuarioDestino?.apellidos }}</span>
-                <small>{{ referido.usuarioDestino?.profesion }}</small>
               </div>
             </td>
             
@@ -188,7 +179,7 @@
           </tr>
           
           <tr *ngIf="referidos.length === 0">
-            <td colspan="8" class="empty-state">
+            <td colspan="7" class="empty-state">
               <i class="fas fa-folder-open"></i>
               <p>No hay referidos {{ filtroActivo }}</p>
             </td>
@@ -199,9 +190,7 @@
 
     <!-- PAGINACIÓN -->
     <div class="pagination-container" *ngIf="totalItems > 0">
-      <!-- Navegación de páginas (solo si hay más de 1 página) -->
       <div class="pagination" *ngIf="totalPages > 1">
-        <!-- Botón anterior -->
         <button 
           class="pagination-btn" 
           [class.disabled]="currentPage === 1"
@@ -211,7 +200,6 @@
           <i class="fas fa-chevron-left"></i>
         </button>
 
-        <!-- Primera página -->
         <button 
           *ngIf="getPages()[0] > 1"
           class="pagination-btn"
@@ -220,10 +208,8 @@
           1
         </button>
         
-        <!-- Puntos suspensivos -->
         <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
 
-        <!-- Páginas visibles -->
         <button 
           *ngFor="let page of getPages()"
           class="pagination-btn"
@@ -233,10 +219,8 @@
           {{ page }}
         </button>
 
-        <!-- Puntos suspensivos -->
         <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
 
-        <!-- Última página -->
         <button 
           *ngIf="getPages()[getPages().length - 1] < totalPages"
           class="pagination-btn"
@@ -245,7 +229,6 @@
           {{ totalPages }}
         </button>
 
-        <!-- Botón siguiente -->
         <button 
           class="pagination-btn" 
           [class.disabled]="currentPage === totalPages"
@@ -256,12 +239,10 @@
         </button>
       </div>
 
-      <!-- Mensaje si solo hay una página -->
       <div *ngIf="totalPages <= 1" class="pagination-single">
         Página 1 de 1
       </div>
 
-      <!-- Selector de elementos por página -->
       <div class="items-per-page">
         <label>Mostrar:</label>
         <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
@@ -276,7 +257,9 @@
   </div>
 </div>
 
-<!-- MODAL NUEVO REFERIDO -->
+<!-- ============================================================================
+     MODAL NUEVO REFERIDO (SIN CAMPO MÉDICO DESTINO)
+     ============================================================================ -->
 <div class="modal-backdrop" *ngIf="mostrarModalNuevo" (click)="cerrarModalNuevo()">
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
@@ -339,65 +322,43 @@
         <!-- Campo Expediente -->
         <div class="form-group">
           <label class="form-label">Expediente *</label>
-          <select 
-            formControlName="fkexpediente" 
-            class="form-select"
-            [class.invalid]="isFieldInvalid('fkexpediente')"
-            [disabled]="!expedientesDisponibles.length"
+          <div class="info-readonly">
+            <i class="fas fa-folder"></i>
+            <span *ngIf="obtenerNumeroExpedienteSeleccionado()">
+              {{ obtenerNumeroExpedienteSeleccionado() }}
+            </span>
+            <span *ngIf="!obtenerNumeroExpedienteSeleccionado()" class="text-muted">
+              Seleccione un paciente primero
+            </span>
+          </div>
+          <input 
+            type="hidden" 
+            formControlName="fkexpediente"
           >
-            <option value="">Seleccione un expediente</option>
-            <option 
-              *ngFor="let expediente of expedientesDisponibles" 
-              [value]="expediente.idexpediente"
-            >
-              {{ expediente.numeroexpediente }}
-            </option>
-          </select>
+          
           <div class="error-message" *ngIf="isFieldInvalid('fkexpediente')">
             {{ getFieldError('fkexpediente') }}
           </div>
         </div>
 
-        <!-- Campos Clínica y Médico -->
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Clínica Destino *</label>
-            <select 
-              formControlName="fkclinica" 
-              class="form-select"
-              [class.invalid]="isFieldInvalid('fkclinica')"
+        <!-- ✅ SOLO CLÍNICA (SIN MÉDICO DESTINO) -->
+        <div class="form-group">
+          <label class="form-label">Clínica Destino *</label>
+          <select 
+            formControlName="fkclinica" 
+            class="form-select"
+            [class.invalid]="isFieldInvalid('fkclinica')"
+          >
+            <option value="">Seleccione una clínica</option>
+            <option 
+              *ngFor="let clinica of clinicas" 
+              [value]="clinica.idclinica"
             >
-              <option value="">Seleccione una clínica</option>
-              <option 
-                *ngFor="let clinica of clinicas" 
-                [value]="clinica.idclinica"
-              >
-                {{ clinica.nombreclinica }}
-              </option>
-            </select>
-            <div class="error-message" *ngIf="isFieldInvalid('fkclinica')">
-              {{ getFieldError('fkclinica') }}
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Médico Destino *</label>
-            <select 
-              formControlName="fkusuariodestino" 
-              class="form-select"
-              [class.invalid]="isFieldInvalid('fkusuariodestino')"
-            >
-              <option value="">Seleccione un médico</option>
-              <option 
-                *ngFor="let medico of medicos" 
-                [value]="medico.idusuario"
-              >
-                {{ medico.nombres }} {{ medico.apellidos }} - {{ medico.profesion }}
-              </option>
-            </select>
-            <div class="error-message" *ngIf="isFieldInvalid('fkusuariodestino')">
-              {{ getFieldError('fkusuariodestino') }}
-            </div>
+              {{ clinica.nombreclinica }}
+            </option>
+          </select>
+          <div class="error-message" *ngIf="isFieldInvalid('fkclinica')">
+            {{ getFieldError('fkclinica') }}
           </div>
         </div>
 
@@ -416,7 +377,7 @@
           </div>
         </div>
 
-        <!-- 🆕 Campo Documento (AHORA DENTRO DEL FORM) -->
+        <!-- Campo Documento -->
         <div class="form-group">
           <label class="form-label">
             Documento de Referencia (Opcional)
@@ -426,7 +387,7 @@
             <input 
               type="file" 
               id="inputDocumentoCrear"
-              accept="image/jpeg,image/png,image/webp,application/pdf"
+              accept="Acepta documentos PDF"
               (change)="onDocumentoInicialSeleccionado($event)"
               style="display: none;"
             >
@@ -446,7 +407,7 @@
           </div>
           <small class="form-help">
             <i class="fas fa-lightbulb"></i>
-            Se aceptan imágenes (JPG, PNG, WebP) o archivos PDF hasta 10MB
+            Acepta documentos PDF. Tamaño máximo: 10MB.
           </small>
         </div>
       </form>
@@ -472,7 +433,9 @@
   </div>
 </div>
 
-<!-- MODAL DETALLE -->
+<!-- ============================================================================
+     MODAL DETALLE
+     ============================================================================ -->
 <div class="modal-backdrop" *ngIf="mostrarModalDetalle" (click)="cerrarModalDetalle()">
   <div class="modal-content modal-detalle" (click)="$event.stopPropagation()">
     <div class="modal-header">
@@ -494,11 +457,11 @@
 
       <!-- Información del Referido -->
       <div class="detalle-section">
-        <h4><i class="fas fa-exchange-alt"></i> Referido</h4>
+        <h4><i class="fas fa-exchange-alt"></i> Información del Referido</h4>
         <div class="detalle-info">
-          <p><strong>De:</strong> {{ referidoSeleccionado.usuario?.nombres }} {{ referidoSeleccionado.usuario?.apellidos }} ({{ referidoSeleccionado.usuario?.profesion }})</p>
-          <p><strong>Para:</strong> {{ referidoSeleccionado.usuarioDestino?.nombres }} {{ referidoSeleccionado.usuarioDestino?.apellidos }} ({{ referidoSeleccionado.usuarioDestino?.profesion }})</p>
-          <p><strong>Clínica:</strong> {{ referidoSeleccionado.clinica?.nombreclinica }}</p>
+          <p><strong>Médico Origen:</strong> {{ referidoSeleccionado.usuario?.nombres }} {{ referidoSeleccionado.usuario?.apellidos }} ({{ referidoSeleccionado.usuario?.profesion }})</p>
+          <p><strong>Clínica Destino:</strong> {{ referidoSeleccionado.clinica?.nombreclinica }}</p>
+          <p><strong>Fecha de Creación:</strong> {{ referidosService.formatearFecha(referidoSeleccionado.fechacreacion) }}</p>
         </div>
       </div>
 
@@ -541,13 +504,13 @@
           </div>
           <div class="confirmacion-item" [class.completada]="referidoSeleccionado.confirmacion4 === 1">
             <i class="fas fa-check-circle"></i>
-            <span>Médico Destino</span>
+            <span>Clínica Destino</span>
             <small *ngIf="referidoSeleccionado.usuarioconfirma4">{{ referidoSeleccionado.usuarioconfirma4 }}</small>
           </div>
         </div>
       </div>
 
-      <!-- 🆕 DOCUMENTOS -->
+      <!-- DOCUMENTOS -->
       <div class="detalle-section">
         <h4><i class="fas fa-file"></i> Documentos</h4>
         
@@ -571,14 +534,6 @@
               >
                 <i class="fas fa-eye"></i> Ver
               </a>
-              <button 
-                *ngIf="puedeSubirDocumentoInicial()"
-                class="btn-documento-eliminar"
-                (click)="eliminarDocumentoInicial()"
-                title="Eliminar documento"
-              >
-                <i class="fas fa-trash"></i>
-              </button>
             </div>
           </div>
 
@@ -621,6 +576,7 @@
             <h5>✅ Documento de Aceptación Final</h5>
           </div>
           
+          <!-- SI YA EXISTE EL DOCUMENTO -->
           <div *ngIf="referidoSeleccionado.rutadocumentofinal" class="documento-content">
             <div class="documento-info">
               <i class="fas fa-file-pdf"></i>
@@ -636,7 +592,7 @@
                 <i class="fas fa-eye"></i> Ver
               </a>
               <button 
-                *ngIf="puedeSubirDocumentoFinal()"
+                *ngIf="puedeSubirDocumentoFinal() && referidoSeleccionado.confirmacion4 === 0"
                 class="btn-documento-eliminar"
                 (click)="eliminarDocumentoFinal()"
                 title="Eliminar documento"
@@ -646,6 +602,7 @@
             </div>
           </div>
 
+          <!-- SI NO HAY DOCUMENTO Y PUEDE SUBIRLO -->
           <div *ngIf="!referidoSeleccionado.rutadocumentofinal && puedeSubirDocumentoFinal()" class="documento-upload">
             <input 
               type="file" 
@@ -656,23 +613,17 @@
             >
             <label for="inputDocumentoFinal" class="btn-seleccionar">
               <i class="fas fa-upload"></i>
-              {{ archivoDocumentoFinal ? archivoDocumentoFinal.name : 'Subir Documento' }}
+              {{ archivoDocumentoFinal ? archivoDocumentoFinal.name : 'Seleccionar Documento Final' }}
             </label>
-            <button 
-              *ngIf="archivoDocumentoFinal"
-              class="btn-subir"
-              (click)="subirDocumentoFinal()"
-              [disabled]="subiendoDocumento"
-            >
-              <span *ngIf="subiendoDocumento">
-                <i class="fas fa-spinner fa-spin"></i> Subiendo...
-              </span>
-              <span *ngIf="!subiendoDocumento">
-                <i class="fas fa-check"></i> Confirmar Subida
-              </span>
-            </button>
+            
+            <!-- ✅ NUEVO MENSAJE DE AYUDA -->
+            <small class="form-help" *ngIf="archivoDocumentoFinal">
+              <i class="fas fa-info-circle"></i>
+              El documento se subirá automáticamente al aprobar
+            </small>
           </div>
 
+          <!-- SI NO HAY DOCUMENTO Y NO PUEDE SUBIRLO -->
           <div *ngIf="!referidoSeleccionado.rutadocumentofinal && !puedeSubirDocumentoFinal()" class="documento-vacio">
             <i class="fas fa-file-excel"></i>
             <p>Esperando documento de aceptación final</p>
@@ -686,8 +637,10 @@
         *ngIf="puedeConfirmar(referidoSeleccionado!)"
         class="btn-confirmar" 
         (click)="confirmarDesdeDetalle()"
+        [disabled]="necesitaDocumentoFinal()"
       >
-        <i class="fas fa-check"></i> Aprobar
+        <i class="fas fa-check"></i> 
+        {{ obtenerTextoBotonConfirmar() }}
       </button>
       <button class="btn-cerrar" (click)="cerrarModalDetalle()">
         <i class="fas fa-times"></i> Cerrar
@@ -696,57 +649,58 @@
   </div>
 </div>
 
+<!-- ============================================================================
+     MODAL CONFIRMACIÓN
+     ============================================================================ -->
+<div class="modal-backdrop" *ngIf="mostrarModalConfirmacion" (click)="cerrarModalConfirmacion()">
+  <div class="modal-content modal-confirmacion" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Confirmar Referido</h3>
+      <button class="modal-close" (click)="cerrarModalConfirmacion()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
 
-
-  <!-- MODAL CONFIRMACIÓN -->
-  <div class="modal-backdrop" *ngIf="mostrarModalConfirmacion" (click)="cerrarModalConfirmacion()">
-    <div class="modal-content modal-confirmacion" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3>Confirmar Referido</h3>
-        <button class="modal-close" (click)="cerrarModalConfirmacion()">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-
-      <div class="modal-body">
-        <p class="confirmacion-mensaje">
-          ¿Está seguro de aprobar este referido?
-        </p>
-        
-        <div class="form-group">
-          <label class="form-label">Comentario (Opcional)</label>
-          <textarea 
-            [(ngModel)]="comentarioConfirmacion"
-            class="form-textarea"
-            rows="4"
-            placeholder="Puede agregar un comentario adicional..."
-          ></textarea>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn-cancelar" (click)="cerrarModalConfirmacion()">
-          <i class="fas fa-times"></i> Cancelar
-        </button>
-        <button 
-          class="btn-confirmar-grande" 
-          (click)="ejecutarConfirmacion()"
-          [disabled]="confirmando"
-        >
-          <span *ngIf="confirmando">
-            <i class="fas fa-spinner fa-spin"></i> Aprobando...
-          </span>
-          <span *ngIf="!confirmando">
-            <i class="fas fa-check"></i> Aprobar
-          </span>
-        </button>
+    <div class="modal-body">
+      <p class="confirmacion-mensaje">
+        ¿Está seguro de aprobar este referido?
+      </p>
+      
+      <div class="form-group">
+        <label class="form-label">Comentario (Opcional)</label>
+        <textarea 
+          [(ngModel)]="comentarioConfirmacion"
+          class="form-textarea"
+          rows="4"
+          placeholder="Puede agregar un comentario adicional..."
+        ></textarea>
       </div>
     </div>
-  </div>
 
-    <!-- MODAL EDITAR REFERIDO -->
-<div class="modal-backdrop" *ngIf="mostrarModalEditar" (click)="cerrarModalEditar()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-footer">
+      <button class="btn-cancelar" (click)="cerrarModalConfirmacion()">
+        <i class="fas fa-times"></i> Cancelar
+      </button>
+      <button 
+        class="btn-confirmar-grande" 
+        (click)="ejecutarConfirmacion()"
+        [disabled]="confirmando"
+      >
+        <span *ngIf="confirmando">
+          <i class="fas fa-spinner fa-spin"></i> Aprobando...
+        </span>
+        <span *ngIf="!confirmando">
+          <i class="fas fa-check"></i> Aprobar
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL EDITAR - Versión corregida -->
+<div class="modal-backdrop modal-editar-backdrop" *ngIf="mostrarModalEditar" (click)="cerrarModalEditar()">
+  <div class="modal-content modal-editar-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3>Editar Referido</h3>
       <button class="modal-close" (click)="cerrarModalEditar()">
@@ -775,46 +729,24 @@
           </div>
         </div>
 
-        <!-- Campos Editables: Clínica y Médico -->
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Clínica Destino *</label>
-            <select 
-              formControlName="fkclinica" 
-              class="form-select"
-              [class.invalid]="isFieldInvalidEdit('fkclinica')"
+        <!-- CLÍNICA -->
+        <div class="form-group">
+          <label class="form-label">Clínica Destino *</label>
+          <select 
+            formControlName="fkclinica" 
+            class="form-select"
+            [class.invalid]="isFieldInvalidEdit('fkclinica')"
+          >
+            <option value="">Seleccione una clínica</option>
+            <option 
+              *ngFor="let clinica of clinicas" 
+              [value]="clinica.idclinica"
             >
-              <option value="">Seleccione una clínica</option>
-              <option 
-                *ngFor="let clinica of clinicas" 
-                [value]="clinica.idclinica"
-              >
-                {{ clinica.nombreclinica }}
-              </option>
-            </select>
-            <div class="error-message" *ngIf="isFieldInvalidEdit('fkclinica')">
-              {{ getFieldErrorEdit('fkclinica') }}
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Médico Destino *</label>
-            <select 
-              formControlName="fkusuariodestino" 
-              class="form-select"
-              [class.invalid]="isFieldInvalidEdit('fkusuariodestino')"
-            >
-              <option value="">Seleccione un médico</option>
-              <option 
-                *ngFor="let medico of medicos" 
-                [value]="medico.idusuario"
-              >
-                {{ medico.nombres }} {{ medico.apellidos }} - {{ medico.profesion }}
-              </option>
-            </select>
-            <div class="error-message" *ngIf="isFieldInvalidEdit('fkusuariodestino')">
-              {{ getFieldErrorEdit('fkusuariodestino') }}
-            </div>
+              {{ clinica.nombreclinica }}
+            </option>
+          </select>
+          <div class="error-message" *ngIf="isFieldInvalidEdit('fkclinica')">
+            {{ getFieldErrorEdit('fkclinica') }}
           </div>
         </div>
 
@@ -831,6 +763,62 @@
           <div class="error-message" *ngIf="isFieldInvalidEdit('comentario')">
             {{ getFieldErrorEdit('comentario') }}
           </div>
+        </div>
+
+        <!-- AGREGAR SECCIÓN DE DOCUMENTO QUE FALTA -->
+        <div class="form-group">
+          <label class="form-label">
+            Documento de Referencia
+            <i class="fas fa-info-circle" title="Puede reemplazar el documento existente"></i>
+          </label>
+          
+          <!-- SI YA EXISTE UN DOCUMENTO -->
+          <div *ngIf="referidoEnEdicion?.rutadocumentoinicial" class="documento-info-editar">
+            <div class="documento-actual">
+              <i class="fas fa-file-pdf"></i>
+              <span>{{ obtenerNombreArchivo(referidoEnEdicion?.rutadocumentoinicial) }}</span>
+              <a 
+                [href]="referidosService.obtenerUrlDocumento(referidoEnEdicion?.rutadocumentoinicial)" 
+                target="_blank"
+                class="btn-ver-mini"
+                title="Ver documento actual"
+              >
+                <i class="fas fa-eye"></i>
+              </a>
+            </div>
+            <small class="form-help">
+              <i class="fas fa-lightbulb"></i>
+              Para reemplazar el documento, seleccione un nuevo archivo
+            </small>
+          </div>
+
+          <!-- CAMPO PARA CARGAR NUEVO/REEMPLAZAR -->
+          <div class="documento-upload-editar">
+            <input 
+              type="file" 
+              id="inputDocumentoEditarInicial"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              (change)="onDocumentoEditarSeleccionado($event)"
+              style="display: none;"
+            >
+            <label for="inputDocumentoEditarInicial" class="btn-seleccionar-archivo-crear">
+              <i class="fas fa-paperclip"></i>
+              {{ archivoDocumentoInicial ? archivoDocumentoInicial.name : (referidoEnEdicion?.rutadocumentoinicial ? 'Reemplazar documento' : 'Seleccionar documento') }}
+            </label>
+            <button 
+              *ngIf="archivoDocumentoInicial"
+              type="button"
+              class="btn-limpiar-archivo" 
+              (click)="limpiarArchivoInicial()"
+              title="Quitar archivo"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <small class="form-help">
+            <i class="fas fa-lightbulb"></i>
+            Acepta documentos PDF. Tamaño máximo: 10MB.
+          </small>
         </div>
       </form>
     </div>

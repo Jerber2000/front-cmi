@@ -1,4 +1,4 @@
-// src/app/services/reporteria.service.ts
+// src/app/services/reporteria.service.ts - ACTUALIZADO
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -201,7 +201,10 @@ export class ReporteriaService {
     return hasParams ? params : undefined;
   }
 
-  // Dashboard
+  // ==========================================
+  // OBTENER DATOS
+  // ==========================================
+
   obtenerDashboard(): Observable<DashboardData> {
     return this.http.get<ApiResponse<DashboardData>>(
       `${this.apiUrl}/dashboard`,
@@ -211,7 +214,6 @@ export class ReporteriaService {
     );
   }
 
-  // Reporte de Pacientes
   obtenerReportePacientes(filtros: FiltrosPacientes = {}): Observable<ReportePacientes> {
     const params = this.buildParams(filtros);
     
@@ -227,7 +229,6 @@ export class ReporteriaService {
     );
   }
 
-  // Reporte de Consultas
   obtenerReporteConsultas(filtros: FiltrosConsultas = {}): Observable<ReporteConsultas> {
     const params = this.buildParams(filtros);
     
@@ -243,7 +244,6 @@ export class ReporteriaService {
     );
   }
 
-  // Reporte de Inventario
   obtenerReporteInventario(filtros: FiltrosInventario = {}): Observable<ReporteInventario> {
     const params = this.buildParams(filtros);
     
@@ -260,7 +260,6 @@ export class ReporteriaService {
     );
   }
 
-  // Reporte de Agenda
   obtenerReporteAgenda(filtros: FiltrosAgenda = {}): Observable<ReporteAgenda> {
     const params = this.buildParams(filtros);
     
@@ -276,7 +275,6 @@ export class ReporteriaService {
     );
   }
 
-  // Reporte de Referencias
   obtenerReporteReferencias(filtros: FiltrosReferencias = {}): Observable<ReporteReferencias> {
     const params = this.buildParams(filtros);
     
@@ -292,43 +290,10 @@ export class ReporteriaService {
     );
   }
 
-  // Generar PDF
-  generarPDF(tipoReporte: string, filtros: any = {}, titulo: string = ''): Observable<Blob> {
-    const body = {
-      tipoReporte,
-      filtros,
-      titulo: titulo || `Reporte de ${tipoReporte}`
-    };
+  // ==========================================
+  // MÉTODOS AUXILIARES
+  // ==========================================
 
-    return this.http.post(
-      `${this.apiUrl}/generar-pdf`,
-      body,
-      { 
-        headers: this.getHeaders(),
-        responseType: 'blob'
-      }
-    );
-  }
-
-  // Exportar Excel
-  exportarExcel(tipoReporte: string, filtros: any = {}, nombreArchivo: string = ''): Observable<Blob> {
-    const body = {
-      tipoReporte,
-      filtros,
-      nombreArchivo: nombreArchivo || `reporte_${tipoReporte}`
-    };
-
-    return this.http.post(
-      `${this.apiUrl}/exportar-excel`,
-      body,
-      { 
-        headers: this.getHeaders(),
-        responseType: 'blob'
-      }
-    );
-  }
-
-  // Métodos auxiliares
   formatearFecha(fecha: string | Date): string {
     if (!fecha) return '';
     const date = new Date(fecha);
@@ -344,14 +309,5 @@ export class ReporteriaService {
       style: 'currency',
       currency: 'GTQ'
     }).format(valor);
-  }
-
-  descargarArchivo(blob: Blob, nombreArchivo: string): void {
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = nombreArchivo;
-    link.click();
-    window.URL.revokeObjectURL(url);
   }
 }

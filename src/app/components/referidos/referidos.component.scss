@@ -837,14 +837,25 @@
 
 .form-help {
   display: block;
-  color: #6c757d;
-  font-size: 12px;
   margin-top: 8px;
-  font-style: italic;
-
+  color: #6c757d;
+  font-size: 0.875rem;
+  
   i {
-    color: #ffc107;
     margin-right: 4px;
+    color: #0d6efd;
+  }
+}
+
+// Botón deshabilitado
+.btn-confirmar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #6c757d;
+  
+  &:hover {
+    background-color: #6c757d;
+    transform: none;
   }
 }
 
@@ -1577,4 +1588,124 @@
     font-size: 12px;
     margin-left: auto;
   }
+}
+.text-muted {
+  color: #6c757d;
+  font-style: italic;
+}
+
+// Documento en modal de edición
+.documento-info-editar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.documento-actual {
+  background: #f8f9fa;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  i.fas.fa-file-pdf {
+    font-size: 24px;
+    color: #dc3545;
+  }
+
+  span {
+    flex: 1;
+    color: #495057;
+    font-size: 14px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .btn-ver-mini {
+    padding: 6px 12px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    &:hover {
+      background: #0056b3;
+      transform: translateY(-1px);
+    }
+
+    i {
+      margin: 0;
+      font-size: 14px;
+    }
+  }
+}
+
+.documento-upload-editar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ====================================
+   FIX DEFINITIVO PARA MODALES
+   ==================================== */
+
+// Resetear cualquier z-index previo y asegurar visibilidad
+.modal-backdrop {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 999999 !important; // Súper alto
+  animation: fadeIn 0.3s ease-out;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: auto; // Permitir scroll si es necesario
+}
+
+.modal-content {
+  position: relative !important;
+  z-index: 1000000 !important; // Aún más alto que el backdrop
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important; // Sombra más fuerte
+  width: 100%;
+  max-width: 700px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: modalSlideIn 0.3s ease-out;
+  transform: translateZ(0); // Forzar nueva capa de renderizado
+  backface-visibility: hidden; // Mejorar renderizado
+}
+
+// Asegurar que el sidebar no interfiera
+.sidebar-container {
+  z-index: 1000 !important; // Mucho menor que los modales
+}
+
+// Asegurar que otros elementos no interfieran
+.content-area {
+  position: relative;
+  z-index: 1;
 }

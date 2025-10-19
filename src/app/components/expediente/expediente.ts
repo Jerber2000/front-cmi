@@ -10,7 +10,7 @@ import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { NgxPaginationModule } from 'ngx-pagination';
-import { PdfService } from '../../services/pdf.service';
+import { PdfExcelReporteriaService } from '../../services/pdf-excel-reporteria.service';
 import { ArchivoService } from '../../services/archivo.service';
 
 
@@ -75,7 +75,7 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
     private fb: FormBuilder,
     private servicioAlerta: AlertaService,
     private archivoService: ArchivoService,
-    private pdfService: PdfService
+    private pdfExcelService: PdfExcelReporteriaService 
   ) {
     this.formularioExpediente = this.crearFormulario();
     this.configurarBusqueda();
@@ -286,7 +286,7 @@ descargarPDFExpediente(expediente: Expediente): void {
       Object.entries(expediente).map(([k, v]) => [k, v ?? ''])
     );
 
-    this.pdfService.generarPDFExpediente(expedienteSeguro);
+    this.pdfExcelService.generarPDFExpediente(expedienteSeguro);  // ← CAMBIAR
     this.servicioAlerta.alertaExito('PDF generado exitosamente');
   } catch (error) {
     console.error('Error al generar PDF:', error);

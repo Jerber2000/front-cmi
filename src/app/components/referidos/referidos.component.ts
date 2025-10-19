@@ -7,19 +7,14 @@ import { Router } from '@angular/router';
 import { 
   ReferidosService, 
   Referido, 
-  CrearReferidoRequest 
+  CrearReferidoRequest,
+  Clinica  // ✅ Agregado
 } from '../../services/referidos.service';
 import { ServicioPaciente, Paciente } from '../../services/paciente.service';
 import { ServicioExpediente, Expediente } from '../../services/expediente.service';
-import { UsuarioService, Usuario } from '../../services/usuario.service';
 import { ArchivoService } from '../../services/archivo.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AlertaService } from '../../services/alerta.service';
-
-interface Clinica {
-  idclinica: number;
-  nombreclinica: string;
-}
 
 @Component({
   selector: 'app-referidos',
@@ -46,8 +41,7 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
   // Datos
   referidos: Referido[] = [];
   pacientes: Paciente[] = [];
-  clinicas: Clinica[] = [];
-  medicos: Usuario[] = [];
+  clinicas: Clinica[] = [];  // ✅ Tipo correcto
   expedientesDisponibles: Expediente[] = [];
   
   // Filtros y búsqueda
@@ -74,18 +68,16 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
   mostrarModalNuevo = false;
   mostrarModalDetalle = false;
   mostrarModalConfirmacion = false;
+  mostrarModalEditar = false;
   
-  // Formularios
+  // Formularios (✅ SIN fkusuariodestino)
   referidoForm: FormGroup;
+  referidoEditForm: FormGroup;
   
   // Selección
   referidoSeleccionado: Referido | null = null;
   comentarioConfirmacion = '';
-
-  // Modificación
-  mostrarModalEditar = false;
   referidoEnEdicion: Referido | null = null;
-  referidoEditForm: FormGroup;
 
   // Buscador en modal
   busquedaPaciente = '';
@@ -93,12 +85,10 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
   pacienteSeleccionado: Paciente | null = null;
   mostrarListaPacientes = false;
 
-  // Propiedades para manejo de documentos (simplificadas)
+  // Documentos
   archivoDocumentoInicial: File | null = null;
   archivoDocumentoFinal: File | null = null;
   subiendoDocumento = false;
-
-  // URLs de documentos para previsualización
   urlDocumentoInicial: string | null = null;
   urlDocumentoFinal: string | null = null;
   
@@ -116,22 +106,21 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
     public referidosService: ReferidosService,
     private alerta: AlertaService,
     private servicioPaciente: ServicioPaciente,
-    private usuarioService: UsuarioService,  
     private archivoService: ArchivoService 
   ) {
+    // ✅ FORMULARIO SIN fkusuariodestino
     this.referidoForm = this.fb.group({
       fkpaciente: ['', Validators.required],
       fkexpediente: ['', Validators.required],
       fkclinica: ['', Validators.required],
-      fkusuariodestino: ['', Validators.required],
       comentario: ['', [Validators.required, Validators.minLength(10)]]
     });
 
+    // ✅ FORMULARIO EDITAR SIN fkusuariodestino
     this.referidoEditForm = this.fb.group({
-    fkclinica: ['', Validators.required],
-    fkusuariodestino: ['', Validators.required],
-    comentario: ['', [Validators.required, Validators.minLength(10)]]
-  });
+      fkclinica: ['', Validators.required],
+      comentario: ['', [Validators.required, Validators.minLength(10)]]
+    });
   }
 
   ngOnInit(): void {
@@ -166,6 +155,21 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
         };
         
         this.esAdmin = this.usuarioActual.fkrol === 1;
+        
+        // ✅ CRÍTICO: Asegurar que fkclinica esté disponible
+        console.log('👤 Usuario cargado:', {
+          idusuario: this.usuarioActual.idusuario,
+          usuario: this.usuarioActual.usuario,
+          fkrol: this.usuarioActual.fkrol,
+          fkclinica: this.usuarioActual.fkclinica,
+          esAdmin: this.esAdmin
+        });
+        
+        // ⚠️ Si fkclinica no existe en localStorage, alertar
+        if (this.usuarioActual.fkclinica === undefined || this.usuarioActual.fkclinica === null) {
+          console.warn('⚠️ ADVERTENCIA: fkclinica no está en localStorage');
+          this.alerta.alertaPreventiva('Tu usuario no tiene clínica asignada. Contacta al administrador.');
+        }
       }
     } catch (error) {
       console.error('Error loading user info:', error);
@@ -201,8 +205,7 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
     this.loading = true;
     try {
       await this.cargarPacientes();
-      await this.cargarClinicas();
-      await this.cargarMedicos();
+      await this.cargarClinicas();  // ✅ Ya no carga médicos
       await this.cargarReferidos();
     } catch (error) {
       this.alerta.alertaError('Error al cargar los datos');
@@ -273,28 +276,18 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
     });
   }
 
+  // ✅ NUEVO: Cargar clínicas desde BD
   cargarClinicas(): Promise<void> {
     return new Promise((resolve) => {
-      this.clinicas = [
-        { idclinica: 1, nombreclinica: 'Medicina General' },
-        { idclinica: 2, nombreclinica: 'Psicología' },
-        { idclinica: 3, nombreclinica: 'Fisioterapia' },
-        { idclinica: 4, nombreclinica: 'Nutrición' },
-        { idclinica: 5, nombreclinica: 'Educación Inclusiva' }
-      ];
-      resolve();
-    });
-  }
-
-  cargarMedicos(): Promise<void> {
-    return new Promise((resolve) => {
-      this.usuarioService.obtenerUsuarios().subscribe({
-        next: (usuarios: any) => {
-          this.medicos = usuarios.filter((u: any) => u.estado === 1);
+      this.referidosService.obtenerClinicas().subscribe({
+        next: (clinicas: Clinica[]) => {
+          this.clinicas = clinicas;
           resolve();
         },
         error: (error: any) => {
-          this.medicos = [];
+          console.error('Error al cargar clínicas:', error);
+          this.alerta.alertaError('Error al cargar clínicas');
+          this.clinicas = [];
           resolve();
         }
       });
@@ -462,19 +455,32 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
       const paciente = this.pacientes.find(p => p.idpaciente === parseInt(idPaciente));
       this.expedientesDisponibles = paciente?.expedientes || [];
       
-      if (this.expedientesDisponibles.length === 0) {
+      // ✅ NUEVO: Auto-seleccionar el primer expediente si existe
+      if (this.expedientesDisponibles.length > 0) {
+        this.referidoForm.patchValue({ 
+          fkexpediente: this.expedientesDisponibles[0].idexpediente 
+        });
+      } else {
         this.alerta.alertaPreventiva('Este paciente no tiene expedientes disponibles');
+        this.referidoForm.patchValue({ fkexpediente: '' });
       }
     } else {
       this.expedientesDisponibles = [];
+      this.referidoForm.patchValue({ fkexpediente: '' });
     }
-    
-    this.referidoForm.patchValue({ fkexpediente: '' });
   }
 
-  // GUARDAR REFERIDO (usando lógica de usuarios)
-  // src/app/components/referidos/referidos.component.ts
+    // Método helper para obtener el número de expediente seleccionado
+  obtenerNumeroExpedienteSeleccionado(): string {
+    const idExpediente = this.referidoForm.get('fkexpediente')?.value;
+    if (idExpediente && this.expedientesDisponibles.length > 0) {
+      const expediente = this.expedientesDisponibles.find(e => e.idexpediente === parseInt(idExpediente));
+      return expediente?.numeroexpediente || '';
+    }
+    return '';
+  }
 
+  // ✅ GUARDAR REFERIDO (SIN fkusuariodestino)
   async guardarReferido(): Promise<void> {
     if (!this.referidoForm.valid) {
       this.marcarFormularioComoTocado();
@@ -492,49 +498,62 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
     const fkpaciente = parseInt(this.referidoForm.value.fkpaciente);
     const fkexpediente = parseInt(this.referidoForm.value.fkexpediente);
     const fkclinica = parseInt(this.referidoForm.value.fkclinica);
-    const fkusuariodestino = parseInt(this.referidoForm.value.fkusuariodestino);
     const comentario = this.referidoForm.value.comentario?.trim();
 
-    if (isNaN(fkpaciente) || isNaN(fkexpediente) || isNaN(fkclinica) || isNaN(fkusuariodestino)) {
+    if (isNaN(fkpaciente) || isNaN(fkexpediente) || isNaN(fkclinica)) {
       this.alerta.alertaError('Error en los datos del formulario');
       this.guardando = false;
       return;
     }
 
-    if (!comentario || comentario.length < 10) {
-      this.alerta.alertaError('El motivo del referido debe tener al menos 10 caracteres');
-      this.guardando = false;
-      return;
-    }
-
     try {
-      // ✅ CORRECTO: Subir documento usando el método del service
-      let rutaDocumentoInicial = '';
-      
-      if (this.archivoDocumentoInicial) {
-        const resultado = await this.referidosService.subirDocumentoInicial(
-          0, // Temporal
-          this.archivoDocumentoInicial
-        );
-        rutaDocumentoInicial = resultado.rutadocumentoinicial;
-      }
-
-      // 2. Crear referido con la ruta del documento
+      // 1. Crear referido SIN documento
       const datos: CrearReferidoRequest = {
         fkpaciente,
         fkexpediente,
         fkclinica,
-        fkusuariodestino,
-        comentario,
-        rutadocumentoinicial: rutaDocumentoInicial || undefined
+        comentario
       };
 
       this.referidosService.crearReferido(datos).subscribe({
-        next: (referidoCreado) => {
-          this.alerta.alertaExito('Referido creado exitosamente');
-          this.cerrarModalNuevo();
-          this.cargarReferidos();
-          this.guardando = false;
+        next: async (referidoCreado) => {
+          // 2. Si hay documento, subirlo
+          if (this.archivoDocumentoInicial) {
+            try {
+              const resultado = await this.referidosService.subirDocumentoInicial(
+                referidoCreado.idrefpaciente,
+                this.archivoDocumentoInicial
+              );
+
+              this.referidosService.actualizarReferido(
+                referidoCreado.idrefpaciente,
+                { rutadocumentoinicial: resultado.rutadocumentoinicial } as any
+              ).subscribe({
+                next: () => {
+                  this.alerta.alertaExito('Referido creado con documento exitosamente');
+                  this.cerrarModalNuevo();
+                  this.cargarReferidos();
+                  this.guardando = false;
+                },
+                error: (error) => {
+                  this.alerta.alertaPreventiva('Referido creado pero error al adjuntar documento');
+                  this.cerrarModalNuevo();
+                  this.cargarReferidos();
+                  this.guardando = false;
+                }
+              });
+            } catch (error: any) {
+              this.alerta.alertaPreventiva('Referido creado pero error al subir documento');
+              this.cerrarModalNuevo();
+              this.cargarReferidos();
+              this.guardando = false;
+            }
+          } else {
+            this.alerta.alertaExito('Referido creado exitosamente');
+            this.cerrarModalNuevo();
+            this.cargarReferidos();
+            this.guardando = false;
+          }
         },
         error: (error) => {
           let mensajeError = 'Error al crear el referido';
@@ -553,6 +572,7 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
       this.guardando = false;
     }
   }
+
   cerrarModalNuevo(): void {
     this.mostrarModalNuevo = false;
     this.referidoForm.reset();
@@ -563,18 +583,70 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
   }
 
   // ============================================================================
-// MODAL EDITAR REFERIDO
-// ============================================================================
+  // MODAL EDITAR REFERIDO (SIN fkusuariodestino)
+  // ============================================================================
 
+async editarReferido(referido: Referido): Promise<void> {
+  console.log('🔧 === EDITAR REFERIDO ===');
+  console.log('Referido a editar:', referido);
+  
+  // ✅ 1. CERRAR OTROS MODALES PRIMERO
+  this.mostrarModalDetalle = false;
+  this.mostrarModalConfirmacion = false;
+  this.referidoSeleccionado = null;
+  
+  // ✅ 2. LIMPIAR ARCHIVOS TEMPORALES
+  this.archivoDocumentoInicial = null;
+  const inputInicial = document.getElementById('inputDocumentoEditarInicial') as HTMLInputElement;
+  if (inputInicial) inputInicial.value = '';
+  
+  // ✅ 3. CARGAR CLÍNICAS SI NO ESTÁN CARGADAS (SIN AWAIT)
+  if (this.clinicas.length === 0) {
+    console.log('⏳ Cargando clínicas en background...');
+    this.cargarClinicas(); // ✅ SIN await - que cargue en paralelo
+  }
 
+  // ✅ 4. OBTENER DETALLE DEL REFERIDO
+  console.log('⏳ Obteniendo detalle del referido...');
+  this.referidosService.obtenerReferidoPorId(referido.idrefpaciente).subscribe({
+    next: (detalle) => {
+      console.log('✅ Detalle obtenido:', detalle);
+      this.referidoEnEdicion = detalle;
+      
+      // ✅ 5. LLENAR EL FORMULARIO
+      this.referidoEditForm.patchValue({
+        fkclinica: detalle.fkclinica,
+        comentario: detalle.comentario
+      });
+      
+      console.log('✅ Formulario llenado:', this.referidoEditForm.value);
+      
+      // ✅ 6. ABRIR MODAL
+      this.mostrarModalEditar = true;
+      console.log('✅ Modal de edición abierto');
+    },
+    error: (error) => {
+      console.error('❌ Error al cargar referido:', error);
+      this.alerta.alertaError('Error al cargar los datos del referido');
+      this.mostrarModalEditar = false;
+      this.referidoEnEdicion = null;
+    }
+  });
+}
 
 cerrarModalEditar(): void {
+  console.log('🔴 Cerrando modal de edición');
   this.mostrarModalEditar = false;
   this.referidoEnEdicion = null;
   this.referidoEditForm.reset();
+  this.archivoDocumentoInicial = null;
+  
+  // Limpiar input de archivo
+  const inputInicial = document.getElementById('inputDocumentoEditarInicial') as HTMLInputElement;
+  if (inputInicial) inputInicial.value = '';
 }
 
-guardarEdicion(): void {
+async guardarEdicion(): Promise<void> {
   if (!this.referidoEditForm.valid || !this.referidoEnEdicion) {
     this.marcarFormularioComoTocadoEdit();
     this.alerta.alertaError('Por favor complete todos los campos requeridos');
@@ -583,82 +655,99 @@ guardarEdicion(): void {
 
   this.guardando = true;
 
-  const datosActualizar = {
-    fkclinica: parseInt(this.referidoEditForm.value.fkclinica),
-    fkusuariodestino: parseInt(this.referidoEditForm.value.fkusuariodestino),
-    comentario: this.referidoEditForm.value.comentario.trim()
-  };
+  try {
+    const datosActualizar: any = {
+      fkclinica: parseInt(this.referidoEditForm.value.fkclinica),
+      comentario: this.referidoEditForm.value.comentario.trim()
+    };
 
-  this.referidosService.actualizarReferido(
-    this.referidoEnEdicion.idrefpaciente,
-    datosActualizar
-  ).subscribe({
-    next: (referidoActualizado) => {
-      this.alerta.alertaExito('Referido actualizado exitosamente');
-      this.cerrarModalEditar();
-      this.cargarReferidos();
-      this.guardando = false;
-    },
-    error: (error) => {
-      let mensajeError = 'Error al actualizar el referido';
+    // Si hay un nuevo archivo, subirlo primero
+    if (this.archivoDocumentoInicial) {
+      try {
+        const resultado = await this.referidosService.subirDocumentoInicial(
+          this.referidoEnEdicion.idrefpaciente,
+          this.archivoDocumentoInicial
+        );
+        datosActualizar.rutadocumentoinicial = resultado.rutadocumentoinicial;
+      } catch (error: any) {
+        this.alerta.alertaPreventiva('Error al subir el nuevo documento, pero se guardarán los demás cambios');
+      }
+    }
+
+    // Actualizar el referido
+    this.referidosService.actualizarReferido(
+      this.referidoEnEdicion.idrefpaciente,
+      datosActualizar
+    ).subscribe({
+      next: (referidoActualizado) => {
+        this.alerta.alertaExito('Referido actualizado exitosamente');
+        this.cerrarModalEditar();
+        this.cargarReferidos();
+        this.guardando = false;
+      },
+      error: (error) => {
+        let mensajeError = 'Error al actualizar el referido';
+        
+        if (error.error?.mensaje) mensajeError = error.error.mensaje;
+        else if (error.error?.message) mensajeError = error.error.message;
+        else if (error.message) mensajeError = error.message;
+        
+        this.alerta.alertaError(mensajeError);
+        this.guardando = false;
+      }
+    });
+  } catch (error: any) {
+    this.alerta.alertaError(error.message || 'Error al procesar la edición');
+    this.guardando = false;
+  }
+}
+
+  onDocumentoEditarSeleccionado(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
       
-      if (error.error?.mensaje) mensajeError = error.error.mensaje;
-      else if (error.error?.message) mensajeError = error.error.message;
-      else if (error.message) mensajeError = error.message;
+      const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+      if (!tiposPermitidos.includes(file.type)) {
+        this.alerta.alertaError('Solo se permiten imágenes (JPG, PNG, WebP) o archivos PDF');
+        input.value = '';
+        return;
+      }
       
-      this.alerta.alertaError(mensajeError);
-      this.guardando = false;
-    }
-  });
-}
-
-// ============================================================================
-// VALIDACIÓN DE FORMULARIO DE EDICIÓN
-// ============================================================================
-
-private marcarFormularioComoTocadoEdit(): void {
-  Object.keys(this.referidoEditForm.controls).forEach(key => {
-    const control = this.referidoEditForm.get(key);
-    if (control) {
-      control.markAsTouched();
-    }
-  });
-}
-
-isFieldInvalidEdit(fieldName: string): boolean {
-  const field = this.referidoEditForm.get(fieldName);
-  return !!(field && field.invalid && (field.dirty || field.touched));
-}
-
-getFieldErrorEdit(fieldName: string): string {
-  const field = this.referidoEditForm.get(fieldName);
-  if (field && field.errors && (field.dirty || field.touched)) {
-    if (field.errors['required']) {
-      return `${this.getFieldDisplayName(fieldName)} es requerido`;
-    }
-    if (field.errors['minlength']) {
-      return `Mínimo ${field.errors['minlength'].requiredLength} caracteres`;
+      if (file.size > 10 * 1024 * 1024) {
+        this.alerta.alertaError('El archivo no puede superar los 10MB');
+        input.value = '';
+        return;
+      }
+      
+      this.archivoDocumentoInicial = file;
     }
   }
-  return '';
-}
-
   // ============================================================================
   // MODAL DETALLE
   // ============================================================================
 
-  verDetalleReferido(referido: Referido): void {
-    this.referidosService.obtenerReferidoPorId(referido.idrefpaciente).subscribe({
-      next: (detalle) => {
-        this.referidoSeleccionado = detalle;
-        this.actualizarUrlsDocumentos();
-        this.mostrarModalDetalle = true;
-      },
-      error: (error) => {
-        this.alerta.alertaError('Error al cargar el detalle del referido');
-      }
-    });
-  }
+verDetalleReferido(referido: Referido): void {
+  console.log('🔍 === verDetalleReferido ===');
+  console.log('Referido a ver:', referido);
+  
+  // ✅ CERRAR MODAL DE EDITAR SI ESTÁ ABIERTO
+  this.mostrarModalEditar = false;
+  this.referidoEnEdicion = null;
+  
+  this.referidosService.obtenerReferidoPorId(referido.idrefpaciente).subscribe({
+    next: (detalle) => {
+      console.log('✅ Detalle cargado:', detalle);
+      this.referidoSeleccionado = detalle;
+      this.actualizarUrlsDocumentos();
+      this.mostrarModalDetalle = true;
+    },
+    error: (error) => {
+      console.error('❌ Error al cargar detalle:', error);
+      this.alerta.alertaError('Error al cargar el detalle del referido');
+    }
+  });
+}
 
   cerrarModalDetalle(): void {
     this.mostrarModalDetalle = false;
@@ -675,18 +764,92 @@ getFieldErrorEdit(fieldName: string): string {
     this.mostrarModalConfirmacion = true;
   }
 
-  confirmarDesdeDetalle(): void {
-    this.cerrarModalDetalle();
-    this.mostrarModalConfirmacion = true;
+
+
+async confirmarDesdeDetalle(): Promise<void> {
+  console.log('🔵 === confirmarDesdeDetalle ===');
+  console.log('referidoSeleccionado:', this.referidoSeleccionado);
+  
+  if (!this.referidoSeleccionado) {
+    console.log('❌ No hay referido seleccionado');
+    return;
   }
+
+  // ✅ ETAPA 4: Verificar si necesita subir documento final
+  if (this.referidoSeleccionado.confirmacion4 === 0 && 
+      this.referidoSeleccionado.confirmacion3 === 1) {
+    
+    // Si no hay documento y hay uno seleccionado, subirlo primero
+    if (!this.referidoSeleccionado.rutadocumentofinal && this.archivoDocumentoFinal) {
+      console.log('📤 Subiendo documento final antes de confirmar...');
+      
+      try {
+        this.subiendoDocumento = true;
+        
+        const resultado = await this.referidosService.subirDocumentoFinal(
+          this.referidoSeleccionado.idrefpaciente,
+          this.archivoDocumentoFinal
+        );
+
+        // Actualizar el referido con la ruta del documento
+        await new Promise<void>((resolve, reject) => {
+          this.referidosService.actualizarReferido(
+            this.referidoSeleccionado!.idrefpaciente,
+            { rutadocumentofinal: resultado.rutadocumentofinal } as any
+          ).subscribe({
+            next: (referidoActualizado) => {
+              this.referidoSeleccionado = referidoActualizado;
+              this.archivoDocumentoFinal = null;
+              
+              // Limpiar input de archivo
+              const input = document.getElementById('inputDocumentoFinal') as HTMLInputElement;
+              if (input) input.value = '';
+              
+              resolve();
+            },
+            error: (error) => {
+              reject(error);
+            }
+          });
+        });
+
+        this.subiendoDocumento = false;
+        console.log('✅ Documento subido, procediendo con confirmación...');
+        
+      } catch (error: any) {
+        this.subiendoDocumento = false;
+        this.alerta.alertaError(error.message || 'Error al subir documento final');
+        return;
+      }
+    }
+    
+    // Validar que ahora sí exista el documento
+    if (!this.referidoSeleccionado.rutadocumentofinal) {
+      this.alerta.alertaError('Debe seleccionar y subir el documento final antes de completar');
+      return;
+    }
+  }
+
+  // Continuar con el flujo normal de confirmación
+  this.mostrarModalDetalle = false;
+  this.mostrarModalConfirmacion = true;
+}
 
   cerrarModalConfirmacion(): void {
     this.mostrarModalConfirmacion = false;
     this.comentarioConfirmacion = '';
+    // ✅ Ahora sí limpiar el referido seleccionado
+    this.referidoSeleccionado = null;
   }
 
   ejecutarConfirmacion(): void {
-    if (!this.referidoSeleccionado) return;
+    console.log('🔵 === CLIC EN BOTÓN APROBAR ===');
+    console.log('referidoSeleccionado:', this.referidoSeleccionado);
+    
+    if (!this.referidoSeleccionado) {
+      console.log('❌ No hay referido seleccionado');
+      return;
+    }
 
     this.confirmando = true;
 
@@ -695,12 +858,14 @@ getFieldErrorEdit(fieldName: string): string {
       this.comentarioConfirmacion || undefined
     ).subscribe({
       next: (referido) => {
+        console.log('✅ Confirmación exitosa:', referido);
         this.alerta.alertaExito('Referido aprobado exitosamente');
-        this.cerrarModalConfirmacion();
+        this.cerrarModalConfirmacion(); // ✅ Esto ahora limpia referidoSeleccionado
         this.cargarReferidos();
         this.confirmando = false;
       },
       error: (error) => {
+        console.error('❌ ERROR en confirmación:', error);
         this.alerta.alertaError(
           error.error?.mensaje || error.error?.message || 'Error al aprobar el referido'
         );
@@ -710,27 +875,8 @@ getFieldErrorEdit(fieldName: string): string {
   }
 
   // ============================================================================
-  // EDITAR Y ELIMINAR
+  // ELIMINAR
   // ============================================================================
-
-  editarReferido(referido: Referido): void {
-  this.referidosService.obtenerReferidoPorId(referido.idrefpaciente).subscribe({
-    next: (detalle) => {
-      this.referidoEnEdicion = detalle;
-      
-      this.referidoEditForm.patchValue({
-        fkclinica: detalle.fkclinica,
-        fkusuariodestino: detalle.fkusuariodestino,
-        comentario: detalle.comentario
-      });
-      
-      this.mostrarModalEditar = true;
-    },
-    error: (error) => {
-      this.alerta.alertaError('Error al cargar los datos del referido');
-    }
-  });
-}
 
   eliminarReferido(referido: Referido): void {
     this.alerta.alertaConfirmacion(
@@ -757,7 +903,6 @@ getFieldErrorEdit(fieldName: string): string {
   // GESTIÓN DE DOCUMENTOS
   // ============================================================================
 
-  // Seleccionar archivo documento inicial (al crear)
   onDocumentoInicialSeleccionado(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
@@ -780,7 +925,6 @@ getFieldErrorEdit(fieldName: string): string {
     }
   }
 
-  // Seleccionar archivo documento final
   onDocumentoFinalSeleccionado(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
@@ -803,7 +947,6 @@ getFieldErrorEdit(fieldName: string): string {
     }
   }
 
-  // ✅ Subir documento inicial (desde detalle)
   async subirDocumentoInicial(): Promise<void> {
     if (!this.referidoSeleccionado || !this.archivoDocumentoInicial) {
       this.alerta.alertaError('No hay archivo seleccionado');
@@ -813,13 +956,11 @@ getFieldErrorEdit(fieldName: string): string {
     this.subiendoDocumento = true;
 
     try {
-      // Subir usando ArchivoService
       const resultado = await this.referidosService.subirDocumentoInicial(
         this.referidoSeleccionado.idrefpaciente,
         this.archivoDocumentoInicial
       );
 
-      // Actualizar referido con la ruta
       this.referidosService.actualizarReferido(
         this.referidoSeleccionado.idrefpaciente,
         { rutadocumentoinicial: resultado.rutadocumentoinicial }
@@ -847,7 +988,6 @@ getFieldErrorEdit(fieldName: string): string {
     }
   }
 
-  // ✅ Subir documento final
   async subirDocumentoFinal(): Promise<void> {
     if (!this.referidoSeleccionado || !this.archivoDocumentoFinal) {
       this.alerta.alertaError('No hay archivo seleccionado');
@@ -889,44 +1029,40 @@ getFieldErrorEdit(fieldName: string): string {
     }
   }
 
-  // Eliminar documento inicial
   async eliminarDocumentoInicial(): Promise<void> {
-  if (!this.referidoSeleccionado || !this.referidoSeleccionado.rutadocumentoinicial) return;
+    if (!this.referidoSeleccionado || !this.referidoSeleccionado.rutadocumentoinicial) return;
 
-  const confirmado = await this.alerta.alertaConfirmacion(
-    '¿Eliminar documento inicial?',
-    'Esta acción no se puede deshacer',
-    'Sí, eliminar',
-    'Cancelar'
-  );
+    const confirmado = await this.alerta.alertaConfirmacion(
+      '¿Eliminar documento inicial?',
+      'Esta acción no se puede deshacer',
+      'Sí, eliminar',
+      'Cancelar'
+    );
 
-  if (confirmado) {
-    try {
-      // Eliminar archivo físico
-      await this.archivoService.eliminarArchivo(this.referidoSeleccionado.rutadocumentoinicial);
-      
-      // Actualizar BD (quitar ruta)
-      this.referidosService.actualizarReferido(
-        this.referidoSeleccionado.idrefpaciente,
-        { rutadocumentoinicial: '' } as any
-      ).subscribe({
-        next: (referidoActualizado) => {
-          this.alerta.alertaExito('Documento eliminado correctamente');
-          this.referidoSeleccionado = referidoActualizado;
-          this.actualizarUrlsDocumentos();
-          this.cargarReferidos();
-        },
-        error: (error) => {
-          this.alerta.alertaError('Error al actualizar referido');
-        }
-      });
-    } catch (error: any) {
-      this.alerta.alertaError(error.message || 'Error al eliminar documento');
+    if (confirmado) {
+      try {
+        await this.archivoService.eliminarArchivo(this.referidoSeleccionado.rutadocumentoinicial);
+        
+        this.referidosService.actualizarReferido(
+          this.referidoSeleccionado.idrefpaciente,
+          { rutadocumentoinicial: '' } as any
+        ).subscribe({
+          next: (referidoActualizado) => {
+            this.alerta.alertaExito('Documento eliminado correctamente');
+            this.referidoSeleccionado = referidoActualizado;
+            this.actualizarUrlsDocumentos();
+            this.cargarReferidos();
+          },
+          error: (error) => {
+            this.alerta.alertaError('Error al actualizar referido');
+          }
+        });
+      } catch (error: any) {
+        this.alerta.alertaError(error.message || 'Error al eliminar documento');
+      }
     }
   }
-}
 
-  // Eliminar documento final
   async eliminarDocumentoFinal(): Promise<void> {
     if (!this.referidoSeleccionado || !this.referidoSeleccionado.rutadocumentofinal) return;
 
@@ -961,7 +1097,6 @@ getFieldErrorEdit(fieldName: string): string {
     }
   }
 
-  // Descargar documento
   descargarDocumento(url: string, nombreArchivo: string): void {
     const link = document.createElement('a');
     link.href = url;
@@ -972,7 +1107,6 @@ getFieldErrorEdit(fieldName: string): string {
     document.body.removeChild(link);
   }
 
-  // Actualizar URLs de documentos
   actualizarUrlsDocumentos(): void {
     if (this.referidoSeleccionado) {
       this.urlDocumentoInicial = this.referidosService.obtenerUrlDocumento(
@@ -984,40 +1118,63 @@ getFieldErrorEdit(fieldName: string): string {
     }
   }
 
-  // Limpiar archivo
   limpiarArchivoInicial(): void {
     this.archivoDocumentoInicial = null;
     const input = document.getElementById('inputDocumentoCrear') as HTMLInputElement;
     if (input) input.value = '';
   }
 
-  // Obtener nombre del archivo
   obtenerNombreArchivo(ruta: string | undefined): string {
     if (!ruta) return '';
     return ruta.split('/').pop() || '';
   }
 
   // ============================================================================
-  // PERMISOS
+  // PERMISOS (ACTUALIZADOS POR CLÍNICA)
   // ============================================================================
 
+  // ✅ ACTUALIZADO: Validación por clínica
   puedeConfirmar(referido: Referido): boolean {
-    if (!referido || !this.usuarioActual) return false;
+    console.log('🔍 === puedeConfirmar ===');
+    console.log('referido:', referido);
+    console.log('usuarioActual:', this.usuarioActual);
+    
+    if (!referido || !this.usuarioActual) {
+      console.log('❌ No hay referido o usuario');
+      return false;
+    }
 
-    if (referido.confirmacion4 === 1) return false;
+    if (referido.confirmacion4 === 1) {
+      console.log('❌ Referido completado');
+      return false;
+    }
 
+    // Etapa 2: Admin
     if (referido.confirmacion2 === 0 && referido.confirmacion1 === 1) {
+      console.log('📍 ETAPA 2 - Admin requerido');
+      console.log('esAdmin:', this.esAdmin);
       return this.esAdmin;
     }
 
+    // Etapa 3: Otro admin
     if (referido.confirmacion3 === 0 && referido.confirmacion2 === 1) {
+      console.log('📍 ETAPA 3 - Otro admin requerido');
+      console.log('esAdmin:', this.esAdmin);
+      console.log('usuarioconfirma2:', referido.usuarioconfirma2);
+      console.log('usuario actual:', this.usuarioActual.usuario);
       return this.esAdmin && referido.usuarioconfirma2 !== this.usuarioActual.usuario;
     }
 
+    // ✅ Etapa 4: Usuario de la clínica destino
     if (referido.confirmacion4 === 0 && referido.confirmacion3 === 1) {
-      return referido.fkusuariodestino === this.usuarioActual.idusuario;
+      console.log('📍 ETAPA 4 - Usuario de clínica destino');
+      console.log('fkclinica usuario:', this.usuarioActual.fkclinica);
+      console.log('fkclinica referido:', referido.fkclinica);
+      console.log('¿Coinciden?:', this.usuarioActual.fkclinica === referido.fkclinica);
+      return this.usuarioActual.fkclinica === referido.fkclinica;
     }
 
+    console.log('❌ No cumple ninguna condición');
     return false;
   }
 
@@ -1049,6 +1206,23 @@ getFieldErrorEdit(fieldName: string): string {
     );
   }
 
+  puedeEliminarDocumentoInicial(): boolean {
+    if (!this.referidoSeleccionado || !this.usuarioActual) return false;
+    return this.referidosService.puedeEliminarDocumentoInicial(
+      this.referidoSeleccionado,
+      this.usuarioActual,
+      this.esAdmin
+    );
+  }
+
+  puedeEliminarDocumentoFinal(): boolean {
+    if (!this.referidoSeleccionado || !this.usuarioActual) return false;
+    return this.referidosService.puedeEliminarDocumentoFinal(
+      this.referidoSeleccionado,
+      this.usuarioActual,
+      this.esAdmin
+    );
+  }
   // ============================================================================
   // VALIDACIÓN DE FORMULARIOS
   // ============================================================================
@@ -1062,8 +1236,22 @@ getFieldErrorEdit(fieldName: string): string {
     });
   }
 
+  private marcarFormularioComoTocadoEdit(): void {
+    Object.keys(this.referidoEditForm.controls).forEach(key => {
+      const control = this.referidoEditForm.get(key);
+      if (control) {
+        control.markAsTouched();
+      }
+    });
+  }
+
   isFieldInvalid(fieldName: string): boolean {
     const field = this.referidoForm.get(fieldName);
+    return !!(field && field.invalid && (field.dirty || field.touched));
+  }
+
+  isFieldInvalidEdit(fieldName: string): boolean {
+    const field = this.referidoEditForm.get(fieldName);
     return !!(field && field.invalid && (field.dirty || field.touched));
   }
 
@@ -1080,12 +1268,24 @@ getFieldErrorEdit(fieldName: string): string {
     return '';
   }
 
+  getFieldErrorEdit(fieldName: string): string {
+    const field = this.referidoEditForm.get(fieldName);
+    if (field && field.errors && (field.dirty || field.touched)) {
+      if (field.errors['required']) {
+        return `${this.getFieldDisplayName(fieldName)} es requerido`;
+      }
+      if (field.errors['minlength']) {
+        return `Mínimo ${field.errors['minlength'].requiredLength} caracteres`;
+      }
+    }
+    return '';
+  }
+
   private getFieldDisplayName(fieldName: string): string {
     const fieldNames: { [key: string]: string } = {
       'fkpaciente': 'Paciente',
       'fkexpediente': 'Expediente',
       'fkclinica': 'Clínica',
-      'fkusuariodestino': 'Médico destino',
       'comentario': 'Motivo del referido'
     };
     return fieldNames[fieldName] || fieldName;
@@ -1098,4 +1298,34 @@ getFieldErrorEdit(fieldName: string): string {
       this.mostrarListaPacientes = false;
     }
   }
+
+  /**
+ * ✅ Verifica si el referido está en etapa 4 y necesita documento final
+ */
+necesitaDocumentoFinal(): boolean {
+  if (!this.referidoSeleccionado) return false;
+  
+  return (
+    this.referidoSeleccionado.confirmacion4 === 0 &&
+    this.referidoSeleccionado.confirmacion3 === 1 &&
+    !this.referidoSeleccionado.rutadocumentofinal &&
+    !this.archivoDocumentoFinal
+  );
+}
+
+/**
+ * ✅ Obtiene el texto dinámico del botón de confirmar
+ */
+obtenerTextoBotonConfirmar(): string {
+  if (!this.referidoSeleccionado) return 'Aprobar';
+  
+  // Etapa 4: Completar con documento
+  if (this.referidoSeleccionado.confirmacion4 === 0 && 
+      this.referidoSeleccionado.confirmacion3 === 1) {
+    return 'Aprobar y Completar';
+  }
+  
+  // Otras etapas
+  return 'Aprobar';
+}
 }

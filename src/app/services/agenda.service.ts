@@ -148,4 +148,41 @@ export class AgendaService {
       params: { fecha }
     });
   }
+
+  // agenda.service.ts - Agregar este método
+obtenerReporteFormateado(fecha: string): Observable<any> {
+  return this.obtenerCitasConTransporte(fecha).pipe(
+    map(response => {
+      if (response.success && response.data) {
+        return {
+          ...response,
+          data: response.data.map((cita: any) => ({
+            ...cita,
+            nombreCompleto: `${cita.paciente?.nombres || ''} ${cita.paciente?.apellidos || ''}`.trim(),
+            medicoCompleto: `Dr. ${cita.usuario?.nombres || ''} ${cita.usuario?.apellidos || ''}`.trim(),
+            fechaFormateada: this.formatearFecha(cita.fechaatencion),
+            horaFormateada: this.formatearHora(cita.horaatencion)
+          }))
+        };
+      }
+      return response;
+    })
+  );
+}
+
+  private formatearFecha(fecha: string): string {
+    if (!fecha) return '';
+    const date = new Date(fecha);
+    return date.toLocaleDateString('es-GT', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  }
+
+  private formatearHora(hora: string): string {
+    if (!hora) return '';
+    return hora.substring(0, 5); // HH:mm
+  }
 }
