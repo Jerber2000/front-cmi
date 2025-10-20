@@ -1,9 +1,9 @@
 // sidebar.component.ts
-
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { HasRoleDirective } from '../../directives/has-role.directive';
 
 export interface MenuItem {
   label: string;
@@ -11,6 +11,7 @@ export interface MenuItem {
   route?: string;
   children?: MenuItem[];
   expanded?: boolean;
+  roles?: number[];
 }
 
 @Component({
@@ -18,7 +19,7 @@ export interface MenuItem {
   selector: 'app-sidebar',
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.scss'],
-  imports: [CommonModule],
+  imports: [CommonModule, HasRoleDirective],
 })
 export class SidebarComponent {
   @Input() isExpanded: boolean = true;
@@ -33,50 +34,55 @@ export class SidebarComponent {
     {
       label: 'Gestión de usuarios',
       icon: 'fas fa-users',
+      roles: [1,2,5,6],
       children: [
-        { label: 'Usuarios', route: '/usuario' } ,
-        { label: 'Perfiles', route: '/perfil' } 
+        { label: 'Usuarios', route: '/usuario', roles: [1,5] } ,
+        { label: 'Perfiles', route: '/perfil', roles: [1,2,5,6] } 
       ]
     },
     {
       label: 'Gestión de Pacientes',
       icon: 'fas fa-hospital-user',
+      roles: [1,2,5,6],
       children: [
-        { label: 'Pacientes', route: '/pacientes' },
-        { label: 'Expedientes', route: '/expedientes' },
-        { label: 'Referidos', route: '/referidos' },
-        { label: 'Inventario', route: '/inventario' }
+        { label: 'Pacientes', route: '/pacientes', roles: [1,2,5,6] },
+        { label: 'Expedientes', route: '/expedientes', roles: [1,2,5,6] },
+        { label: 'Referidos', route: '/referidos', roles: [1,2,5,6] },
+        { label: 'Inventario', route: '/inventario', roles: [1,2,5,6] }
     ]
   },
     {
       label: 'Gestión Clinica',
       icon: 'fas fa-hospital',
+      roles: [1,2,5,6],
       children: [
-        { label: 'Agenda', route: '/agenda' },
-        { label: 'Reporteria', route: '/reporteria' },
-        { label: 'Documentos', route: '/documentos' },
-        { label: 'Administración', route: '/administracion' },
-        { label: 'Educación Inclusiva', route: '/educacion-inclusiva' },
-        { label: 'Fisioterapia', route: '/fisioterapia' },
-        { label: 'Medicina General', route: '/medicina-general' },
-        { label: 'Nutrición', route: '/nutricion' },
-        { label: 'Psicología', route: '/psicologia' }
+        { label: 'Agenda', route: '/agenda', roles: [1,2,5,6] },
+        { label: 'Reporteria', route: '/reporteria', roles: [1,5] },
+        { label: 'Documentos', route: '/documentos', roles: [1,5] },
+        { label: 'Administración', route: '/administracion', roles: [1,5] },
+        { label: 'Educación Inclusiva', route: '/educacion-inclusiva', roles: [1,5] },
+        { label: 'Fisioterapia', route: '/fisioterapia', roles: [1,5,6] },
+        { label: 'Medicina General', route: '/medicina-general', roles: [1,2,5] },
+        { label: 'Nutrición', route: '/nutricion', roles: [1,5] },
+        { label: 'Psicología', route: '/psicologia', roles: [1,5] }
       ]
     },
     {
       label: 'Acerca de',
       icon: 'fas fa-info-circle',
+      roles: [1,2,5,6],
       children: [
-        { label: 'Quienes somos', route: '/acerca/nosotros' },
-        { label: 'Misión y visión', route: '/acerca/mision' },
-        { label: 'Contáctanos', route: '/acerca/contacto' }
+        { label: 'Quienes somos', route: '/acerca/nosotros', roles: [1,2,5,6] },
+        { label: 'Misión y visión', route: '/acerca/mision', roles: [1,2,5,6] },
+        { label: 'Contáctanos', route: '/acerca/contacto', roles: [1,2,5,6] }
       ]
     },
     {
       label: 'Cerrar Sesion',
       icon: 'fas fa-sign-out-alt',
+      roles: [1,2,5,6],
       children: [
-        { label: 'Cerrar Sesion', route: '/logout/logout' }
+        { label: 'Cerrar Sesion', route: '/logout/logout', roles: [1,2,5,6] }
       ]
     }
   ];

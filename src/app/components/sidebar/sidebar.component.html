@@ -6,7 +6,9 @@
         <img *ngIf="userInfo.avatar" [src]="userInfo.avatar" [alt]="userInfo.name">
         <i *ngIf="!userInfo.avatar" class="fas fa-user-circle"></i>
       </div>
-      <div class="user-name" (click)="onUserNameClick()" style="cursor: pointer;">{{ userInfo.name }}</div>
+      <div class="user-name" (click)="onUserNameClick()" style="cursor: pointer;">
+        {{ userInfo.name }}
+      </div>
     </div>
 
     <button class="toggle-button" (click)="onToggleSidebar()">
@@ -19,30 +21,40 @@
   <nav class="sidebar-nav">
     <ul class="nav-list">
       <li class="nav-item" *ngFor="let item of currentMenuItems">
-        <!-- Item principal -->
-        <div class="nav-link"
-             [class.has-children]="item.children?.length"
-             [class.expanded]="item.expanded"
-             (click)="onMenuItemClick(item)">
-          <div class="nav-link-content">
-            <i *ngIf="item.icon" [class]="item.icon" class="nav-icon"></i>
-            <span class="nav-label" *ngIf="isExpanded">{{ item.label }}</span>
-          </div>
-          <i *ngIf="item.children?.length && isExpanded" 
-             class="fas fa-chevron-down expand-icon"
-             [class.rotated]="item.expanded"></i>
-        </div>
-
-        <!-- Submenú -->
-        <ul class="submenu"
-            *ngIf="item.children?.length && item.expanded && isExpanded">
-          <li class="submenu-item" *ngFor="let subItem of item.children">
-            <div class="submenu-link" (click)="onSubMenuItemClick(subItem)">
-              <i *ngIf="subItem.icon" [class]="subItem.icon" class="submenu-icon"></i>
-              <span class="submenu-label">{{ subItem.label }}</span>
+        
+        <ng-container *appHasRole="item.roles || []">
+          
+          <!-- Item principal -->
+          <div class="nav-link"
+               [class.has-children]="item.children?.length"
+               [class.expanded]="item.expanded"
+               (click)="onMenuItemClick(item)">
+            <div class="nav-link-content">
+              <i *ngIf="item.icon" [class]="item.icon" class="nav-icon"></i>
+              <span class="nav-label" *ngIf="isExpanded">{{ item.label }}</span>
             </div>
-          </li>
-        </ul>
+            <i *ngIf="item.children?.length && isExpanded" 
+               class="fas fa-chevron-down expand-icon"
+               [class.rotated]="item.expanded"></i>
+          </div>
+
+          <!-- Submenú -->
+          <ul class="submenu"
+              *ngIf="item.children?.length && item.expanded && isExpanded">
+            
+            <li class="submenu-item" *ngFor="let subItem of item.children">
+              
+              <ng-container *appHasRole="subItem.roles || []">
+                <div class="submenu-link" (click)="onSubMenuItemClick(subItem)">
+                  <i *ngIf="subItem.icon" [class]="subItem.icon" class="submenu-icon"></i>
+                  <span class="submenu-label">{{ subItem.label }}</span>
+                </div>
+              </ng-container>
+              
+            </li>
+          </ul>
+          
+        </ng-container>
       </li>
     </ul>
   </nav>

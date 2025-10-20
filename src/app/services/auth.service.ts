@@ -191,4 +191,63 @@
         this.userInfoSubject.next({ name: 'Usuario', avatar: null });
       }
     }
+
+    // ========================================
+    //  NUEVOS MÉTODOS PARA ROLES
+    // ========================================
+
+    /**
+    * Obtener el rol del usuario actual (ID)
+    */
+    get userRole(): number | null {
+      const user = this.getCurrentUser();
+      return user?.fkrol || null;
+    }
+
+    /**
+     * Obtener el nombre del rol del usuario actual
+     */
+    get userRoleName(): string | null {
+      const user = this.getCurrentUser();
+      return user?.rolNombre || user?.rol?.nombre || null;
+    }
+
+    /**
+     * Verificar si el usuario está autenticado
+     */
+    get isAuthenticated(): boolean {
+      return !!this.getToken() && !!this.getCurrentUser();
+    }
+
+    /**
+     * Verificar si el usuario tiene uno de los roles permitidos
+     * @param rolesPermitidos Array de IDs de roles permitidos
+     * @returns true si el usuario tiene uno de los roles
+     * 
+     * @example
+     * // Verificar si es DOCTOR(3) o ENFERMERA(4)
+     * if (this.authService.hasRole([3, 4])) {
+     *   console.log('Puede ver pacientes');
+     * }
+     */
+    hasRole(rolesPermitidos: number[]): boolean {
+      const userRole = this.userRole;
+      if (!userRole) return false;
+      return rolesPermitidos.includes(userRole);
+    }
+
+    /**
+     * Verificar si el usuario tiene un rol específico
+     * @param rolId ID del rol a verificar
+     * @returns true si el usuario tiene ese rol
+     * 
+     * @example
+     * // Verificar si es ADMIN(2)
+     * if (this.authService.hasSpecificRole(2)) {
+     *   console.log('Es administrador');
+     * }
+     */
+    hasSpecificRole(rolId: number): boolean {
+      return this.userRole === rolId;
+    }
   }

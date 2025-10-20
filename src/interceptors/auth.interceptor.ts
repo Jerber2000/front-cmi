@@ -3,6 +3,8 @@ import { HttpInterceptorFn, HttpResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { tap } from 'rxjs/operators';
 import { AuthService } from '../app/services/auth.service';
+import { Router } from '@angular/router';
+import { AlertaService } from '../app/services/alerta.service';
 
 // ← DEFINIR INTERFACE para las respuestas del backend
 interface BackendResponse {
@@ -15,6 +17,8 @@ interface BackendResponse {
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   
   const authService = inject(AuthService);
+  const router = inject(Router);
+  const alerta = inject(AlertaService);
   
   const token = localStorage.getItem('token');
   
@@ -45,6 +49,16 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           if (error.status === 401) {
             console.log('❌ Error 401: Token inválido, redirigiendo a login');
             authService.logout();
+          }
+
+          // ⭐ NUEVO: Manejar error 403: Sin permisos
+          if (error.status === 403) {
+            console.error('❌ Error 403: Sin permisos', error.error);
+            
+            const mensaje = error.error?.message || 'No tienes permisos para realizar esta acción';
+            
+            // ⭐ Opción 1: Con tu AlertService (descomenta cuando lo tengas)
+            alerta.alertaError('Sin permisos');
           }
         }
       })
