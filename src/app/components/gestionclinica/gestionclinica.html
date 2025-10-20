@@ -1,4 +1,4 @@
-<!-- gestionclinica.html - Template mejorado -->
+<!-- gestionclinica.html - Template sin quickActions -->
 <div class="content-area" [class.sidebar-expanded]="sidebarExpanded">
   <app-sidebar 
     [userInfo]="userInfo"
@@ -37,24 +37,19 @@
       </div>
     </div>
 
-    <!-- Estadísticas específicas del módulo -->
+    <!-- Estadísticas específicas del módulo (solo si hay estadísticas) -->
     <div class="fila-estadisticas" 
-         *ngIf="(dashboardData$ | async)?.formattedStats as stats; else noStats">
+         *ngIf="(dashboardData$ | async)?.formattedStats as stats">
       <div class="tarjeta-estadistica" 
-           *ngFor="let stat of stats; trackBy: trackByStatLabel">
-        <div class="valor-estadistica" [class]="'stat-' + stat.color">
+           *ngFor="let stat of stats; trackBy: trackByStatLabel"
+           [class]="'stat-' + stat.color">
+        <div class="valor-estadistica">
           <i [class]="stat.icon" *ngIf="stat.icon"></i>
           {{ stat.value }}
         </div>
         <div class="etiqueta-estadistica">{{ stat.label }}</div>
       </div>
     </div>
-    
-    <ng-template #noStats>
-      <div class="no-stats" *ngIf="hasStats((dashboardData$ | async)?.formattedStats || [])">
-        <p>No hay estadísticas disponibles</p>
-      </div>
-    </ng-template>
   </div>
 
   <!-- Dashboard Content -->
@@ -123,7 +118,7 @@
             </div>
           </div>
 
-          <!-- Tercera fila si hay más de 8 módulos -->
+          <!-- Tercera fila si hay más de 8 módulos (solo administración) -->
           <div class="divider" *ngIf="modules.length > 8"></div>
           <div class="icons-grid" *ngIf="modules.length > 8">
             <div 
@@ -161,39 +156,7 @@
           </div>
         </ng-template>
 
-        <!-- Acciones rápidas -->
-        <div class="quick-actions" 
-             *ngIf="(dashboardData$ | async)?.visibleActions as actions">
-          <div *ngIf="hasQuickActions(actions)">
-            <h3>Acciones Rápidas</h3>
-            <div class="action-buttons">
-              <button 
-                class="action-btn" 
-                *ngFor="let action of actions; trackBy: trackByActionId"
-                (click)="quickAction(action.action)"
-                [attr.aria-label]="'Ejecutar acción: ' + action.label"
-                [disabled]="loading$ | async"
-              >
-                <i [class]="action.icon" [attr.aria-hidden]="true"></i>
-                {{ action.label }}
-              </button>
-            </div>
-          </div>
-        </div>
-
       </div>
     </div>
-  </div>
-
-
-  <!-- Debug info (solo en desarrollo) -->
-  <div class="debug-info" *ngIf="false">
-    <h4>Debug Info:</h4>
-    <p>Módulo actual: {{ currentModule$ | async }}</p>
-    <p>Total módulos: {{ (dashboardData$ | async)?.activeModules?.length || 0 }}</p>
-    <p>Total notificaciones: {{ (dashboardData$ | async)?.totalNotifications || 0 }}</p>
-    <p>Ruta actual: {{ router.url }}</p>
-    <p>Usuario: {{ userInfo.name }} ({{ userInfo.role }})</p>
-    <p>Permisos: {{ userInfo.permissions?.join(', ') || 'Ninguno' }}</p>
   </div>
 </div>
