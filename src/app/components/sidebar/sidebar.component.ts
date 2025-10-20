@@ -54,6 +54,7 @@ export class SidebarComponent {
       children: [
         { label: 'Agenda', route: '/agenda' },
         { label: 'Reporteria', route: '/reporteria' },
+        { label: 'Documentos', route: '/documentos' },
         { label: 'Administración', route: '/administracion' },
         { label: 'Educación Inclusiva', route: '/educacion-inclusiva' },
         { label: 'Fisioterapia', route: '/fisioterapia' },

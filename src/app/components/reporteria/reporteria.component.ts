@@ -1,4 +1,5 @@
-// src/app/components/reporteria/reporteria.component.ts
+// src/app/components/reporteria/reporteria.component.ts - ACTUALIZADO
+
 import { Component, OnInit, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
@@ -13,6 +14,7 @@ import {
   FiltrosAgenda,
   FiltrosReferencias
 } from '../../services/reporteria.service';
+import { PdfExcelReporteriaService } from '../../services/pdf-excel-reporteria.service'; // 🆕 NUEVO
 import { ArchivoService } from '../../services/archivo.service';
 import { AlertaService } from '../../services/alerta.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
@@ -32,36 +34,27 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
   generandoPDF = false;
   generandoExcel = false;
   
-  // Usuario actual
   userInfo: any = {};
   usuarioActual: any = null;
-  
-  // Dashboard
   dashboardData: DashboardData | null = null;
-  
-  // Tipo de reporte activo
   tipoReporteActivo: 'dashboard' | 'pacientes' | 'consultas' | 'inventario' | 'agenda' | 'referencias' = 'dashboard';
   
-  // Datos de reportes
   datosReporte: any[] = [];
   resumenReporte: any = null;
   alertasReporte: any = null;
   
-  // Paginación local
   currentPage = 1;
   itemsPerPage = 10;
   totalPages = 0;
   totalItems = 0;
   datosPaginados: any[] = [];
   
-  // Formularios de filtros
   filtrosPacientesForm: FormGroup;
   filtrosConsultasForm: FormGroup;
   filtrosInventarioForm: FormGroup;
   filtrosAgendaForm: FormGroup;
   filtrosReferenciasForm: FormGroup;
   
-  // Datos para selectores
   aniosDisponibles: number[] = [];
   mesesDisponibles = [
     { valor: 1, nombre: 'Enero' },
@@ -84,10 +77,10 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
     private fb: FormBuilder,
     private router: Router,
     public reporteriaService: ReporteriaService,
+    private pdfExcelService: PdfExcelReporteriaService, // 🆕 NUEVO
     private archivoService: ArchivoService,
     private alerta: AlertaService
   ) {
-    // Inicializar formularios
     this.filtrosPacientesForm = this.fb.group({
       desde: [''],
       hasta: [''],
@@ -136,7 +129,6 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
     this.loadUserInfo();
     this.generarAniosDisponibles();
     
-    // Solo cargar dashboard al inicio
     if (this.tipoReporteActivo === 'dashboard') {
       this.cargarDashboard();
     }
@@ -190,9 +182,6 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
     }
   }
   
-  // ==========================================
-  // CAMBIO DE TIPO DE REPORTE
-  // ==========================================
   cambiarTipoReporte(tipo: typeof this.tipoReporteActivo): void {
     this.tipoReporteActivo = tipo;
     this.currentPage = 1;
@@ -204,9 +193,6 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
     }
   }
   
-  // ==========================================
-  // CARGAR DASHBOARD
-  // ==========================================
   cargarDashboard(): void {
     this.loading = true;
     
@@ -222,12 +208,9 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
     });
   }
   
-  // ==========================================
-  // CARGAR REPORTES
-  // ==========================================
   cargarReporte(): void {
     if (this.tipoReporteActivo === 'dashboard') {
-      return; // No hacer nada si es dashboard
+      return;
     }
     
     this.loadingReporte = true;
@@ -257,7 +240,7 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
     const filtros: FiltrosPacientes = {
       ...this.filtrosPacientesForm.value,
       page: 1,
-      limit: 1000 // Traer todos para paginar localmente
+      limit: 1000
     };
     
     this.reporteriaService.obtenerReportePacientes(filtros).subscribe({
@@ -364,9 +347,6 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
     });
   }
   
-  // ==========================================
-  // LIMPIAR FILTROS
-  // ==========================================
   limpiarFiltros(): void {
     switch (this.tipoReporteActivo) {
       case 'pacientes':
@@ -388,9 +368,6 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
     this.cargarReporte();
   }
   
-  // ==========================================
-  // PAGINACIÓN LOCAL
-  // ==========================================
   updatePagination(): void {
     this.totalItems = this.datosReporte.length;
     this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
@@ -457,58 +434,85 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
   }
   
   // ==========================================
-  // EXPORTAR PDF
+  // 🆕 EXPORTAR PDF - ACTUALIZADO
   // ==========================================
-  exportarPDF(): void {
-    this.generandoPDF = true;
+  async exportarPDF(): Promise<void> {
+    if (this.generandoPDF) return;
     
-    // Limpiar filtros vacíos antes de enviar
-    const filtros = this.obtenerFiltrosActivos();
-    const filtrosLimpios = Object.keys(filtros).reduce((acc: any, key) => {
-      const valor = filtros[key];
-      if (valor !== '' && valor !== null && valor !== undefined) {
-        acc[key] = valor;
-      }
-      return acc;
-    }, {});
-    
-    const titulo = `Reporte de ${this.obtenerNombreTipoReporte()} - ${new Date().toLocaleDateString()}`;
-    
-    this.reporteriaService.generarPDF(this.tipoReporteActivo, filtrosLimpios, titulo).subscribe({
-      next: (blob) => {
-        const nombreArchivo = `reporte_${this.tipoReporteActivo}_${Date.now()}.pdf`;
-        this.reporteriaService.descargarArchivo(blob, nombreArchivo);
-        this.alerta.alertaExito('PDF generado exitosamente');
+    try {
+      this.generandoPDF = true;
+
+      // Validar que hay un tipo de reporte activo
+      if (this.tipoReporteActivo === 'dashboard') {
+        this.alerta.alertaError('No se puede exportar el dashboard a PDF');
         this.generandoPDF = false;
-      },
-      error: (error) => {
-        this.alerta.alertaError('Error al generar PDF');
-        this.generandoPDF = false;
+        return;
       }
-    });
+
+      // Validar que hay datos
+      if (!this.datosReporte || this.datosReporte.length === 0) {
+        this.alerta.alertaError('No hay datos para exportar');
+        this.generandoPDF = false;
+        return;
+      }
+
+      console.log('Exportando PDF:', this.tipoReporteActivo, 'Registros:', this.datosReporte.length);
+
+      // Generar PDF
+      await this.pdfExcelService.generarPDF(
+        this.tipoReporteActivo,
+        this.datosReporte
+      );
+
+      this.alerta.alertaExito('PDF generado exitosamente');
+
+    } catch (error) {
+      console.error('Error al generar PDF:', error);
+      this.alerta.alertaError('Error al generar PDF: ' + error);
+    } finally {
+      this.generandoPDF = false;
+    }
   }
   
   // ==========================================
-  // EXPORTAR EXCEL
+  // 🆕 EXPORTAR EXCEL - ACTUALIZADO
   // ==========================================
   exportarExcel(): void {
-    this.generandoExcel = true;
+    if (this.generandoExcel) return;
     
-    const filtros = this.obtenerFiltrosActivos();
-    const nombreArchivo = `reporte_${this.tipoReporteActivo}`;
-    
-    this.reporteriaService.exportarExcel(this.tipoReporteActivo, filtros, nombreArchivo).subscribe({
-      next: (blob) => {
-        const archivo = `${nombreArchivo}_${Date.now()}.xlsx`;
-        this.reporteriaService.descargarArchivo(blob, archivo);
-        this.alerta.alertaExito('Excel generado exitosamente');
+    try {
+      this.generandoExcel = true;
+
+      // Validar que hay un tipo de reporte activo
+      if (this.tipoReporteActivo === 'dashboard') {
+        this.alerta.alertaError('No se puede exportar el dashboard a Excel');
         this.generandoExcel = false;
-      },
-      error: (error) => {
-        this.alerta.alertaError('Error al generar Excel');
-        this.generandoExcel = false;
+        return;
       }
-    });
+
+      // Validar que hay datos
+      if (!this.datosReporte || this.datosReporte.length === 0) {
+        this.alerta.alertaError('No hay datos para exportar');
+        this.generandoExcel = false;
+        return;
+      }
+
+      console.log('Exportando Excel:', this.tipoReporteActivo, 'Registros:', this.datosReporte.length);
+
+      // Generar Excel
+      this.pdfExcelService.generarExcel(
+        this.tipoReporteActivo,
+        this.datosReporte
+      );
+
+      this.alerta.alertaExito('Excel generado exitosamente');
+
+    } catch (error) {
+      console.error('Error al generar Excel:', error);
+      this.alerta.alertaError('Error al generar Excel: ' + error);
+    } finally {
+      this.generandoExcel = false;
+    }
   }
   
   // ==========================================

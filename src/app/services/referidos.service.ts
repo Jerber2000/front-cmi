@@ -6,10 +6,18 @@ import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { ArchivoService } from './archivo.service'; 
 
+// ============================================================================
+// INTERFACES ACTUALIZADAS (SIN fkusuariodestino)
+// ============================================================================
+
+export interface Clinica {
+  idclinica: number;
+  nombreclinica: string;
+}
+
 export interface Referido {
   idrefpaciente: number;
   fkusuario: number;
-  fkusuariodestino: number;
   fkpaciente: number;
   fkexpediente: number;
   fkclinica: number;
@@ -24,8 +32,8 @@ export interface Referido {
   usuarioconfirma4?: string;
   fechacreacion: string;
   estado: number;
-  rutadocumentoinicial?: string; 
-  rutadocumentofinal?: string; 
+  rutadocumentoinicial?: string;
+  rutadocumentofinal?: string;
   paciente?: {
     idpaciente: number;
     nombres: string;
@@ -33,17 +41,8 @@ export interface Referido {
     cui: string;
     fechanacimiento?: string;
   };
-  clinica?: {
-    idclinica: number;
-    nombreclinica: string;
-  };
+  clinica?: Clinica;
   usuario?: {
-    idusuario: number;
-    nombres: string;
-    apellidos: string;
-    profesion: string;
-  };
-  usuarioDestino?: {
     idusuario: number;
     nombres: string;
     apellidos: string;
@@ -51,13 +50,13 @@ export interface Referido {
   };
 }
 
+// ❌ ACTUALIZADO: Sin fkusuariodestino
 export interface CrearReferidoRequest {
   fkpaciente: number;
   fkexpediente: number;
   fkclinica: number;
-  fkusuariodestino: number;
   comentario: string;
-  rutadocumentoinicial?: string; // ← AGREGADO
+  rutadocumentoinicial?: string;
 }
 
 export interface ConfirmarReferidoRequest {
@@ -97,10 +96,21 @@ export class ReferidosService {
   }
 
   // ============================================================================
+  // ✅ NUEVO: Obtener clínicas desde BD
+  // ============================================================================
+  obtenerClinicas(): Observable<Clinica[]> {
+    return this.http.get<ApiResponse<Clinica[]>>(
+      `${this.apiUrl}/clinicas`,
+      { headers: this.getHeaders() }
+    ).pipe(
+      map(response => response.data || [])
+    );
+  }
+
+  // ============================================================================
   // MÉTODOS CRUD PRINCIPALES
   // ============================================================================
 
-  // Crear nuevo referido
   crearReferido(datos: CrearReferidoRequest): Observable<Referido> {
     return this.http.post<ApiResponse<Referido>>(
       this.apiUrl,
@@ -111,7 +121,6 @@ export class ReferidosService {
     );
   }
 
-  // Listar referidos con filtros
   obtenerReferidos(
     tipo?: 'pendientes' | 'enviados' | 'recibidos' | 'completados',
     search?: string,
@@ -141,7 +150,6 @@ export class ReferidosService {
     );
   }
 
-  // Obtener referido por ID
   obtenerReferidoPorId(id: number): Observable<Referido> {
     return this.http.get<ApiResponse<Referido>>(
       `${this.apiUrl}/${id}`,
@@ -151,20 +159,33 @@ export class ReferidosService {
     );
   }
 
-  // Confirmar/aprobar referido
+  // En referidos.service.ts
   confirmarReferido(id: number, comentario?: string): Observable<Referido> {
+    console.log('🌐 === SERVICIO confirmarReferido ===');
+    console.log('ID:', id);
+    console.log('Comentario:', comentario);
+    
     const body: ConfirmarReferidoRequest = comentario ? { comentario } : {};
+    console.log('Body de la petición:', body);
+    
+    const url = `${this.apiUrl}/${id}/confirmar`;
+    console.log('URL completa:', url);
+    console.log('Headers:', this.getHeaders());
+    
+    console.log('📡 Enviando petición HTTP PUT...');
     
     return this.http.put<ApiResponse<Referido>>(
-      `${this.apiUrl}/${id}/confirmar`,
+      url,
       body,
       { headers: this.getHeaders() }
     ).pipe(
-      map(response => response.data!)
+      map(response => {
+        console.log('✅ Respuesta recibida:', response);
+        return response.data!;
+      })
     );
   }
 
-  // Actualizar referido
   actualizarReferido(id: number, datos: Partial<CrearReferidoRequest>): Observable<Referido> {
     return this.http.put<ApiResponse<Referido>>(
       `${this.apiUrl}/${id}`,
@@ -175,7 +196,6 @@ export class ReferidosService {
     );
   }
 
-  // Cambiar estado (eliminar lógico)
   cambiarEstado(id: number, estado: number): Observable<Referido> {
     return this.http.put<ApiResponse<Referido>>(
       `${this.apiUrl}/${id}/estado`,
@@ -186,7 +206,6 @@ export class ReferidosService {
     );
   }
 
-  // Obtener historial de referidos de un paciente
   obtenerHistorialPaciente(idPaciente: number): Observable<Referido[]> {
     return this.http.get<ApiResponse<Referido[]>>(
       `${this.apiUrl}/paciente/${idPaciente}`,
@@ -195,108 +214,137 @@ export class ReferidosService {
       map(response => response.data || [])
     );
   }
-// ============================================================================
-// MÉTODOS DE GESTIÓN DE DOCUMENTOS (USANDO ArchivoService)
-// ============================================================================
-
-/**
- * Subir documento inicial usando ArchivoService
- */
-async subirDocumentoInicial(
-  idReferido: number, 
-  archivo: File
-): Promise<{ rutadocumentoinicial: string }> {
-  const resultado = await this.archivoService.subirArchivos(
-    'referidos',  
-    idReferido,   
-    { documento: archivo }
-  );
-  
-  return {
-    rutadocumentoinicial: resultado.rutaDocumento || ''
-  };
-}
-
-/**
- * Subir documento final usando ArchivoService
- */
-async subirDocumentoFinal(
-  idReferido: number,
-  archivo: File
-): Promise<{ rutadocumentofinal: string }> {
-  const resultado = await this.archivoService.subirArchivos(
-    'referidos',
-    idReferido,
-    { documento: archivo }
-  );
-  
-  return {
-    rutadocumentofinal: resultado.rutaDocumento || ''
-  };
-}
-
-/**
- * Obtener URL pública de un documento
- */
-obtenerUrlDocumento(rutaDocumento: string | null | undefined): string | null {
-  if (!rutaDocumento || typeof rutaDocumento !== 'string') {
-    return null;
-  }
-  
-  return this.archivoService.obtenerUrlPublica(rutaDocumento);
-}
 
   // ============================================================================
-  // MÉTODOS DE PERMISOS Y VALIDACIONES
+  // MÉTODOS DE GESTIÓN DE DOCUMENTOS
+  // ============================================================================
+
+  async subirDocumentoInicial(
+    idReferido: number, 
+    archivo: File
+  ): Promise<{ rutadocumentoinicial: string }> {
+    const resultado = await this.archivoService.subirArchivos(
+      'referidos',  
+      idReferido,   
+      { documento: archivo }
+    );
+    
+    return {
+      rutadocumentoinicial: resultado.rutaDocumento || ''
+    };
+  }
+
+  async subirDocumentoFinal(
+    idReferido: number,
+    archivo: File
+  ): Promise<{ rutadocumentofinal: string }> {
+    const resultado = await this.archivoService.subirArchivos(
+      'referidos',
+      idReferido,
+      { documento: archivo }
+    );
+    
+    return {
+      rutadocumentofinal: resultado.rutaDocumento || ''
+    };
+  }
+
+  obtenerUrlDocumento(rutaDocumento: string | null | undefined): string | null {
+    if (!rutaDocumento || typeof rutaDocumento !== 'string') {
+      return null;
+    }
+    
+    return this.archivoService.obtenerUrlPublica(rutaDocumento);
+  }
+
+/**
+ * ✅ Verifica si el usuario puede eliminar documento final
+ */
+  puedeEliminarDocumentoFinal(referido: Referido, usuarioActual: any, esAdmin: boolean): boolean {
+    if (!referido || !usuarioActual) return false;
+    
+    // No se puede eliminar si el referido está completado
+    if (referido.confirmacion4 === 1) return false;
+    
+    // Admin siempre puede eliminar (si no está completado)
+    if (esAdmin) return true;
+    
+    // Usuario de la clínica destino puede eliminar
+    return usuarioActual.fkclinica === referido.fkclinica;
+  }
+
+  // ============================================================================
+  // MÉTODOS DE PERMISOS Y VALIDACIONES (ACTUALIZADOS)
   // ============================================================================
 
   /**
-   * Verifica si el usuario puede subir documento inicial
+   * ✅ Verifica si el usuario puede subir documento inicial
    */
+  puedeEliminarDocumentoInicial(referido: Referido, usuarioActual: any, esAdmin: boolean): boolean {
+    if (!referido || !usuarioActual) return false;
+    
+    // No se puede eliminar si el referido está completado
+    if (referido.confirmacion4 === 1) return false;
+    
+    // Admin siempre puede eliminar (si no está completado)
+    if (esAdmin) return true;
+    
+    // El creador puede eliminar su propio documento
+    const esCreador = referido.fkusuario === usuarioActual.idusuario;
+    
+    return esCreador;
+  }
+
+  /**
+   * ✅ ACTUALIZADO: Verifica si el usuario puede subir documento final
+   * Ahora valida si pertenece a la clínica destino
+   */
+  puedeSubirDocumentoFinal(referido: Referido, usuarioActual: any): boolean {
+    console.log('🔍 === puedeSubirDocumentoFinal ===');
+    console.log('referido:', referido);
+    console.log('usuarioActual:', usuarioActual);
+    
+    if (!referido || !usuarioActual) {
+      console.log('❌ Faltan datos');
+      return false;
+    }
+    
+    if (referido.confirmacion3 !== 1) {
+      console.log('❌ confirmacion3 no está en 1:', referido.confirmacion3);
+      return false;
+    }
+    
+    console.log('fkclinica usuario:', usuarioActual.fkclinica);
+    console.log('fkclinica referido:', referido.fkclinica);
+    console.log('¿Coinciden?:', usuarioActual.fkclinica === referido.fkclinica);
+    
+    // ✅ El usuario debe estar asignado a la clínica destino
+    return usuarioActual.fkclinica === referido.fkclinica;
+  }
+
   puedeSubirDocumentoInicial(referido: Referido, usuarioActual: any, esAdmin: boolean): boolean {
     if (!referido || !usuarioActual) return false;
     
-    // No se puede si está completado
     if (referido.confirmacion4 === 1) return false;
     
-    // Puede subir: creador o admin (si ya pasó confirmacion1)
     const esCreador = referido.fkusuario === usuarioActual.idusuario;
     const adminPuedeSubir = esAdmin && referido.confirmacion1 === 1 && referido.confirmacion4 === 0;
     
     return esCreador || adminPuedeSubir;
   }
 
-  /**
-   * Verifica si el usuario puede subir documento final
-   */
-  puedeSubirDocumentoFinal(referido: Referido, usuarioActual: any): boolean {
-    if (!referido || !usuarioActual) return false;
-    
-    // Debe estar en etapa final (confirmacion3 completada)
-    if (referido.confirmacion3 !== 1) return false;
-    
-    // Solo médico destino
-    return referido.fkusuariodestino === usuarioActual.idusuario;
-  }
-
   // ============================================================================
   // MÉTODOS AUXILIARES Y FORMATEO
   // ============================================================================
 
-  /**
-   * Obtiene el estado del referido en texto legible
-   */
   obtenerEstadoReferido(referido: Referido): string {
     if (referido.confirmacion4 === 1) return 'Completado';
-    if (referido.confirmacion3 === 1) return 'Pendiente médico destino';
+    if (referido.confirmacion3 === 1) return 'Pendiente clínica destino';
     if (referido.confirmacion2 === 1) return 'Pendiente admin 2';
     if (referido.confirmacion1 === 1) return 'Pendiente admin 1';
     return 'En proceso';
   }
 
-  /**
-   * Calcula el progreso del referido en porcentaje
-   */
   obtenerProgresoReferido(referido: Referido): number {
     let confirmaciones = 0;
     if (referido.confirmacion1 === 1) confirmaciones++;
@@ -306,9 +354,6 @@ obtenerUrlDocumento(rutaDocumento: string | null | undefined): string | null {
     return (confirmaciones / 4) * 100;
   }
 
-  /**
-   * Formatea fecha a formato local
-   */
   formatearFecha(fecha: string): string {
     if (!fecha) return '';
     const date = new Date(fecha);
@@ -319,9 +364,6 @@ obtenerUrlDocumento(rutaDocumento: string | null | undefined): string | null {
     });
   }
 
-  /**
-   * Formatea fecha y hora a formato local
-   */
   formatearFechaHora(fecha: string): string {
     if (!fecha) return '';
     const date = new Date(fecha);

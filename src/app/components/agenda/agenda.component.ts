@@ -20,6 +20,7 @@ import { UsuarioService, Usuario } from '../../services/usuario.service';
 import { AlertaService } from '../../services/alerta.service';
 import { Paciente, ServicioPaciente } from '../../services/paciente.service';
 import { AgendaService, CitaRequest } from '../../services/agenda.service';
+import { PdfExcelReporteriaService } from '../../services/pdf-excel-reporteria.service';
 
 // Interfaces
 export interface Cita {
@@ -154,7 +155,9 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     private PacienteService: ServicioPaciente,
     private alerta: AlertaService,
     private fb: FormBuilder,
-    private agendaService: AgendaService
+    private agendaService: AgendaService,
+    private pdfExcelService: PdfExcelReporteriaService 
+
   ) {
     this.initForm();
     this.fechaActual = new Date().toLocaleDateString('es-ES');
@@ -783,14 +786,34 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     });
   }
 
-  exportarReportePDF(): void {
-    // Implementar después si lo necesitas
-    this.alerta.alertaInfo('Función de exportar a PDF en desarrollo');
+  async exportarReportePDF(): Promise<void> {
+    if (this.reporteTransportes.length === 0) {
+      this.alerta.alertaError('No hay datos para exportar');
+      return;
+    }
+    
+    try {
+      await this.pdfExcelService.generarPDF('transporte', this.reporteTransportes);
+      this.alerta.alertaExito('PDF generado exitosamente');
+    } catch (error) {
+      console.error('Error al generar PDF:', error);
+      this.alerta.alertaError('Error al generar el PDF');
+    }
   }
 
   exportarReporteExcel(): void {
-    // Implementar después si lo necesitas
-    this.alerta.alertaInfo('Función de exportar a Excel en desarrollo');
+    if (this.reporteTransportes.length === 0) {
+      this.alerta.alertaError('No hay datos para exportar');
+      return;
+    }
+    
+    try {
+      this.pdfExcelService.generarExcel('transporte', this.reporteTransportes);
+      this.alerta.alertaExito('Excel generado exitosamente');
+    } catch (error) {
+      console.error('Error al generar Excel:', error);
+      this.alerta.alertaError('Error al generar el Excel');
+    }
   }
 
   formatearHora(hora: any): string {

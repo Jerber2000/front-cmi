@@ -238,8 +238,7 @@
       </div>
     </div>
 
-    <!-- Tabla -->
-    <div class="table-container" *ngIf="!loadingReporte">
+   <div class="table-container" *ngIf="!loadingReporte">
       <table class="reporte-table">
         <thead>
           <tr>
@@ -247,25 +246,46 @@
             <th>CUI</th>
             <th>Género</th>
             <th>Edad</th>
+            <th>F. Nacimiento</th>
+            <th>Teléfono</th>
             <th>Municipio</th>
-            <th>Expediente</th>
+            <th>Aldea</th>
+            <th>Dirección</th>
+            <th>N° Expediente</th>
+            <th>Contacto Emergencia</th>
+            <th>Tel. Emergencia</th>
+            <th>Encargado</th>
+            <th>DPI Encargado</th>
+            <th>Tel. Encargado</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let item of datosPaginados">
             <td>{{ item.nombres }} {{ item.apellidos }}</td>
             <td>{{ item.cui }}</td>
-            <td>{{ item.genero === 'M' ? 'Masculino' : 'Femenino' }}</td>
-            <td>{{ calcularEdad(item.fechanacimiento) }} años</td>
+            <td>{{ item.genero === 'M' ? 'M' : 'F' }}</td>
+            <td>{{ calcularEdad(item.fechanacimiento) }}</td>
+            <td>{{ reporteriaService.formatearFecha(item.fechanacimiento) }}</td>
+            <td>{{ item.telefonopersonal || 'N/A' }}</td>
             <td>{{ item.municipio || 'N/A' }}</td>
+            <td>{{ item.aldea || 'N/A' }}</td>
+            <td>{{ item.direccion || 'N/A' }}</td>
             <td>
-              <span class="badge-estado" [class.completado]="item.tieneExpediente">
-                {{ item.tieneExpediente ? 'Sí' : 'No' }}
+              <span class="badge-expediente" *ngIf="item.expedientes && item.expedientes.length > 0">
+                {{ item.expedientes[0].numeroexpediente }}
+              </span>
+              <span class="text-muted" *ngIf="!item.expedientes || item.expedientes.length === 0">
+                Sin expediente
               </span>
             </td>
+            <td>{{ item.nombrecontactoemergencia || 'N/A' }}</td>
+            <td>{{ item.telefonoemergencia || 'N/A' }}</td>
+            <td>{{ item.nombreencargado || 'N/A' }}</td>
+            <td>{{ item.dpiencargado || 'N/A' }}</td>
+            <td>{{ item.telefonoencargado || 'N/A' }}</td>
           </tr>
           <tr *ngIf="datosPaginados.length === 0">
-            <td colspan="6" class="empty-state">
+            <td colspan="15" class="empty-state">
               <i class="fas fa-folder-open"></i>
               <p>No hay datos para mostrar</p>
             </td>
@@ -368,8 +388,13 @@
           <tr>
             <th>Fecha</th>
             <th>Paciente</th>
+            <th>F. Nac. Paciente</th>
             <th>Médico</th>
+            <th>Clínica</th>
+            <th>Recordatorio</th>
+            <th>Nota Consulta</th>
             <th>Motivo Consulta</th>
+            <th>Evolución</th>
             <th>Diagnóstico</th>
           </tr>
         </thead>
@@ -377,12 +402,37 @@
           <tr *ngFor="let item of datosPaginados">
             <td>{{ reporteriaService.formatearFecha(item.fecha) }}</td>
             <td>{{ item.paciente?.nombres }} {{ item.paciente?.apellidos }}</td>
+            <td>{{ reporteriaService.formatearFecha(item.paciente?.fechanacimiento) }}</td>
             <td>{{ item.usuario?.nombres }} {{ item.usuario?.apellidos }}</td>
-            <td>{{ item.motivoconsulta || 'N/A' }}</td>
-            <td>{{ item.diagnosticotratamiento || 'Sin diagnóstico' }}</td>
+            <td>{{ item.usuario?.clinica?.nombreclinica || 'N/A' }}</td>
+            <td>
+              <span class="text-truncate" [title]="item.recordatorio">
+                {{ item.recordatorio || 'N/A' }}
+              </span>
+            </td>
+            <td>
+              <span class="text-truncate" [title]="item.notaconsulta">
+                {{ item.notaconsulta || 'N/A' }}
+              </span>
+            </td>
+            <td>
+              <span class="text-truncate" [title]="item.motivoconsulta">
+                {{ item.motivoconsulta || 'N/A' }}
+              </span>
+            </td>
+            <td>
+              <span class="text-truncate" [title]="item.evolucion">
+                {{ item.evolucion || 'N/A' }}
+              </span>
+            </td>
+            <td>
+              <span class="text-truncate" [title]="item.diagnosticotratamiento">
+                {{ item.diagnosticotratamiento || 'Sin diagnóstico' }}
+              </span>
+            </td>
           </tr>
           <tr *ngIf="datosPaginados.length === 0">
-            <td colspan="5" class="empty-state">
+            <td colspan="10" class="empty-state">
               <i class="fas fa-folder-open"></i>
               <p>No hay datos para mostrar</p>
             </td>
@@ -511,16 +561,24 @@
           <tr *ngFor="let item of datosPaginados">
             <td>
               <strong>{{ item.nombre }}</strong>
-              <small *ngIf="item.descripcion" style="display: block; color: #6c757d;">{{ item.descripcion }}</small>
+              <small *ngIf="item.descripcion">{{ item.descripcion }}</small>
             </td>
-            <td>
-              <span [class.text-danger]="item.unidades <= 10">{{ item.unidades }}</span>
+            <td [class.text-danger]="item.unidades <= 10" style="text-align: center;">
+              {{ item.unidades }}
             </td>
-            <td>{{ reporteriaService.formatearMoneda(item.precio || 0) }}</td>
-            <td>{{ reporteriaService.formatearFecha(item.fechaingreso) }}</td>
-            <td>{{ reporteriaService.formatearFecha(item.fechaegreso) }}</td>
-            <td>
-              <span class="badge-estado" [class.completado]="item.estado === 1" [class.en-proceso]="item.estado === 0">
+            <td style="white-space: nowrap;">
+              {{ reporteriaService.formatearMoneda(item.precio || 0) }}
+            </td>
+            <td style="white-space: nowrap;">
+              {{ reporteriaService.formatearFecha(item.fechaingreso) }}
+            </td>
+            <td style="white-space: nowrap;">
+              {{ reporteriaService.formatearFecha(item.fechaegreso) }}
+            </td>
+            <td style="text-align: center;">
+              <span class="badge-estado" 
+                    [class.completado]="item.estado === 1" 
+                    [class.en-proceso]="item.estado === 0">
                 {{ item.estado === 1 ? 'Activo' : 'Inactivo' }}
               </span>
             </td>
@@ -777,14 +835,15 @@
     </div>
 
     <!-- Tabla -->
-    <div class="table-container" *ngIf="!loadingReporte">
+   <div class="table-container" *ngIf="!loadingReporte">
       <table class="reporte-table">
         <thead>
           <tr>
             <th>Fecha</th>
             <th>Paciente</th>
-            <th>De</th>
-            <th>Para</th>
+            <th>N° Expediente</th>
+            <th>Enviado Por</th>
+            <th>Confirmado Por</th>
             <th>Clínica</th>
             <th>Estado</th>
           </tr>
@@ -793,9 +852,24 @@
           <tr *ngFor="let item of datosPaginados">
             <td>{{ reporteriaService.formatearFecha(item.fechacreacion) }}</td>
             <td>{{ item.paciente?.nombres }} {{ item.paciente?.apellidos }}</td>
+            <td>
+              <span class="badge-expediente" *ngIf="item.expediente?.numeroexpediente">
+                {{ item.expediente.numeroexpediente }}
+              </span>
+              <span class="text-muted" *ngIf="!item.expediente?.numeroexpediente">
+                Sin expediente
+              </span>
+            </td>
             <td>{{ item.usuario?.nombres }} {{ item.usuario?.apellidos }}</td>
-            <td>{{ item.usuarioDestino?.nombres }} {{ item.usuarioDestino?.apellidos }}</td>
-            <td>{{ item.clinica?.nombreclinica }}</td>
+            <td>
+              <span *ngIf="item.usuarioconfirma4" class="text-success">
+                {{ item.usuarioconfirma4 }}
+              </span>
+              <span *ngIf="!item.usuarioconfirma4" class="text-warning">
+                Pendiente
+              </span>
+            </td>
+            <td>{{ item.clinica?.nombreclinica || 'N/A' }}</td>
             <td>
               <span class="badge-estado" [class.completado]="item.confirmacion4 === 1" [class.en-proceso]="item.confirmacion4 === 0">
                 {{ item.confirmacion4 === 1 ? 'Completado' : 'Pendiente' }}
@@ -803,7 +877,7 @@
             </td>
           </tr>
           <tr *ngIf="datosPaginados.length === 0">
-            <td colspan="6" class="empty-state">
+            <td colspan="7" class="empty-state">
               <i class="fas fa-folder-open"></i>
               <p>No hay datos para mostrar</p>
             </td>

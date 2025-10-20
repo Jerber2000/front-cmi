@@ -1,9 +1,9 @@
-// gestionclinica.service.ts
+// gestionclinica.service.ts - Versión actualizada
 import { Injectable } from '@angular/core';
 import { Observable, BehaviorSubject, of } from 'rxjs';
 import { Router } from '@angular/router';
 
-// Interfaces mejoradas
+// Interfaces
 export interface ModuleConfig {
   id: string;
   name: string;
@@ -61,8 +61,69 @@ export class GestionClinicaService {
   public dashboardConfig$ = this.dashboardConfigSubject.asObservable();
   public loading$ = this.loadingSubject.asObservable();
 
-  // Configuraciones base para cada módulo
+  // Módulos comunes para todos los módulos clínicos
+  private readonly commonClinicalModules: ModuleConfig[] = [
+    { 
+      id: 'perfil', 
+      name: 'Perfil', 
+      icon: 'fas fa-user-circle', 
+      route: '/perfil', 
+      color: 'patients',
+      description: 'Perfil de usuario',
+      isActive: true
+    },
+    { 
+      id: 'pacientes', 
+      name: 'Pacientes', 
+      icon: 'fas fa-users', 
+      route: '/pacientes', 
+      color: 'doctors',
+      description: 'Gestión de pacientes',
+      isActive: true
+    },
+    { 
+      id: 'expedientes', 
+      name: 'Expedientes', 
+      icon: 'fas fa-folder-open', 
+      route: '/expedientes', 
+      color: 'exchange',
+      description: 'Expedientes médicos',
+      isActive: true
+    },
+    { 
+      id: 'referidos', 
+      name: 'Referidos', 
+      icon: 'fas fa-exchange-alt', 
+      route: '/referidos', 
+      color: 'calendar',
+      description: 'Pacientes referidos',
+      isActive: true
+    },
+    { 
+      id: 'agenda', 
+      name: 'Agenda', 
+      icon: 'fas fa-calendar-alt', 
+      route: '/agenda', 
+      color: 'reports',
+      description: 'Calendario de citas',
+      isActive: true
+    },
+    { 
+      id: 'documentos', 
+      name: 'Documentos', 
+      icon: 'fas fa-file-pdf', 
+      route: '/documentos', 
+      color: 'pdf',
+      description: 'Gestión documental',
+      isActive: true
+    }
+  ];
+
+  // Configuraciones por módulo
   private readonly moduleConfigurations: Record<ModuleType, DashboardConfig> = {
+    // ========================================
+    // ADMINISTRACIÓN - TODOS LOS MÓDULOS
+    // ========================================
     'administracion': {
       title: 'ADMINISTRACIÓN',
       subtitle: 'Panel de administración y control del sistema',
@@ -70,69 +131,75 @@ export class GestionClinicaService {
       layout: 'grid',
       modules: [
         { 
-          id: 'pacientes', 
-          name: 'Pacientes', 
-          icon: 'fas fa-users', 
-          route: '/pacientes', 
-          color: 'patients', 
-          notification: 0,
-          description: 'Gestión de pacientes',
+          id: 'perfil', 
+          name: 'Perfil', 
+          icon: 'fas fa-user-circle', 
+          route: '/perfil', 
+          color: 'patients',
+          description: 'Perfil de usuario',
           isActive: true
         },
         { 
           id: 'usuarios', 
-          name: 'Médicos', 
+          name: 'Usuarios', 
           icon: 'fas fa-user-md', 
           route: '/usuario', 
           color: 'doctors',
-          description: 'Gestión de personal médico',
+          description: 'Gestión de usuarios',
           isActive: true
         },
         { 
-          id: 'calendario', 
-          name: 'Calendario', 
-          icon: 'fas fa-calendar-alt', 
-          route: '/calendario', 
-          color: 'calendar', 
-          notification: 0,
-          description: 'Programación de citas',
+          id: 'pacientes', 
+          name: 'Pacientes', 
+          icon: 'fas fa-users', 
+          route: '/pacientes', 
+          color: 'patients',
+          description: 'Gestión de pacientes',
           isActive: true
         },
         { 
           id: 'expedientes', 
           name: 'Expedientes', 
-          icon: 'fas fa-folder-medical', 
+          icon: 'fas fa-folder-open', 
           route: '/expedientes', 
           color: 'exchange',
-          description: 'Historiales médicos',
+          description: 'Expedientes médicos',
           isActive: true
         },
         { 
-          id: 'reportes', 
-          name: 'Reportes', 
-          icon: 'fas fa-clipboard-list', 
-          route: '/reportes', 
+          id: 'referidos', 
+          name: 'Referidos', 
+          icon: 'fas fa-exchange-alt', 
+          route: '/referidos', 
+          color: 'calendar',
+          description: 'Pacientes referidos',
+          isActive: true
+        },
+        { 
+          id: 'agenda', 
+          name: 'Agenda', 
+          icon: 'fas fa-calendar-alt', 
+          route: '/agenda', 
           color: 'reports',
-          description: 'Informes y estadísticas',
+          description: 'Calendario de citas',
           isActive: true
         },
         { 
-          id: 'configuracion', 
-          name: 'Configuración', 
-          icon: 'fas fa-cogs', 
-          route: '/configuracion', 
+          id: 'inventario', 
+          name: 'Inventario', 
+          icon: 'fas fa-boxes', 
+          route: '/inventario', 
           color: 'settings',
-          description: 'Configuración del sistema',
-          isActive: true,
-          permissions: ['admin']
+          description: 'Inventario médico',
+          isActive: true
         },
         { 
-          id: 'estadisticas', 
-          name: 'Estadísticas', 
+          id: 'reporteria', 
+          name: 'Reportería', 
           icon: 'fas fa-chart-bar', 
-          route: '/estadisticas', 
+          route: '/reporteria', 
           color: 'stats',
-          description: 'Análisis de datos',
+          description: 'Reportes y estadísticas',
           isActive: true
         },
         { 
@@ -145,538 +212,79 @@ export class GestionClinicaService {
           isActive: true
         }
       ],
-      quickActions: [
-        { 
-          id: 'nuevo-paciente', 
-          label: 'Nuevo Paciente', 
-          icon: 'fas fa-plus', 
-          action: 'nuevo-paciente',
-          route: '/pacientes/nuevo',
-          isVisible: true
-        },
-        { 
-          id: 'cita-urgente', 
-          label: 'Cita Urgente', 
-          icon: 'fas fa-clock', 
-          action: 'cita-urgente',
-          route: '/calendario/urgente',
-          isVisible: true
-        },
-        { 
-          id: 'reporte-diario', 
-          label: 'Reporte Diario', 
-          icon: 'fas fa-chart-line', 
-          action: 'reporte-diario',
-          route: '/reportes/diario',
-          isVisible: true
-        }
-      ],
-      notifications: { 
-        pacientes: 0, 
-        citas: 0, 
-        reportes: 0, 
-        mensajes: 0 
-      },
-      stats: { 
-        pacientesHoy: 0, 
-        citasPendientes: 0, 
-        reportesGenerados: 0 
-      }
+      quickActions: [], // Sin acciones rápidas
+      notifications: {},
+      stats: {}
     },
 
+    // ========================================
+    // EDUCACIÓN INCLUSIVA
+    // ========================================
     'educacion-inclusiva': {
       title: 'EDUCACIÓN INCLUSIVA',
       subtitle: 'Gestión de programas educativos inclusivos',
       theme: 'education',
       layout: 'grid',
-      modules: [
-        { 
-          id: 'estudiantes', 
-          name: 'Estudiantes', 
-          icon: 'fas fa-user-graduate', 
-          route: '/educacion/estudiantes', 
-          color: 'patients',
-          description: 'Gestión de estudiantes',
-          isActive: true
-        },
-        { 
-          id: 'programas', 
-          name: 'Programas', 
-          icon: 'fas fa-book-open', 
-          route: '/educacion/programas', 
-          color: 'doctors',
-          description: 'Programas educativos',
-          isActive: true
-        },
-        { 
-          id: 'evaluaciones', 
-          name: 'Evaluaciones', 
-          icon: 'fas fa-clipboard-check', 
-          route: '/educacion/evaluaciones', 
-          color: 'calendar',
-          description: 'Evaluaciones académicas',
-          isActive: true
-        },
-        { 
-          id: 'recursos', 
-          name: 'Recursos', 
-          icon: 'fas fa-tools', 
-          route: '/educacion/recursos', 
-          color: 'exchange',
-          description: 'Materiales educativos',
-          isActive: true
-        },
-        { 
-          id: 'talleres', 
-          name: 'Talleres', 
-          icon: 'fas fa-chalkboard-teacher', 
-          route: '/educacion/talleres', 
-          color: 'reports',
-          description: 'Talleres y capacitaciones',
-          isActive: true
-        },
-        { 
-          id: 'seguimiento', 
-          name: 'Seguimiento', 
-          icon: 'fas fa-chart-line', 
-          route: '/educacion/seguimiento', 
-          color: 'stats',
-          description: 'Seguimiento académico',
-          isActive: true
-        }
-      ],
-      quickActions: [
-        { 
-          id: 'nuevo-estudiante', 
-          label: 'Nuevo Estudiante', 
-          icon: 'fas fa-user-plus', 
-          action: 'nuevo-estudiante',
-          route: '/educacion/estudiantes/nuevo',
-          isVisible: true
-        },
-        { 
-          id: 'programar-taller', 
-          label: 'Programar Taller', 
-          icon: 'fas fa-calendar-plus', 
-          action: 'programar-taller',
-          route: '/educacion/talleres/nuevo',
-          isVisible: true
-        },
-        { 
-          id: 'reporte-progreso', 
-          label: 'Reporte de Progreso', 
-          icon: 'fas fa-chart-bar', 
-          action: 'reporte-progreso',
-          route: '/educacion/reportes',
-          isVisible: true
-        }
-      ],
-      notifications: { 
-        estudiantes: 0, 
-        evaluaciones: 0, 
-        talleres: 0 
-      },
-      stats: { 
-        estudiantesActivos: 0, 
-        talleresHoy: 0, 
-        evaluacionesPendientes: 0 
-      }
+      modules: [...this.commonClinicalModules],
+      quickActions: [],
+      notifications: {},
+      stats: {}
     },
 
+    // ========================================
+    // FISIOTERAPIA
+    // ========================================
     'fisioterapia': {
       title: 'FISIOTERAPIA',
       subtitle: 'Gestión de servicios de fisioterapia y rehabilitación',
       theme: 'therapy',
       layout: 'grid',
-      modules: [
-        { 
-          id: 'pacientes-fisio', 
-          name: 'Pacientes', 
-          icon: 'fas fa-walking', 
-          route: '/fisioterapia/pacientes', 
-          color: 'patients',
-          description: 'Pacientes en rehabilitación',
-          isActive: true
-        },
-        { 
-          id: 'terapias', 
-          name: 'Terapias', 
-          icon: 'fas fa-dumbbell', 
-          route: '/fisioterapia/terapias', 
-          color: 'doctors',
-          description: 'Sesiones de terapia',
-          isActive: true
-        },
-        { 
-          id: 'citas-fisio', 
-          name: 'Citas', 
-          icon: 'fas fa-calendar-check', 
-          route: '/fisioterapia/citas', 
-          color: 'calendar',
-          description: 'Programación de citas',
-          isActive: true
-        },
-        { 
-          id: 'equipos', 
-          name: 'Equipos', 
-          icon: 'fas fa-tools', 
-          route: '/fisioterapia/equipos', 
-          color: 'exchange',
-          description: 'Equipos de rehabilitación',
-          isActive: true
-        },
-        { 
-          id: 'ejercicios', 
-          name: 'Ejercicios', 
-          icon: 'fas fa-running', 
-          route: '/fisioterapia/ejercicios', 
-          color: 'reports',
-          description: 'Rutinas de ejercicios',
-          isActive: true
-        },
-        { 
-          id: 'progreso', 
-          name: 'Progreso', 
-          icon: 'fas fa-chart-line', 
-          route: '/fisioterapia/progreso', 
-          color: 'stats',
-          description: 'Seguimiento de progreso',
-          isActive: true
-        }
-      ],
-      quickActions: [
-        { 
-          id: 'nueva-sesion', 
-          label: 'Nueva Sesión', 
-          icon: 'fas fa-plus', 
-          action: 'nueva-sesion',
-          route: '/fisioterapia/sesiones/nueva',
-          isVisible: true
-        },
-        { 
-          id: 'evaluar-paciente', 
-          label: 'Evaluar Paciente', 
-          icon: 'fas fa-stethoscope', 
-          action: 'evaluar-paciente',
-          route: '/fisioterapia/evaluaciones',
-          isVisible: true
-        },
-        { 
-          id: 'plan-ejercicios', 
-          label: 'Plan de Ejercicios', 
-          icon: 'fas fa-list-alt', 
-          action: 'plan-ejercicios',
-          route: '/fisioterapia/planes',
-          isVisible: true
-        }
-      ],
-      notifications: { 
-        citas: 0, 
-        evaluaciones: 0, 
-        seguimientos: 0 
-      },
-      stats: { 
-        pacientesHoy: 0, 
-        sesionesCompletadas: 0, 
-        equiposDisponibles: 0 
-      }
+      modules: [...this.commonClinicalModules],
+      quickActions: [],
+      notifications: {},
+      stats: {}
     },
 
+    // ========================================
+    // MEDICINA GENERAL
+    // ========================================
     'medicina-general': {
       title: 'MEDICINA GENERAL',
       subtitle: 'Atención médica general y consultas',
       theme: 'medical',
       layout: 'grid',
-      modules: [
-        { 
-          id: 'consultas', 
-          name: 'Consultas', 
-          icon: 'fas fa-stethoscope', 
-          route: '/medicina/consultas', 
-          color: 'patients',
-          description: 'Consultas médicas',
-          isActive: true
-        },
-        { 
-          id: 'diagnosticos', 
-          name: 'Diagnósticos', 
-          icon: 'fas fa-diagnoses', 
-          route: '/medicina/diagnosticos', 
-          color: 'doctors',
-          description: 'Diagnósticos médicos',
-          isActive: true
-        },
-        { 
-          id: 'recetas', 
-          name: 'Recetas', 
-          icon: 'fas fa-prescription', 
-          route: '/medicina/recetas', 
-          color: 'calendar',
-          description: 'Recetas médicas',
-          isActive: true
-        },
-        { 
-          id: 'historiales', 
-          name: 'Historiales', 
-          icon: 'fas fa-file-medical-alt', 
-          route: '/medicina/historiales', 
-          color: 'exchange',
-          description: 'Historiales clínicos',
-          isActive: true
-        },
-        { 
-          id: 'examenes', 
-          name: 'Exámenes', 
-          icon: 'fas fa-vial', 
-          route: '/medicina/examenes', 
-          color: 'reports',
-          description: 'Exámenes médicos',
-          isActive: true
-        },
-        { 
-          id: 'seguimientos', 
-          name: 'Seguimientos', 
-          icon: 'fas fa-heartbeat', 
-          route: '/medicina/seguimientos', 
-          color: 'stats',
-          description: 'Seguimiento de pacientes',
-          isActive: true
-        }
-      ],
-      quickActions: [
-        { 
-          id: 'nueva-consulta', 
-          label: 'Nueva Consulta', 
-          icon: 'fas fa-plus', 
-          action: 'nueva-consulta',
-          route: '/medicina/consultas/nueva',
-          isVisible: true
-        },
-        { 
-          id: 'receta-rapida', 
-          label: 'Receta Rápida', 
-          icon: 'fas fa-prescription-bottle', 
-          action: 'receta-rapida',
-          route: '/medicina/recetas/nueva',
-          isVisible: true
-        },
-        { 
-          id: 'examen-urgente', 
-          label: 'Examen Urgente', 
-          icon: 'fas fa-exclamation-triangle', 
-          action: 'examen-urgente',
-          route: '/medicina/examenes/urgente',
-          isVisible: true
-        }
-      ],
-      notifications: { 
-        consultas: 0, 
-        recetas: 0, 
-        examenes: 0 
-      },
-      stats: { 
-        consultasHoy: 0, 
-        pacientesAtendidos: 0, 
-        recetasEmitidas: 0 
-      }
+      modules: [...this.commonClinicalModules],
+      quickActions: [],
+      notifications: {},
+      stats: {}
     },
 
+    // ========================================
+    // NUTRICIÓN
+    // ========================================
     'nutricion': {
       title: 'NUTRICIÓN',
       subtitle: 'Servicios de nutrición y dietética',
       theme: 'nutrition',
       layout: 'grid',
-      modules: [
-        { 
-          id: 'evaluaciones-nutri', 
-          name: 'Evaluaciones', 
-          icon: 'fas fa-weight', 
-          route: '/nutricion/evaluaciones', 
-          color: 'patients',
-          description: 'Evaluaciones nutricionales',
-          isActive: true
-        },
-        { 
-          id: 'planes-alimentarios', 
-          name: 'Planes', 
-          icon: 'fas fa-utensils', 
-          route: '/nutricion/planes', 
-          color: 'doctors',
-          description: 'Planes alimentarios',
-          isActive: true
-        },
-        { 
-          id: 'seguimiento-nutri', 
-          name: 'Seguimiento', 
-          icon: 'fas fa-chart-line', 
-          route: '/nutricion/seguimiento', 
-          color: 'calendar',
-          description: 'Seguimiento nutricional',
-          isActive: true
-        },
-        { 
-          id: 'recetas-nutri', 
-          name: 'Recetas', 
-          icon: 'fas fa-book', 
-          route: '/nutricion/recetas', 
-          color: 'exchange',
-          description: 'Recetas saludables',
-          isActive: true
-        },
-        { 
-          id: 'educacion-nutri', 
-          name: 'Educación', 
-          icon: 'fas fa-chalkboard-teacher', 
-          route: '/nutricion/educacion', 
-          color: 'reports',
-          description: 'Educación nutricional',
-          isActive: true
-        },
-        { 
-          id: 'reportes-nutri', 
-          name: 'Reportes', 
-          icon: 'fas fa-clipboard-list', 
-          route: '/nutricion/reportes', 
-          color: 'stats',
-          description: 'Reportes nutricionales',
-          isActive: true
-        }
-      ],
-      quickActions: [
-        { 
-          id: 'nueva-evaluacion', 
-          label: 'Nueva Evaluación', 
-          icon: 'fas fa-plus', 
-          action: 'nueva-evaluacion',
-          route: '/nutricion/evaluaciones/nueva',
-          isVisible: true
-        },
-        { 
-          id: 'plan-alimentario', 
-          label: 'Plan Alimentario', 
-          icon: 'fas fa-apple-alt', 
-          action: 'plan-alimentario',
-          route: '/nutricion/planes/nuevo',
-          isVisible: true
-        },
-        { 
-          id: 'consulta-nutricional', 
-          label: 'Consulta', 
-          icon: 'fas fa-comments', 
-          action: 'consulta-nutricional',
-          route: '/nutricion/consultas',
-          isVisible: true
-        }
-      ],
-      notifications: { 
-        evaluaciones: 0, 
-        planes: 0, 
-        seguimientos: 0 
-      },
-      stats: { 
-        evaluacionesHoy: 0, 
-        planesActivos: 0, 
-        consultasSemanales: 0 
-      }
+      modules: [...this.commonClinicalModules],
+      quickActions: [],
+      notifications: {},
+      stats: {}
     },
 
+    // ========================================
+    // PSICOLOGÍA
+    // ========================================
     'psicologia': {
       title: 'PSICOLOGÍA',
       subtitle: 'Servicios de salud mental y psicología',
       theme: 'psychology',
       layout: 'grid',
-      modules: [
-        { 
-          id: 'sesiones-psico', 
-          name: 'Sesiones', 
-          icon: 'fas fa-comments', 
-          route: '/psicologia/sesiones', 
-          color: 'patients',
-          description: 'Sesiones psicológicas',
-          isActive: true
-        },
-        { 
-          id: 'evaluaciones-psico', 
-          name: 'Evaluaciones', 
-          icon: 'fas fa-brain', 
-          route: '/psicologia/evaluaciones', 
-          color: 'doctors',
-          description: 'Evaluaciones psicológicas',
-          isActive: true
-        },
-        { 
-          id: 'terapias-psico', 
-          name: 'Terapias', 
-          icon: 'fas fa-heart', 
-          route: '/psicologia/terapias', 
-          color: 'calendar',
-          description: 'Terapias especializadas',
-          isActive: true
-        },
-        { 
-          id: 'casos', 
-          name: 'Casos', 
-          icon: 'fas fa-folder-open', 
-          route: '/psicologia/casos', 
-          color: 'exchange',
-          description: 'Casos clínicos',
-          isActive: true
-        },
-        { 
-          id: 'grupos', 
-          name: 'Grupos', 
-          icon: 'fas fa-users', 
-          route: '/psicologia/grupos', 
-          color: 'reports',
-          description: 'Terapias grupales',
-          isActive: true
-        },
-        { 
-          id: 'recursos-psico', 
-          name: 'Recursos', 
-          icon: 'fas fa-book-medical', 
-          route: '/psicologia/recursos', 
-          color: 'stats',
-          description: 'Recursos terapéuticos',
-          isActive: true
-        }
-      ],
-      quickActions: [
-        { 
-          id: 'nueva-sesion-psico', 
-          label: 'Nueva Sesión', 
-          icon: 'fas fa-plus', 
-          action: 'nueva-sesion-psico',
-          route: '/psicologia/sesiones/nueva',
-          isVisible: true
-        },
-        { 
-          id: 'evaluacion-psico', 
-          label: 'Evaluación', 
-          icon: 'fas fa-clipboard-check', 
-          action: 'evaluacion-psico',
-          route: '/psicologia/evaluaciones/nueva',
-          isVisible: true
-        },
-        { 
-          id: 'terapia-grupal', 
-          label: 'Terapia Grupal', 
-          icon: 'fas fa-users', 
-          action: 'terapia-grupal',
-          route: '/psicologia/grupos/nueva',
-          isVisible: true
-        }
-      ],
-      notifications: { 
-        sesiones: 0, 
-        evaluaciones: 0, 
-        casos: 0 
-      },
-      stats: { 
-        sesionesHoy: 0, 
-        casosActivos: 0, 
-        terapiasGrupales: 0 
-      }
+      modules: [...this.commonClinicalModules],
+      quickActions: [],
+      notifications: {},
+      stats: {}
     }
   };
 
@@ -709,7 +317,6 @@ export class GestionClinicaService {
    * Establecer módulo actual
    */
   setCurrentModule(moduleType: ModuleType): void {
-    // Eliminar el loading al cambiar módulos
     this.currentModuleSubject.next(moduleType);
     const config = this.getModuleConfiguration(moduleType);
     this.dashboardConfigSubject.next(config);
@@ -728,7 +335,6 @@ export class GestionClinicaService {
   updateModuleStats(stats: Partial<ModuleStats>): void {
     const currentConfig = this.dashboardConfigSubject.value;
     if (currentConfig) {
-      // Filtrar valores undefined antes de la actualización
       const filteredStats = Object.fromEntries(
         Object.entries(stats).filter(([_, value]) => value !== undefined)
       ) as ModuleStats;
@@ -747,7 +353,6 @@ export class GestionClinicaService {
   updateModuleNotifications(notifications: Partial<ModuleNotifications>): void {
     const currentConfig = this.dashboardConfigSubject.value;
     if (currentConfig) {
-      // Filtrar valores undefined antes de la actualización
       const filteredNotifications = Object.fromEntries(
         Object.entries(notifications).filter(([_, value]) => value !== undefined && typeof value === 'number')
       ) as ModuleNotifications;
@@ -778,14 +383,7 @@ export class GestionClinicaService {
    * Obtener acciones rápidas visibles
    */
   getVisibleQuickActions(userPermissions: string[] = []): QuickAction[] {
-    const currentConfig = this.dashboardConfigSubject.value;
-    if (!currentConfig) return [];
-
-    return currentConfig.quickActions.filter(action => {
-      if (!action.isVisible) return false;
-      if (!action.permissions) return true;
-      return action.permissions.some(permission => userPermissions.includes(permission));
-    });
+    return []; // Sin acciones rápidas
   }
 
   /**
@@ -810,25 +408,7 @@ export class GestionClinicaService {
    * Ejecutar acción rápida
    */
   executeQuickAction(actionId: string): Observable<boolean> {
-    const currentConfig = this.dashboardConfigSubject.value;
-    if (!currentConfig) return of(false);
-
-    const action = currentConfig.quickActions.find(a => a.id === actionId);
-    if (!action) return of(false);
-
-    this.setLoading(true);
-
-    // Simular ejecución de acción
-    return new Observable(observer => {
-      setTimeout(() => {
-        if (action.route) {
-          this.router.navigate([action.route]);
-        }
-        this.setLoading(false);
-        observer.next(true);
-        observer.complete();
-      }, 500);
-    });
+    return of(false); // Sin acciones rápidas
   }
 
   /**
@@ -838,10 +418,7 @@ export class GestionClinicaService {
     return new Observable(observer => {
       this.setLoading(true);
       
-      // Simular carga de datos
       setTimeout(() => {
-        // Aquí harías las llamadas reales a la API
-        // Por ahora solo simulamos
         const currentModule = this.currentModuleSubject.value;
         const config = this.getModuleConfiguration(currentModule);
         this.dashboardConfigSubject.next(config);

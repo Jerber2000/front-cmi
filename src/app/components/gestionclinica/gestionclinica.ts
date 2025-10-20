@@ -1,9 +1,9 @@
-// gestionclinica.component.ts - Versión mejorada
+// gestionclinica.component.ts - Versión actualizada sin quickActions
 import { Component, OnInit, OnDestroy, AfterViewInit, ChangeDetectionStrategy, inject } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Observable, Subject, combineLatest } from 'rxjs';
-import { takeUntil, map, startWith } from 'rxjs/operators';
+import { takeUntil, map } from 'rxjs/operators';
 import { ArchivoService } from '../../services/archivo.service';
 
 import { SidebarComponent } from '../sidebar/sidebar.component';
@@ -11,18 +11,16 @@ import {
   GestionClinicaService, 
   DashboardConfig, 
   ModuleConfig, 
-  QuickAction, 
   ModuleType 
 } from '../../services/gestionclinica.service';
 
 // Interface para información del usuario
 interface UserInfo {
   name: string;
-  avatar?: string; // Mantener solo string | undefined
+  avatar?: string;
   permissions?: string[];
   role?: string;
 }
-
 
 // Interface para estadísticas formateadas
 interface FormattedStat {
@@ -30,14 +28,6 @@ interface FormattedStat {
   value: string | number;
   icon?: string;
   color?: string;
-}
-
-// Interface para notificaciones formateadas
-interface FormattedNotification {
-  label: string;
-  count: number;
-  icon?: string;
-  route?: string;
 }
 
 @Component({
@@ -52,8 +42,9 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
   
   // Servicios inyectados
   private readonly gestionService = inject(GestionClinicaService);
-  public readonly router = inject(Router); // Cambiar a public para acceso en template
+  public readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly archivoService = inject(ArchivoService);
   
   // Subject para cleanup
   private readonly destroy$ = new Subject<void>();
@@ -69,7 +60,6 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
   public readonly dashboardConfig$ = this.gestionService.dashboardConfig$;
   public readonly loading$ = this.gestionService.loading$;
   public readonly currentModule$ = this.gestionService.currentModule$;
-  private readonly archivoService = inject(ArchivoService);
 
   // Propiedades del componente
   public sidebarExpanded = true;
@@ -93,7 +83,6 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
       config,
       module,
       activeModules: config ? this.getFilteredModules(config.modules) : [],
-      visibleActions: config ? this.getFilteredActions(config.quickActions) : [],
       formattedStats: config ? this.formatStats(config.stats) : [],
       totalNotifications: this.gestionService.getTotalNotifications()
     }))
@@ -125,14 +114,12 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
    * Configurar suscripciones
    */
   private setupSubscriptions(): void {
-    // Escuchar cambios en la ruta
     this.router.events.pipe(
       takeUntil(this.destroy$)
     ).subscribe(() => {
       this.detectAndSetModule();
     });
 
-    // Escuchar cambios en el módulo actual
     this.currentModule$.pipe(
       takeUntil(this.destroy$)
     ).subscribe(module => {
@@ -180,7 +167,7 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
       }
     } catch (error) {
       console.error('Error al cargar información del usuario:', error);
-      this.userInfo = { name: 'Usuario', permissions: [] }; // Sin avatar property
+      this.userInfo = { name: 'Usuario', permissions: [] };
     }
   }
 
@@ -188,33 +175,8 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
    * Obtener URL pública de archivos
    */
   private obtenerUrlPublica(ruta: string): string | undefined {
-  const result = this.archivoService.obtenerUrlPublica(ruta);
-  return result || undefined; // Convertir null a undefined
-}
-
-  /**
-   * Verificar estado del sidebar
-   */
-  private checkSidebarState(): void {
-    const checkSidebar = () => {
-      const sidebar = document.querySelector('.sidebar-container');
-      if (sidebar) {
-        this.sidebarExpanded = sidebar.classList.contains('expanded');
-      }
-    };
-
-    setTimeout(checkSidebar, 100);
-
-    // Observer para cambios en el sidebar
-    const observer = new MutationObserver(checkSidebar);
-    const sidebar = document.querySelector('.sidebar-container');
-    
-    if (sidebar) {
-      observer.observe(sidebar, {
-        attributes: true,
-        attributeFilter: ['class']
-      });
-    }
+    const result = this.archivoService.obtenerUrlPublica(ruta);
+    return result || undefined;
   }
 
   /**
@@ -225,17 +187,6 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
       if (!module.isActive) return false;
       if (!module.permissions) return true;
       return this.userHasPermission(module.permissions);
-    });
-  }
-
-  /**
-   * Filtrar acciones según permisos del usuario
-   */
-  private getFilteredActions(actions: QuickAction[]): QuickAction[] {
-    return actions.filter(action => {
-      if (!action.isVisible) return false;
-      if (!action.permissions) return true;
-      return this.userHasPermission(action.permissions);
     });
   }
 
@@ -270,21 +221,7 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
     const labels: { [key: string]: string } = {
       'pacientesHoy': 'Pacientes Hoy',
       'citasPendientes': 'Citas Pendientes',
-      'reportesGenerados': 'Reportes Generados',
-      'sesionesCompletadas': 'Sesiones Completadas',
-      'estudiantesActivos': 'Estudiantes Activos',
-      'talleresHoy': 'Talleres Hoy',
-      'evaluacionesPendientes': 'Evaluaciones Pendientes',
-      'equiposDisponibles': 'Equipos Disponibles',
-      'consultasHoy': 'Consultas Hoy',
-      'pacientesAtendidos': 'Pacientes Atendidos',
-      'recetasEmitidas': 'Recetas Emitidas',
-      'evaluacionesHoy': 'Evaluaciones Hoy',
-      'planesActivos': 'Planes Activos',
-      'consultasSemanales': 'Consultas Semanales',
-      'sesionesHoy': 'Sesiones Hoy',
-      'casosActivos': 'Casos Activos',
-      'terapiasGrupales': 'Terapias Grupales'
+      'reportesGenerados': 'Reportes Generados'
     };
     return labels[key] || key.charAt(0).toUpperCase() + key.slice(1);
   }
@@ -296,11 +233,7 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
     const icons: { [key: string]: string } = {
       'pacientesHoy': 'fas fa-users',
       'citasPendientes': 'fas fa-clock',
-      'reportesGenerados': 'fas fa-chart-line',
-      'sesionesCompletadas': 'fas fa-check-circle',
-      'estudiantesActivos': 'fas fa-user-graduate',
-      'consultasHoy': 'fas fa-stethoscope',
-      'equiposDisponibles': 'fas fa-tools'
+      'reportesGenerados': 'fas fa-chart-line'
     };
     return icons[key] || 'fas fa-info-circle';
   }
@@ -312,15 +245,10 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
     const colors: { [key: string]: string } = {
       'pacientesHoy': 'primary',
       'citasPendientes': 'warning',
-      'reportesGenerados': 'success',
-      'sesionesCompletadas': 'info',
-      'estudiantesActivos': 'primary',
-      'consultasHoy': 'secondary',
-      'equiposDisponibles': 'success'
+      'reportesGenerados': 'success'
     };
     return colors[key] || 'primary';
   }
-
 
   /**
    * Navegar a una ruta específica
@@ -335,36 +263,11 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   /**
-   * Ejecutar acción rápida
-   */
-  public quickAction(actionId: string): void {
-    if (!actionId) {
-      console.warn('ID de acción no válido');
-      return;
-    }
-
-    this.gestionService.executeQuickAction(actionId).subscribe({
-      next: (success) => {
-        if (success) {
-          console.log(`Acción ${actionId} ejecutada correctamente`);
-        } else {
-          console.warn(`Error al ejecutar acción ${actionId}`);
-        }
-      },
-      error: (error) => {
-        console.error(`Error en acción ${actionId}:`, error);
-      }
-    });
-  }
-
-
-  /**
    * Manejar toggle del sidebar
    */
- public onSidebarToggle(event: any): void {
-  this.sidebarExpanded = event.expanded || event.detail?.expanded || event;
-}
-
+  public onSidebarToggle(event: any): void {
+    this.sidebarExpanded = event.expanded || event.detail?.expanded || event;
+  }
 
   /**
    * Track by function para ngFor optimizado
@@ -373,26 +276,8 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
     return module.id;
   }
 
-  public trackByActionId(index: number, action: QuickAction): string {
-    return action.id;
-  }
-
   public trackByStatLabel(index: number, stat: FormattedStat): string {
     return stat.label;
-  }
-
-  /**
-   * Obtener título para el módulo actual
-   */
-  public getTitle(config: DashboardConfig | null): string {
-    return config?.title || 'GESTIÓN CLÍNICA';
-  }
-
-  /**
-   * Obtener subtítulo para el módulo actual
-   */
-  public getSubtitle(config: DashboardConfig | null): string {
-    return config?.subtitle || 'Sistema de gestión';
   }
 
   /**
@@ -410,33 +295,9 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   /**
-   * Verificar si hay acciones rápidas disponibles
-   */
-  public hasQuickActions(actions: QuickAction[]): boolean {
-    return actions && actions.length > 0;
-  }
-
-  /**
    * Obtener total de notificaciones
    */
   public getTotalNotifications(): number {
     return this.gestionService.getTotalNotifications();
-  }
-
-  /**
-   * Obtener array de estadísticas (para compatibilidad con template)
-   */
-  public getStatsArray(): FormattedStat[] {
-    const config = this.dashboardConfig$;
-    // Esta función se mantiene para compatibilidad, pero se recomienda usar dashboardData$
-    return [];
-  }
-
-  /**
-   * Obtener array de notificaciones (para compatibilidad con template)
-   */
-  public getNotificationsArray(): FormattedNotification[] {
-    // Esta función se mantiene para compatibilidad, pero se recomienda usar dashboardData$
-    return [];
   }
 }
