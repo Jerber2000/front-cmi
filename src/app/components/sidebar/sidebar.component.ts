@@ -80,9 +80,9 @@ export class SidebarComponent {
     {
       label: 'Cerrar Sesion',
       icon: 'fas fa-sign-out-alt',
-      roles: [1,2,5,6],
+      roles: [1,2,3,4,5,6,7],
       children: [
-        { label: 'Cerrar Sesion', route: '/logout/logout', roles: [1,2,5,6] }
+        { label: 'Cerrar Sesion', route: '/logout/logout', roles: [1,2,3,4,5,6,7] }
       ]
     }
   ];

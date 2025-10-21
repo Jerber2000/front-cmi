@@ -230,7 +230,9 @@ export class AgendaComponent implements OnInit, AfterViewInit {
         this.usuario = usuariosPorRol;
       },
       error: (error) => {
-        console.error('Error al cargar los usuarios por roles: ', error);
+        if (error.status === 403) {
+          return;
+        }
         this.alerta.alertaError('Error al cargar los usuarios por roles');
       }
     });
@@ -242,7 +244,9 @@ export class AgendaComponent implements OnInit, AfterViewInit {
         this.paciente = listadoUsuario;
       },
       error: (error) => {
-        console.error('Error al cargar los pacientes: ', error);
+        if (error.status === 403) {
+          return;
+        }
         this.alerta.alertaError('Error al cargar pacientes');
       }
     });
@@ -419,13 +423,14 @@ export class AgendaComponent implements OnInit, AfterViewInit {
           this.loading = false;
         },
         error: (error) => {
-          console.error('Error cargando citas:', error);
-          this.alerta.alertaError('Error al cargar las citas');
           this.loading = false;
+          if (error.status === 403) {
+            return;
+          }
+          this.alerta.alertaError('Error al cargar las citas');
         }
       });
     } catch (error) {
-      console.error('Error cargando citas:', error);
       this.alerta.alertaError('Error al cargar las citas');
       this.loading = false;
     }
@@ -631,9 +636,12 @@ export class AgendaComponent implements OnInit, AfterViewInit {
           this.loading = false;
         },
         error: (error) => {
-          console.error('Error al crear cita:', error);
-          this.alerta.alertaError('Error interno del servidor');
           this.loading = false;
+          if (error.status === 403) {
+            return;
+          }
+          
+          this.alerta.alertaError('Error al crear cita. Intenta nuevamente.');
         }
       });
     } else if (this.modalMode === 'edit' && this.selectedCita) {
@@ -656,9 +664,11 @@ export class AgendaComponent implements OnInit, AfterViewInit {
           this.loading = false;
         },
         error: (error) => {
-          console.error('Error al actualizar cita:', error);
-          this.alerta.alertaError('Error interno del servidor');
           this.loading = false;
+          if (error.status === 403) {
+            return;
+          }
+          this.alerta.alertaError('Error interno del servidor');
         }
       });
     }
@@ -696,9 +706,11 @@ export class AgendaComponent implements OnInit, AfterViewInit {
         this.loading = false;
       },
       error: (error) => {
-        console.error('Error al eliminar cita:', error);
-        this.alerta.alertaError('Error al eliminar la cita');
         this.loading = false;
+        if (error.status === 403) {
+          return;
+        }
+        this.alerta.alertaError('Error al eliminar la cita');
       }
     });
   }
@@ -779,9 +791,11 @@ export class AgendaComponent implements OnInit, AfterViewInit {
         this.loadingReporte = false;
       },
       error: (error) => {
-        console.error('Error al generar reporte:', error);
-        this.alerta.alertaError('Error al generar el reporte de transportes');
         this.loadingReporte = false;
+        if (error.status === 403) {
+          return;
+        }
+        this.alerta.alertaError('Error al generar el reporte de transportes');
       }
     });
   }
