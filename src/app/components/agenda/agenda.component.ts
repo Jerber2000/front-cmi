@@ -119,6 +119,7 @@ export class AgendaComponent implements OnInit, AfterViewInit {
   selectedDate: string = '';
   selectedCita: CitaRequest | null = null;
   selectedMedico: string = '';
+  isSelectDisabled: boolean = false;
   currentView: string = 'dayGridMonth';
   loading = false;
   searchTerm: string = '';
@@ -213,7 +214,6 @@ export class AgendaComponent implements OnInit, AfterViewInit {
       console.error('Error al obtener el ID del usuario desde localStorage:', error);
     }
     
-    // Valor por defecto si no se puede obtener
     return '1';
   }
 
@@ -225,17 +225,56 @@ export class AgendaComponent implements OnInit, AfterViewInit {
   }
 
   cargarUsuariosPorRol(): void {
-    this.UsuarioService.obtenerUsuariosPorRol(2).subscribe({
-      next: (usuariosPorRol) => {
-        this.usuario = usuariosPorRol;
-      },
-      error: (error) => {
-        if (error.status === 403) {
-          return;
+    const usuarioData = localStorage.getItem('usuario');
+
+    if (!usuarioData) {
+      console.error('No hay datos de usuario en localStorage');
+      return;
+    }
+
+    const usuario = JSON.parse(usuarioData);
+    const usuarioRol = usuario.fkrol;
+
+    if(usuarioRol == 1 || usuarioRol == 5 || usuarioRol == 4){
+      this.UsuarioService.obtenerUsuariosPorRol('2,6,7').subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            this.usuario = response.data;
+          } else {
+            this.usuario = [];
+            this.alerta.alertaInfo(response.message || 'No se encontraron usuarios');
+          }
+        },
+        error: (error) => {
+          if (error.status === 403) {
+            return;
+          }
+          this.alerta.alertaError('Error al cargar los usuarios por roles');
         }
-        this.alerta.alertaError('Error al cargar los usuarios por roles');
-      }
-    });
+      });
+    } else {
+      const currentUserId = this.getCurrentUserId();
+      this.isSelectDisabled = true;
+      this.selectedMedico = currentUserId;
+
+      this.UsuarioService.obtenerUsuarioPorId(parseInt(currentUserId)).subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            this.usuario = [response.data];
+            this.filtrarPorMedico();
+          } else {
+            this.usuario = [];
+            this.alerta.alertaInfo(response.message || 'No se encontró el usuario');
+          }
+        },
+        error: (error) => {
+          if(error.status === 403){
+            return;
+          }
+          this.alerta.alertaError('Error al cargar los usuarios por id');
+        }
+      });
+    }
   }
 
   ListarPacientes(): void {

@@ -30,6 +30,7 @@
             class="form-select form-select-sm"
             [(ngModel)]="selectedMedico"
             (change)="filtrarPorMedico()"
+            [disabled]="isSelectDisabled"
             title="Filtrar por médico">
             <option value="">Todos los profesionales</option>
             <option *ngFor="let medico of usuario" [value]="medico.idusuario">
