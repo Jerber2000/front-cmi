@@ -21,6 +21,7 @@ import { AlertaService } from '../../services/alerta.service';
 import { Paciente, ServicioPaciente } from '../../services/paciente.service';
 import { AgendaService, CitaRequest } from '../../services/agenda.service';
 import { PdfExcelReporteriaService } from '../../services/pdf-excel-reporteria.service';
+import { HasRoleDirective } from '../../directives/has-role.directive';
 
 // Interfaces
 export interface Cita {
@@ -61,7 +62,8 @@ export interface ApiResponse<T> {
     FormsModule,
     ReactiveFormsModule,
     FullCalendarModule,
-    SidebarComponent
+    SidebarComponent,
+    HasRoleDirective
   ],
   templateUrl: './agenda.component.html',
   styleUrls: ['./agenda.component.css']
@@ -236,7 +238,7 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     const usuarioRol = usuario.fkrol;
 
     if(usuarioRol == 1 || usuarioRol == 5 || usuarioRol == 4){
-      this.UsuarioService.obtenerUsuariosPorRol('2,6,7').subscribe({
+      this.UsuarioService.obtenerUsuariosPorRol('2,6,7,12,13,15').subscribe({
         next: (response) => {
           if (response.success && response.data) {
             this.usuario = response.data;
@@ -254,7 +256,7 @@ export class AgendaComponent implements OnInit, AfterViewInit {
       });
     } else {
       const currentUserId = this.getCurrentUserId();
-      this.isSelectDisabled = true;
+      // this.isSelectDisabled = true;
       this.selectedMedico = currentUserId;
 
       this.UsuarioService.obtenerUsuarioPorId(parseInt(currentUserId)).subscribe({
@@ -272,6 +274,22 @@ export class AgendaComponent implements OnInit, AfterViewInit {
             return;
           }
           this.alerta.alertaError('Error al cargar los usuarios por id');
+        }
+      });
+      this.UsuarioService.obtenerUsuariosPorRol('2,6,7,12,13,15').subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            this.usuario = response.data;
+          } else {
+            this.usuario = [];
+            this.alerta.alertaInfo(response.message || 'No se encontraron usuarios');
+          }
+        },
+        error: (error) => {
+          if (error.status === 403) {
+            return;
+          }
+          this.alerta.alertaError('Error al cargar los usuarios por roles');
         }
       });
     }
