@@ -3,6 +3,7 @@ import type { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { cambioClaveGuard } from './guards/cambioClave.guard';
 import { roleGuard } from './guards/role.guard';
+import { InventarioSalidaComponent } from './components/inventarioSalida/inventarioSalida.component';
 
 export const routes: Routes = [
   {
@@ -99,6 +100,12 @@ export const routes: Routes = [
       import('./components/inventario/inventario.component').then(m => m.InventarioComponent),
     canActivate: [authGuard, roleGuard],
     data: { roles: [1,2,5,6] } //administracion, medico-general, sistemas, fisioterapeuta
+  },
+  {
+    path: 'salida-inventario',
+    loadComponent: () =>
+      import('./components/inventarioSalida/inventarioSalida.component').then(m => m.InventarioSalidaComponent),
+    canActivate: [authGuard, roleGuard]
   },
   {
     path: 'educacion-inclusiva',

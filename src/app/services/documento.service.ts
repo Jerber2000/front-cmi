@@ -4,12 +4,19 @@ import { Observable, of } from 'rxjs';
 import { tap, catchError, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment.development';
 
+export interface Clinica {
+  idclinica: number;
+  nombreclinica: string;
+}
+
 export interface Documento {
   iddocumento: number;
   nombredocumento: string;
   descripcion?: string;
   rutadocumento: string;
   urlPublica?: string | null;
+  fkclinica: number;
+  clinica?: Clinica;
   usuariocreacion: string;
   fechacreacion: Date;
   usuariomodificacion?: string;
@@ -29,6 +36,7 @@ export interface DocumentoResponse {
 })
 export class DocumentoService {
   private apiUrl = `${environment.apiUrl}/documentos`;
+  private clinicaUrl = `${environment.apiUrl}/documentos/clinicas/listar`; // ← AGREGAR ESTA LÍNEA
 
   constructor(private http: HttpClient) {}
 
@@ -43,14 +51,35 @@ export class DocumentoService {
   }
 
   /**
+   * Obtener lista de clínicas
+   */
+  obtenerClinicas(): Observable<Clinica[]> {
+    return this.http.get<any>(this.clinicaUrl, {
+      headers: this.getHeaders()
+    }).pipe(
+      map(response => {
+        if (response && response.success && response.data && Array.isArray(response.data)) {
+          return response.data;
+        }
+        return [];
+      }),
+      catchError(error => {
+        console.error('Error al obtener clínicas:', error);
+        return of([]);
+      })
+    );
+  }
+
+  /**
    * Listar documentos
    */
-  listarDocumentos(filtros?: { estado?: number; busqueda?: string }): Observable<Documento[]> {
+  listarDocumentos(filtros?: { estado?: number; busqueda?: string; fkclinica?: number }): Observable<Documento[]> {
     let params = '';
     if (filtros) {
       const queryParams = [];
       if (filtros.estado !== undefined) queryParams.push(`estado=${filtros.estado}`);
       if (filtros.busqueda) queryParams.push(`busqueda=${filtros.busqueda}`);
+      if (filtros.fkclinica) queryParams.push(`fkclinica=${filtros.fkclinica}`);
       if (queryParams.length > 0) params = '?' + queryParams.join('&');
     }
 
@@ -185,13 +214,13 @@ export class DocumentoService {
   /**
    * Formatear tamaño de archivo
    */
-formatearTamano(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
+  formatearTamano(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
 
   /**
    * Validar archivo PDF

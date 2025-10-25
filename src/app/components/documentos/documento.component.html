@@ -24,10 +24,22 @@
           placeholder="Buscar documentos..."
           [(ngModel)]="searchTerm"
           (input)="buscarDocumentos()"
-        >
+        >        
         <button class="btn-add" (click)="showForm()" *ngIf="currentView === 'list'" title="Nuevo Documento">
           <i class="fas fa-plus"></i>
         </button>
+        <!-- ← AGREGAR SELECT DE CLÍNICA -->
+        <select 
+          class="clinica-filter" 
+          [(ngModel)]="selectedClinicaFilter"
+          (ngModelChange)="filtrarPorClinica()"
+        >
+          <option [value]="null">Todas las clínicas</option>
+          <option *ngFor="let clinica of clinicas" [value]="clinica.idclinica">
+            {{ clinica.nombreclinica }}
+          </option>
+        </select>
+
       </div>
       
       <div class="header-info">
@@ -45,6 +57,7 @@
         <thead>
           <tr>
             <th>Nombre del Documento</th>
+            <th>Clínica</th> <!-- ← AGREGAR ESTA COLUMNA -->
             <th>Descripción</th>
             <th>Fecha Creación</th>
             <th>Estado</th>
@@ -57,6 +70,12 @@
           <tr *ngFor="let documento of paginatedDocumentos" class="table-row">
             <td class="user-name">
               {{ documento.nombredocumento }}
+            </td>
+            <!-- ← AGREGAR ESTA CELDA -->
+            <td>
+              <span class="clinica-badge">
+                {{ documento.clinica?.nombreclinica || 'Sin clínica' }}
+              </span>
             </td>
             <td>{{ documento.descripcion || 'Sin descripción' }}</td>
             <td>{{ formatearFecha(documento.fechacreacion) }}</td>
@@ -213,6 +232,24 @@
                 >
                 <div class="error-message" *ngIf="isFieldInvalid('nombredocumento')">
                   {{ getFieldError('nombredocumento') }}
+                </div>
+              </div>
+
+              <!-- ← AGREGAR ESTE CAMPO DE CLÍNICA -->
+              <div class="form-group full-width">
+                <label>Clínica *</label>
+                <select 
+                  formControlName="fkclinica"
+                  class="form-select"
+                  [class.invalid]="isFieldInvalid('fkclinica')"
+                >
+                  <option [value]="null" disabled>Seleccione una clínica</option>
+                  <option *ngFor="let clinica of clinicas" [value]="clinica.idclinica">
+                    {{ clinica.nombreclinica }}
+                  </option>
+                </select>
+                <div class="error-message" *ngIf="isFieldInvalid('fkclinica')">
+                  {{ getFieldError('fkclinica') }}
                 </div>
               </div>
 

@@ -12,7 +12,8 @@ import {
   FiltrosConsultas,
   FiltrosInventario,
   FiltrosAgenda,
-  FiltrosReferencias
+  FiltrosReferencias,
+  FiltrosSalidas 
 } from '../../services/reporteria.service';
 import { PdfExcelReporteriaService } from '../../services/pdf-excel-reporteria.service'; // 🆕 NUEVO
 import { ArchivoService } from '../../services/archivo.service';
@@ -37,7 +38,7 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
   userInfo: any = {};
   usuarioActual: any = null;
   dashboardData: DashboardData | null = null;
-  tipoReporteActivo: 'dashboard' | 'pacientes' | 'consultas' | 'inventario' | 'agenda' | 'referencias' = 'dashboard';
+  tipoReporteActivo: 'dashboard' | 'pacientes' | 'consultas' | 'inventario' | 'agenda' | 'referencias' | 'salidas' = 'dashboard';
   
   datosReporte: any[] = [];
   resumenReporte: any = null;
@@ -54,6 +55,10 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
   filtrosInventarioForm: FormGroup;
   filtrosAgendaForm: FormGroup;
   filtrosReferenciasForm: FormGroup;
+  filtrosSalidas: FiltrosSalidas = {
+    page: 1,
+    limit: 10
+  };
   
   aniosDisponibles: number[] = [];
   mesesDisponibles = [
@@ -184,14 +189,44 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
   
   cambiarTipoReporte(tipo: typeof this.tipoReporteActivo): void {
     this.tipoReporteActivo = tipo;
-    this.currentPage = 1;
+    this.resetearPaginacion();
     
     if (tipo === 'dashboard') {
       this.cargarDashboard();
-    } else {
-      this.cargarReporte();
+    } else if (tipo === 'pacientes') {
+      this.cargarReportePacientes();
+    } else if (tipo === 'consultas') {
+      this.cargarReporteConsultas();
+    } else if (tipo === 'inventario') {
+      this.cargarReporteInventario();
+    } else if (tipo === 'agenda') {
+      this.cargarReporteAgenda();
+    } else if (tipo === 'referencias') {
+      this.cargarReporteReferencias();
+    } else if (tipo === 'salidas') {  // 🆕 AGREGAR ESTE BLOQUE
+      this.cargarReporteSalidas();
     }
   }
+
+
+  aplicarFiltros(): void {
+    this.resetearPaginacion();
+    
+    if (this.tipoReporteActivo === 'pacientes') {
+      this.cargarReportePacientes();
+    } else if (this.tipoReporteActivo === 'consultas') {
+      this.cargarReporteConsultas();
+    } else if (this.tipoReporteActivo === 'inventario') {
+      this.cargarReporteInventario();
+    } else if (this.tipoReporteActivo === 'agenda') {
+      this.cargarReporteAgenda();
+    } else if (this.tipoReporteActivo === 'referencias') {
+      this.cargarReporteReferencias();
+    } else if (this.tipoReporteActivo === 'salidas') {  // 🆕 AGREGAR ESTE BLOQUE
+      this.cargarReporteSalidas();
+    }
+  }
+
   
   cargarDashboard(): void {
     this.loading = true;
@@ -207,7 +242,7 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
       }
     });
   }
-  
+    
   cargarReporte(): void {
     if (this.tipoReporteActivo === 'dashboard') {
       return;
@@ -230,6 +265,9 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
         break;
       case 'referencias':
         this.cargarReporteReferencias();
+        break;
+      case 'salidas':  // 🆕 AGREGAR ESTE CASE
+        this.cargarReporteSalidas();
         break;
       default:
         this.loadingReporte = false;
@@ -346,26 +384,57 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
       }
     });
   }
-  
+
+  cargarReporteSalidas(): void {
+    this.loadingReporte = true;
+    this.reporteriaService.obtenerReporteSalidas(this.filtrosSalidas).subscribe({
+      next: (reporte) => {
+        this.datosReporte = reporte.data;
+        this.resumenReporte = reporte.resumen;
+        this.totalItems = reporte.pagination.total;
+        this.currentPage = reporte.pagination.page;
+        this.itemsPerPage = reporte.pagination.limit;
+        this.totalPages = reporte.pagination.totalPages;
+        this.datosPaginados = [...this.datosReporte];
+        this.loadingReporte = false;
+      },
+      error: (error) => {
+        console.error('Error al cargar reporte de salidas:', error);
+        this.alerta.alertaError('Error al cargar reporte de salidas');
+        this.loadingReporte = false;
+      }
+    });
+  }
+    
   limpiarFiltros(): void {
-    switch (this.tipoReporteActivo) {
-      case 'pacientes':
-        this.filtrosPacientesForm.reset();
-        break;
-      case 'consultas':
-        this.filtrosConsultasForm.reset();
-        break;
-      case 'inventario':
-        this.filtrosInventarioForm.reset({ estado: 'activo' });
-        break;
-      case 'agenda':
-        this.filtrosAgendaForm.reset();
-        break;
-      case 'referencias':
-        this.filtrosReferenciasForm.reset();
-        break;
+    if (this.tipoReporteActivo === 'pacientes') {
+      this.filtrosPacientesForm.reset();  // ✅ Usa .reset() en los FormGroups
+      this.cargarReportePacientes();
+    } else if (this.tipoReporteActivo === 'consultas') {
+      this.filtrosConsultasForm.reset();
+      this.cargarReporteConsultas();
+    } else if (this.tipoReporteActivo === 'inventario') {
+      this.filtrosInventarioForm.reset();
+      this.cargarReporteInventario();
+    } else if (this.tipoReporteActivo === 'agenda') {
+      this.filtrosAgendaForm.reset();
+      this.cargarReporteAgenda();
+    } else if (this.tipoReporteActivo === 'referencias') {
+      this.filtrosReferenciasForm.reset();
+      this.cargarReporteReferencias();
+    } else if (this.tipoReporteActivo === 'salidas') {
+      // ✅ Para salidas SÍ usamos objeto directo porque no es FormGroup
+      this.filtrosSalidas = { page: 1, limit: 10 };
+      this.cargarReporteSalidas();
     }
-    this.cargarReporte();
+  }
+
+  resetearPaginacion(): void {
+    this.currentPage = 1;
+    this.datosReporte = [];
+    this.datosPaginados = [];
+    this.resumenReporte = null;
+    this.alertasReporte = null;
   }
   
   updatePagination(): void {

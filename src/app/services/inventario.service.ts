@@ -8,6 +8,7 @@ import { environment } from '../../environments/environment';
 export interface Medicamento {
   idmedicina: number;
   fkusuario: number;
+  codigoproducto?: string;
   nombre: string;
   descripcion?: string;
   unidades: number;
@@ -31,6 +32,7 @@ export interface Medicamento {
 
 export interface CrearMedicamentoRequest {
   fkusuario: number;
+  codigoproducto?: string;
   nombre: string;
   descripcion?: string;
   unidades?: number;
@@ -42,6 +44,7 @@ export interface CrearMedicamentoRequest {
 }
 
 export interface ActualizarMedicamentoRequest {
+  codigoproducto?: string;
   nombre: string;
   descripcion?: string;
   unidades?: number;

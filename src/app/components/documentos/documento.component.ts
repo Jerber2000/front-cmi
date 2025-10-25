@@ -2,7 +2,7 @@ import { Component, OnInit, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
-import { DocumentoService, Documento } from '../../services/documento.service';
+import { DocumentoService, Documento, Clinica } from '../../services/documento.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AlertaService } from '../../services/alerta.service';
 import { ArchivoService } from '../../services/archivo.service';
@@ -29,6 +29,10 @@ export class DocumentoComponent implements OnInit, AfterViewInit {
   sidebarExpanded = true;
   userInfo: any = {};
 
+  // ← AGREGAR ESTAS VARIABLES
+  clinicas: Clinica[] = [];
+  selectedClinicaFilter: number | null = null;
+
   selectedDocument: File | null = null;
   documentInfo: { name: string, size: number } | null = null;
 
@@ -47,12 +51,14 @@ export class DocumentoComponent implements OnInit, AfterViewInit {
   ) {
     this.documentoForm = this.fb.group({
       nombredocumento: ['', [Validators.required, Validators.minLength(3)]],
-      descripcion: ['']
+      descripcion: [''],
+      fkclinica: [null, [Validators.required]] // ← AGREGAR ESTE CAMPO
     });
   }
 
   ngOnInit(): void {
     this.loadUserInfo();
+    this.cargarClinicas(); // ← AGREGAR ESTA LÍNEA
     this.cargarDocumentos();
   }
 
@@ -96,6 +102,24 @@ export class DocumentoComponent implements OnInit, AfterViewInit {
     } catch (error) {
       console.error('Error al cargar información del usuario:', error);
     }
+  }
+
+  // ← AGREGAR ESTE MÉTODO
+  cargarClinicas(): void {
+    this.documentoService.obtenerClinicas().subscribe({
+      next: (clinicas) => {
+        this.clinicas = clinicas;
+      },
+      error: (error) => {
+        console.error('Error al cargar clínicas:', error);
+        this.alerta.alertaError('Error al cargar clínicas');
+      }
+    });
+  }
+
+  // ← AGREGAR ESTE MÉTODO
+  filtrarPorClinica(): void {
+    this.cargarDocumentos();
   }
 
   // PAGINACIÓN
@@ -167,7 +191,14 @@ export class DocumentoComponent implements OnInit, AfterViewInit {
   // CRUD OPERATIONS
   cargarDocumentos(): void {
     this.loading = true;
-    this.documentoService.listarDocumentos({ estado: 1 }).subscribe({
+    
+    // ← MODIFICAR ESTA LÍNEA PARA INCLUIR FILTRO DE CLÍNICA
+    const filtros: any = { estado: 1 };
+    if (this.selectedClinicaFilter) {
+      filtros.fkclinica = this.selectedClinicaFilter;
+    }
+    
+    this.documentoService.listarDocumentos(filtros).subscribe({
       next: (documentos) => {
         this.documentos = documentos.map(doc => ({
           ...doc,
@@ -193,7 +224,8 @@ export class DocumentoComponent implements OnInit, AfterViewInit {
       const term = this.searchTerm.toLowerCase();
       this.documentosFiltrados = this.documentos.filter(doc =>
         doc.nombredocumento.toLowerCase().includes(term) ||
-        (doc.descripcion && doc.descripcion.toLowerCase().includes(term))
+        (doc.descripcion && doc.descripcion.toLowerCase().includes(term)) ||
+        (doc.clinica?.nombreclinica && doc.clinica.nombreclinica.toLowerCase().includes(term))
       );
     }
     
@@ -223,7 +255,8 @@ export class DocumentoComponent implements OnInit, AfterViewInit {
 
     this.documentoForm.patchValue({
       nombredocumento: documento.nombredocumento || '',
-      descripcion: documento.descripcion || ''
+      descripcion: documento.descripcion || '',
+      fkclinica: documento.fkclinica || null // ← AGREGAR ESTA LÍNEA
     });
 
     if (documento.rutadocumento) {
@@ -335,7 +368,8 @@ export class DocumentoComponent implements OnInit, AfterViewInit {
   private getFieldDisplayName(fieldName: string): string {
     const fieldNames: { [key: string]: string } = {
       'nombredocumento': 'Nombre del documento',
-      'descripcion': 'Descripción'
+      'descripcion': 'Descripción',
+      'fkclinica': 'Clínica' // ← AGREGAR ESTA LÍNEA
     };
     return fieldNames[fieldName] || fieldName;
   }
@@ -353,6 +387,7 @@ export class DocumentoComponent implements OnInit, AfterViewInit {
       try {
         const formData = new FormData();
         formData.append('nombredocumento', this.documentoForm.value.nombredocumento);
+        formData.append('fkclinica', this.documentoForm.value.fkclinica); // ← AGREGAR ESTA LÍNEA
         
         if (this.documentoForm.value.descripcion) {
           formData.append('descripcion', this.documentoForm.value.descripcion);

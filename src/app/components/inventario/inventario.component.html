@@ -128,6 +128,7 @@
         <thead>
           <tr>
             <th>Medicamento</th>
+            <th>Código</th>
             <th>Unidades</th>
             <th>Precio Unit.</th>
             <th>Valor Total</th>
@@ -143,6 +144,11 @@
                 <strong>{{ medicamento.nombre }}</strong>
                 <small *ngIf="medicamento.descripcion">{{ medicamento.descripcion }}</small>
               </div>
+            </td>
+            <td>
+              <span class="codigo-badge">
+                {{ medicamento.codigoproducto || 'Sin código' }}
+              </span>
             </td>
             
             <td class="unidades-cell">
@@ -303,6 +309,21 @@
             >
             <div class="error-message" *ngIf="isFieldInvalid('nombre')">
               {{ getFieldError('nombre') }}
+            </div>
+          </div>
+
+          <div class="form-group full-width">
+            <label>Código de Producto <span class="optional">(opcional)</span></label>
+            <input 
+              type="text" 
+              formControlName="codigoproducto"
+              class="form-input"
+              [class.invalid]="isFieldInvalid('codigoproducto')"
+              placeholder="Ej: MED-001, PARA-500"
+              maxlength="50"
+            >
+            <div class="error-message" *ngIf="isFieldInvalid('codigoproducto')">
+              {{ getFieldError('codigoproducto') }}
             </div>
           </div>
 

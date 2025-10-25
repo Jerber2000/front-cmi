@@ -47,8 +47,7 @@ export class SidebarComponent {
       children: [
         { label: 'Pacientes', route: '/pacientes', roles: [1,2,5,6] },
         { label: 'Expedientes', route: '/expedientes', roles: [1,2,5,6] },
-        { label: 'Referidos', route: '/referidos', roles: [1,2,5,6] },
-        { label: 'Inventario', route: '/inventario', roles: [1,2,5,6] }
+        { label: 'Referidos', route: '/referidos', roles: [1,2,5,6] }
     ]
   },
     {
@@ -59,6 +58,8 @@ export class SidebarComponent {
         { label: 'Agenda', route: '/agenda', roles: [1,2,5,6] },
         { label: 'Reporteria', route: '/reporteria', roles: [1,5] },
         { label: 'Documentos', route: '/documentos', roles: [1,5] },
+        { label: 'Inventario', route: '/inventario', roles: [1,2,5,6] },
+        { label: 'Salida Inventario', route: '/salida-inventario', roles: [1,2,5,6] },
         { label: 'Administración', route: '/administracion', roles: [1,5] },
         { label: 'Educación Inclusiva', route: '/educacion-inclusiva', roles: [1,5] },
         { label: 'Fisioterapia', route: '/fisioterapia', roles: [1,5,6] },
