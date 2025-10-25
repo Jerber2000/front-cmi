@@ -963,3 +963,76 @@ $gray-dark: #495057;
   scrollbar-width: thin;
   scrollbar-color: #c1c1c1 $gray-light;
 }
+
+// Filtro de clínica en la barra de búsqueda
+.clinica-filter {
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  background-color: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 200px;
+
+  &:hover {
+    border-color: #4CAF50;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+  }
+}
+
+// Badge de clínica en la tabla
+.clinica-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+// Select en el formulario
+.form-select {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  background-color: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: #4CAF50;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+  }
+
+  &.invalid {
+    border-color: #f44336;
+    
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.1);
+    }
+  }
+}
+
+// Ajustar el wrapper de búsqueda para el nuevo select
+.search-wrapper {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex: 1;
+}

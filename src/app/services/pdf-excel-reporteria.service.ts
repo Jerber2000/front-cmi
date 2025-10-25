@@ -26,7 +26,7 @@ export class PdfExcelReporteriaService {
   ): Promise<void> {
     try {
       // Determinar orientación según tipo de reporte
-      const esHorizontal = ['pacientes', 'consultas', 'transporte'].includes(tipoReporte);
+      const esHorizontal = ['pacientes', 'consultas', 'transporte', 'salidas'].includes(tipoReporte);
       
       const doc = new jsPDF({
         orientation: esHorizontal ? 'landscape' : 'portrait',
@@ -68,9 +68,13 @@ export class PdfExcelReporteriaService {
           this.generarTablaReferenciasPDF(doc, datos, membretes, yPos);
           break;
         case 'transporte':
-          this.generarTablaTransportePDF(doc, datos, membretes, yPos);
+        this.generarTablaTransportePDF(doc, datos, membretes, yPos);
+        break;
+        case 'salidas':
+          this.generarTablaSalidasPDF(doc, datos, membretes, yPos);
           break;
-      }
+    }
+      
 
       const nombreArchivo = `reporte_${tipoReporte}_${Date.now()}.pdf`;
       doc.save(nombreArchivo);
@@ -602,7 +606,10 @@ export class PdfExcelReporteriaService {
         case 'transporte':
           worksheet = this.generarHojaTransporte(datos);
           break;
-        default:
+        case 'salidas':  // ✅ ANTES DEL DEFAULT
+          worksheet = this.generarHojaSalidas(datos);
+          break;
+        default:  // ✅ DEFAULT AL FINAL
           throw new Error('Tipo de reporte no válido');
       }
 
@@ -616,7 +623,6 @@ export class PdfExcelReporteriaService {
       throw error;
     }
   }
-
   // ==========================================
   // PDF - PACIENTES (HORIZONTAL)
   // ==========================================
@@ -1035,6 +1041,57 @@ export class PdfExcelReporteriaService {
     });
   }
 
+    // ==========================================
+  // PDF - SALIDAS
+  // ==========================================
+  private generarTablaSalidasPDF(
+    doc: jsPDF,
+    datos: any[],
+    membretes: Membretes,
+    yPos: number
+  ): void {
+    const columnas = [
+      { title: 'Fecha', dataKey: 'fecha' },
+      { title: 'Medicamento', dataKey: 'medicamento' },
+      { title: 'Cantidad', dataKey: 'cantidad' },
+      { title: 'Motivo', dataKey: 'motivo' },
+      { title: 'Destino', dataKey: 'destino' },
+      { title: 'Usuario', dataKey: 'usuario' },
+      { title: 'Estado', dataKey: 'estado' }
+    ];
+
+    const filasDatos = datos.map(salida => ({
+      fecha: this.formatearFecha(salida.fechacreacion),
+      medicamento: salida.medicamento?.nombremedicamento || 'N/A',
+      cantidad: `${salida.cantidad || 0} ${salida.medicamento?.unidadmedida || 'unidades'}`,
+      motivo: salida.motivo || 'N/A',
+      destino: salida.destino || 'N/A',
+      usuario: salida.usuario ? `${salida.usuario.nombres} ${salida.usuario.apellidos}` : 'N/A',
+      estado: salida.activo === 1 ? 'Activa' : 'Anulada'
+    }));
+
+    autoTable(doc, {
+      startY: yPos,
+      head: [columnas.map(col => col.title)],
+      body: filasDatos.map(fila => columnas.map(col => fila[col.dataKey as keyof typeof fila])),
+      styles: {
+        fontSize: 8,
+        cellPadding: 2
+      },
+      headStyles: {
+        fillColor: [31, 89, 91],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245]
+      },
+      didDrawPage: (data) => {
+        this.membreteService.insertarMembreteCompleto(doc, membretes);
+      }
+    });
+  }
+
   // ==========================================
   // EXCEL - PACIENTES
   // ==========================================
@@ -1228,6 +1285,38 @@ export class PdfExcelReporteriaService {
   }
 
   // ==========================================
+  // EXCEL - SALIDAS
+  // ==========================================
+  private generarHojaSalidas(datos: any[]): XLSX.WorkSheet {
+    const datosExcel = datos.map(item => ({
+      'Fecha': this.formatearFecha(item.fechacreacion),
+      'Medicamento': item.medicamento?.nombremedicamento || 'N/A',
+      'Principio Activo': item.medicamento?.principioactivo || 'N/A',
+      'Cantidad': item.cantidad || 0,
+      'Unidad': item.medicamento?.unidadmedida || 'N/A',
+      'Motivo': item.motivo || 'N/A',
+      'Destino': item.destino || 'N/A',
+      'Usuario': item.usuario ? `${item.usuario.nombres} ${item.usuario.apellidos}` : 'N/A',
+      'Estado': item.activo === 1 ? 'Activa' : 'Anulada',
+      'Observaciones': item.observaciones || 'N/A'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(datosExcel);
+    
+    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const address = XLSX.utils.encode_col(C) + "1";
+      if (!worksheet[address]) continue;
+      worksheet[address].s = {
+        fill: { fgColor: { rgb: "DC3545" } },
+        font: { color: { rgb: "FFFFFF" }, bold: true }
+      };
+    }
+
+    return worksheet;
+  }
+
+  // ==========================================
   // AUXILIARES
   // ==========================================
 
@@ -1288,7 +1377,8 @@ export class PdfExcelReporteriaService {
       'inventario': 'Reporte de Inventario',
       'agenda': 'Reporte de Agenda',
       'referencias': 'Reporte de Referencias',
-      'transporte': 'Reporte de Transportes'
+      'transporte': 'Reporte de Transportes',
+      'salidas': 'Reporte de Salidas de Inventario'
     };
     return titulos[tipo] || 'Reporte';
   }

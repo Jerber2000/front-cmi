@@ -33,6 +33,12 @@ export interface DashboardData {
     pendientes: number;
     completadas: number;
   };
+  salidas: {
+    totalMes: number;
+    totalUnidadesMes: number;
+    activas: number;
+    anuladas: number;
+  };
 }
 
 export interface ReportePacientes {
@@ -102,6 +108,34 @@ export interface ReporteReferencias {
     enviadas: number;
     recibidas: number;
   };
+}
+
+export interface ReporteSalidas {
+  data: any[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+  resumen: {
+    totalSalidas: number;
+    activas: number;
+    anuladas: number;
+    totalUnidadesDespachadas: number;
+  };
+}
+
+export interface FiltrosSalidas {
+  desde?: string;
+  hasta?: string;
+  estado?: string; // 'activas' | 'anuladas' | 'todas'
+  medicamento?: number;
+  usuario?: number;
+  motivo?: string;
+  destino?: string;
+  page?: number;
+  limit?: number;
 }
 
 export interface FiltrosPacientes {
@@ -289,6 +323,27 @@ export class ReporteriaService {
       }))
     );
   }
+
+  obtenerReporteSalidas(filtros: FiltrosSalidas = {}): Observable<ReporteSalidas> {
+    const params = this.buildParams(filtros);
+    
+    return this.http.get<ApiResponse<any>>(
+      `${this.apiUrl}/salidas`,
+      { headers: this.getHeaders(), params }
+    ).pipe(
+      map(response => ({
+        data: response.data || [],
+        pagination: response.pagination || { total: 0, page: 1, limit: 10, totalPages: 0 },
+        resumen: response.resumen || {
+          totalSalidas: 0,
+          activas: 0,
+          anuladas: 0,
+          totalUnidadesDespachadas: 0
+        }
+      }))
+    );
+  }
+
 
   // ==========================================
   // MÉTODOS AUXILIARES

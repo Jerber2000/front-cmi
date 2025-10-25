@@ -64,6 +64,7 @@ export class InventarioComponent implements OnInit, AfterViewInit {
     private archivoService: ArchivoService
   ) {
     this.medicamentoForm = this.fb.group({
+      codigoproducto: ['', [Validators.maxLength(50)]],
       nombre: ['', [Validators.required, Validators.maxLength(200)]],
       descripcion: [''],
       unidades: [0, [Validators.min(0)]],
@@ -144,12 +145,12 @@ export class InventarioComponent implements OnInit, AfterViewInit {
     } else if (this.filtroEstado === 'inactivos') {
       medicamentosFiltrados = medicamentosFiltrados.filter(m => m.estado === 0);
     }
-    
-    // Filtro por búsqueda
+  
     if (this.busqueda.trim()) {
       const busquedaLower = this.busqueda.toLowerCase();
       medicamentosFiltrados = medicamentosFiltrados.filter(m =>
         m.nombre.toLowerCase().includes(busquedaLower) ||
+        m.codigoproducto?.toLowerCase().includes(busquedaLower) || 
         m.descripcion?.toLowerCase().includes(busquedaLower) ||
         m.observaciones?.toLowerCase().includes(busquedaLower)
       );
@@ -264,6 +265,7 @@ export class InventarioComponent implements OnInit, AfterViewInit {
     
     const datos: CrearMedicamentoRequest = {
       fkusuario: this.usuarioActual.idusuario,
+      codigoproducto: this.medicamentoForm.value.codigoproducto || undefined, // ← AGREGAR
       nombre: this.medicamentoForm.value.nombre,
       descripcion: this.medicamentoForm.value.descripcion || undefined,
       unidades: this.medicamentoForm.value.unidades || 0,
@@ -294,6 +296,7 @@ export class InventarioComponent implements OnInit, AfterViewInit {
     this.medicamentoSeleccionado = medicamento;
     
     this.medicamentoForm.patchValue({
+      codigoproducto: medicamento.codigoproducto || '', // ← AGREGAR
       nombre: medicamento.nombre,
       descripcion: medicamento.descripcion,
       unidades: medicamento.unidades,
@@ -322,6 +325,7 @@ export class InventarioComponent implements OnInit, AfterViewInit {
     this.guardando = true;
     
     const datos: ActualizarMedicamentoRequest = {
+      codigoproducto: this.medicamentoForm.value.codigoproducto || undefined, // ← AGREGAR
       nombre: this.medicamentoForm.value.nombre,
       descripcion: this.medicamentoForm.value.descripcion,
       unidades: this.medicamentoForm.value.unidades,
@@ -408,7 +412,10 @@ export class InventarioComponent implements OnInit, AfterViewInit {
     if (field && field.errors && (field.dirty || field.touched)) {
       if (field.errors['required']) return 'Este campo es requerido';
       if (field.errors['min']) return 'El valor debe ser mayor o igual a 0';
-      if (field.errors['maxlength']) return 'Máximo 200 caracteres';
+      if (field.errors['maxlength']) {
+        if (fieldName === 'codigoproducto') return 'Máximo 50 caracteres';
+        return 'Máximo 200 caracteres';
+      }
     }
     return '';
   }

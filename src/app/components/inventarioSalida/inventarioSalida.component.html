@@ -1,0 +1,624 @@
+<!-- src/app/components/inventarioSalida/inventarioSalida.component.html -->
+<div class="content-area" [class.sidebar-expanded]="sidebarExpanded">
+  <app-sidebar [userInfo]="userInfo"></app-sidebar>
+  
+  <div class="menu-container">
+    <header class="header">
+      <div class="header-content">
+        <div class="header-left">
+          <div class="header-text">
+            <h1 class="title">Salidas de Inventario</h1>
+          </div>
+          <img src="assets/img/LogoFraijanes.png" alt="Logo Fraijanes" class="logo">
+        </div>
+      </div>
+    </header>
+  </div>
+
+  <!-- Tarjetas de Resumen -->
+  <div class="stats-container">
+    <div class="stat-card activos">
+      <div class="stat-icon">
+        <i class="fas fa-box-open"></i>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ obtenerContadorActivas() }}</span>
+        <span class="stat-label">Salidas Activas</span>
+      </div>
+    </div>
+
+    <div class="stat-card inactivos">
+      <div class="stat-icon">
+        <i class="fas fa-ban"></i>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ obtenerContadorAnuladas() }}</span>
+        <span class="stat-label">Salidas Anuladas</span>
+      </div>
+    </div>
+
+    <div class="stat-card total">
+      <div class="stat-icon">
+        <i class="fas fa-cubes"></i>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ obtenerTotalUnidadesSalidas() }}</span>
+        <span class="stat-label">Unidades Despachadas</span>
+      </div>
+    </div>
+  </div>
+
+ <!-- Controles de búsqueda y filtros -->
+  <div class="control-card">
+    <!-- FILTROS ARRIBA -->
+    <div class="filter-buttons">
+      <button 
+        class="filter-btn" 
+        [class.active]="filtroEstado === 'todas'"
+        (click)="cambiarFiltroEstado('todas')"
+      >
+        <i class="fas fa-list"></i> Todas
+      </button>
+      <button 
+        class="filter-btn" 
+        [class.active]="filtroEstado === 'activas'"
+        (click)="cambiarFiltroEstado('activas')"
+      >
+        <i class="fas fa-check-circle"></i> Activas
+      </button>
+      <button 
+        class="filter-btn" 
+        [class.active]="filtroEstado === 'anuladas'"
+        (click)="cambiarFiltroEstado('anuladas')"
+      >
+        <i class="fas fa-ban"></i> Anuladas
+      </button>
+    </div>
+
+    <!-- BUSCADOR Y BOTÓN EN LA MISMA FILA -->
+    <div class="search-row">
+      <div class="search-wrapper">
+        <i class="fas fa-search search-icon"></i>
+        <input 
+          type="text" 
+          class="search-input" 
+          placeholder="Buscar por medicamento, motivo o destino..."
+          [(ngModel)]="busqueda"
+          (input)="buscarSalidas()"
+        >
+        <button 
+          *ngIf="busqueda" 
+          class="btn-clear-search" 
+          (click)="limpiarBusqueda()"
+          title="Limpiar búsqueda"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <button class="btn-add" (click)="abrirModalNueva()" title="Nueva Salida">
+        <i class="fas fa-plus"></i> Nueva Salida
+      </button>
+    </div>
+  </div>
+
+  <!-- LISTA DE SALIDAS -->
+  <div class="main-card">
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Medicamento</th>
+            <th>Cantidad</th>
+            <th>Motivo</th>
+            <th>Destino</th>
+            <th>Usuario</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let salida of salidasPaginadas" class="table-row">
+            <td>{{ inventarioSalidaService.formatearFecha(salida.fechasalida) }}</td>
+            <td class="user-name">
+              {{ salida.medicamento?.nombre }}
+              <span class="codigo-producto" *ngIf="salida.medicamento?.codigoproducto">
+                {{ salida.medicamento?.codigoproducto }}
+              </span>
+            </td>
+            <td class="text-center">
+              <span class="cantidad-badge">{{ salida.cantidad }} unid.</span>
+            </td>
+            <td>{{ salida.motivo || 'Sin especificar' }}</td>
+            <td>{{ salida.destino || 'Sin especificar' }}</td>
+            <td>{{ salida.usuario?.nombres }} {{ salida.usuario?.apellidos }}</td>
+            <td>
+              <span 
+                class="badge" 
+                [class.badge-active]="salida.estado === 1"
+                [class.badge-inactive]="salida.estado === 0"
+              >
+                {{ inventarioSalidaService.obtenerEstadoTexto(salida.estado) }}
+              </span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button 
+                  class="btn-icon btn-view" 
+                  (click)="verDetalleSalida(salida)"
+                  title="Ver detalle"
+                >
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button 
+                  class="btn-icon btn-deactivate" 
+                  (click)="anularSalida(salida)"
+                  [disabled]="salida.estado === 0"
+                  [title]="salida.estado === 1 ? 'Anular salida' : 'Ya anulada'"
+                >
+                  <i class="fas fa-ban"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Estado vacío -->
+      <div *ngIf="salidasPaginadas.length === 0 && !loading" class="empty-state">
+        <i class="fas fa-inbox"></i>
+        <p>No se encontraron salidas</p>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="loading" class="loading-state">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Cargando salidas...</p>
+      </div>
+    </div>
+
+    <!-- PAGINACIÓN -->
+    <div class="pagination-container" *ngIf="totalItems > 0">
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button 
+          class="pagination-btn" 
+          [class.disabled]="currentPage === 1"
+          (click)="previousPage()"
+          [disabled]="currentPage === 1"
+        >
+          <i class="fas fa-chevron-left"></i>
+        </button>
+
+        <button 
+          *ngIf="getPages()[0] > 1"
+          class="pagination-btn"
+          (click)="goToPage(1)"
+        >
+          1
+        </button>
+        
+        <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
+
+        <button 
+          *ngFor="let page of getPages()"
+          class="pagination-btn"
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)"
+        >
+          {{ page }}
+        </button>
+
+        <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
+
+        <button 
+          *ngIf="getPages()[getPages().length - 1] < totalPages"
+          class="pagination-btn"
+          (click)="goToPage(totalPages)"
+        >
+          {{ totalPages }}
+        </button>
+
+        <button 
+          class="pagination-btn" 
+          [class.disabled]="currentPage === totalPages"
+          (click)="nextPage()"
+          [disabled]="currentPage === totalPages"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <div *ngIf="totalPages <= 1" class="pagination-single">
+        Página 1 de 1
+      </div>
+
+      <div class="items-per-page">
+        <label>Mostrar:</label>
+        <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
+          <option [value]="5">5</option>
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+        </select>
+        <span>por página</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL NUEVA SALIDA -->
+  <div class="modal-overlay" *ngIf="mostrarModalNueva" (click)="cerrarModalNueva()">
+    <div class="modal-container modal-large" (click)="$event.stopPropagation()">
+      
+      <!-- Header -->
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="fas fa-box-open"></i>
+          Registrar Salida de Inventario
+        </h3>
+        <button class="btn-close-modal" (click)="cerrarModalNueva()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body">
+        <form [formGroup]="salidaForm">
+
+          <!-- Sección: Medicamento -->
+          <div class="form-section">
+            <h4 class="section-subtitle">
+              <i class="fas fa-pills"></i>
+              Medicamento
+            </h4>
+
+            <!-- 🔥 ESTE ES EL SELECT QUE FALTA -->
+            <div class="form-group">
+              <label class="form-label">
+                Seleccionar Medicamento 
+                <span class="text-danger">*</span>
+              </label>
+              <select 
+                formControlName="fkmedicina"
+                class="form-control"
+                [class.is-invalid]="isFieldInvalid('fkmedicina')"
+              >
+                <option value="">-- Seleccionar Medicamento --</option>
+                <option 
+                  *ngFor="let med of medicamentos" 
+                  [value]="med.idmedicina"
+                >
+                  {{ med.nombre }} - {{ med.codigoproducto }} - Stock: {{ med.unidades }} unidades
+                </option>
+              </select>
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('fkmedicina')">
+                {{ getFieldError('fkmedicina') }}
+              </div>
+            </div>
+
+            <!-- Info del medicamento seleccionado -->
+            <div class="alert alert-info" *ngIf="medicamentoSeleccionado">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <strong>{{ medicamentoSeleccionado.nombre }}</strong>
+                  <br>
+                  <small>Stock Disponible: {{ medicamentoSeleccionado.unidades }} unidades</small>
+                </div>
+                <div class="text-right">
+                  <span 
+                    class="badge"
+                    [ngClass]="{
+                      'badge-success': obtenerColorStock(medicamentoSeleccionado.unidades) === 'success',
+                      'badge-warning': obtenerColorStock(medicamentoSeleccionado.unidades) === 'warning',
+                      'badge-danger': obtenerColorStock(medicamentoSeleccionado.unidades) === 'danger'
+                    }"
+                  >
+                    {{ obtenerColorStock(medicamentoSeleccionado.unidades) === 'success' ? 'Stock Alto' : 
+                      obtenerColorStock(medicamentoSeleccionado.unidades) === 'warning' ? 'Stock Bajo' : 'Sin Stock' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sección: Cantidad y Fecha -->
+          <div class="form-section">
+            <h4 class="section-subtitle">
+              <i class="fas fa-calculator"></i>
+              Cantidad y Fecha
+            </h4>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">
+                  Cantidad 
+                  <span class="text-danger">*</span>
+                </label>
+                <input 
+                  type="number" 
+                  formControlName="cantidad"
+                  class="form-control"
+                  [class.is-invalid]="isFieldInvalid('cantidad')"
+                  min="1"
+                  placeholder="Ej: 10"
+                >
+                <div class="invalid-feedback" *ngIf="isFieldInvalid('cantidad')">
+                  {{ getFieldError('cantidad') }}
+                </div>
+                
+                <!-- Alerta de stock resultante -->
+                <div 
+                  class="alert mt-2" 
+                  *ngIf="medicamentoSeleccionado && salidaForm.get('cantidad')?.value"
+                  [ngClass]="{
+                    'alert-success': stockResultante >= 10,
+                    'alert-warning': stockResultante > 0 && stockResultante < 10,
+                    'alert-danger': stockResultante <= 0
+                  }"
+                >
+                  <small>
+                    <i class="fas fa-info-circle"></i>
+                    Stock después de salida: <strong>{{ stockResultante }}</strong> unidades
+                  </small>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">
+                  Fecha de Salida 
+                  <span class="text-danger">*</span>
+                </label>
+                <input 
+                  type="date" 
+                  formControlName="fechasalida"
+                  class="form-control"
+                  [class.is-invalid]="isFieldInvalid('fechasalida')"
+                  [max]="obtenerFechaHoy()"
+                >
+                <div class="invalid-feedback" *ngIf="isFieldInvalid('fechasalida')">
+                  {{ getFieldError('fechasalida') }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sección: Detalles -->
+          <div class="form-section">
+            <h4 class="section-subtitle">
+              <i class="fas fa-file-alt"></i>
+              Detalles
+            </h4>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Motivo <span class="text-muted">(opcional)</span></label>
+                <input 
+                  type="text" 
+                  formControlName="motivo"
+                  class="form-control"
+                  placeholder="Ej: Dispensación a paciente, Donación..."
+                  maxlength="200"
+                >
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Destino <span class="text-muted">(opcional)</span></label>
+                <input 
+                  type="text" 
+                  formControlName="destino"
+                  class="form-control"
+                  placeholder="Ej: Hospital General, Paciente Juan Pérez..."
+                  maxlength="200"
+                >
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Observaciones <span class="text-muted">(opcional)</span></label>
+              <textarea
+                formControlName="observaciones"
+                class="form-control"
+                rows="3"
+                placeholder="Observaciones adicionales..."
+              ></textarea>
+            </div>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalNueva()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button 
+          type="button"
+          class="btn btn-primary" 
+          (click)="guardarSalida()"
+          [disabled]="salidaForm.invalid || guardando || !medicamentoSeleccionado"
+        >
+          <span *ngIf="guardando">
+            <i class="fas fa-spinner fa-spin"></i> Guardando...
+          </span>
+          <span *ngIf="!guardando">
+            <i class="fas fa-save"></i> Registrar Salida
+          </span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL DETALLE SALIDA -->
+  <div class="modal-overlay" *ngIf="mostrarModalDetalle" (click)="cerrarModalDetalle()">
+    <div class="modal-container modal-medium" (click)="$event.stopPropagation()">
+      
+      <!-- Header -->
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="fas fa-info-circle"></i>
+          Detalle de Salida
+        </h3>
+        <button class="btn-close-modal" (click)="cerrarModalDetalle()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body">
+        
+        <!-- Información del Medicamento -->
+        <div class="detail-section">
+          <h4 class="section-title">
+            <i class="fas fa-pills"></i> Medicamento
+          </h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Nombre:</span>
+              <span class="detail-value">{{ salidaSeleccionada?.medicamento?.nombre }}</span>
+            </div>
+            
+            <div class="detail-item" *ngIf="salidaSeleccionada?.medicamento?.codigoproducto">
+              <span class="detail-label">Código:</span>
+              <span class="detail-value codigo-producto">{{ salidaSeleccionada?.medicamento?.codigoproducto }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="detail-label">Stock Actual:</span>
+              <span class="detail-value">{{ salidaSeleccionada?.medicamento?.unidades }} unidades</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detalles de la Salida -->
+        <div class="detail-section">
+          <h4 class="section-title">
+            <i class="fas fa-box-open"></i> Detalles de Salida
+          </h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Cantidad:</span>
+              <span class="detail-value cantidad-badge">{{ salidaSeleccionada?.cantidad }} unidades</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="detail-label">Fecha Salida:</span>
+              <span class="detail-value">{{ inventarioSalidaService.formatearFecha(salidaSeleccionada?.fechasalida) }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="detail-label">Motivo:</span>
+              <span class="detail-value">{{ salidaSeleccionada?.motivo || 'Sin especificar' }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="detail-label">Destino:</span>
+              <span class="detail-value">{{ salidaSeleccionada?.destino || 'Sin especificar' }}</span>
+            </div>
+
+            <div class="detail-item full-width" *ngIf="salidaSeleccionada?.observaciones">
+              <span class="detail-label">Observaciones:</span>
+              <span class="detail-value">{{ salidaSeleccionada?.observaciones }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Usuario Responsable -->
+        <div class="detail-section" *ngIf="salidaSeleccionada?.usuario">
+          <h4 class="section-title">
+            <i class="fas fa-user"></i> Usuario Responsable
+          </h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Nombre:</span>
+              <span class="detail-value">
+                {{ salidaSeleccionada?.usuario?.nombres }} {{ salidaSeleccionada?.usuario?.apellidos }}
+              </span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="detail-label">Profesión:</span>
+              <span class="detail-value">{{ salidaSeleccionada?.usuario?.profesion || 'N/A' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock Info -->
+        <div class="detail-section" *ngIf="salidaSeleccionada?.stockAnterior || salidaSeleccionada?.stockActual">
+          <h4 class="section-title">
+            <i class="fas fa-chart-line"></i> Movimiento de Stock
+          </h4>
+          <div class="detail-grid">
+            <div class="detail-item" *ngIf="salidaSeleccionada?.stockAnterior">
+              <span class="detail-label">Stock Anterior:</span>
+              <span class="detail-value">{{ salidaSeleccionada?.stockAnterior }} unidades</span>
+            </div>
+            
+            <div class="detail-item" *ngIf="salidaSeleccionada?.stockActual">
+              <span class="detail-label">Stock Después:</span>
+              <span class="detail-value">{{ salidaSeleccionada?.stockActual }} unidades</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Auditoría -->
+        <div class="detail-section">
+          <h4 class="section-title">
+            <i class="fas fa-history"></i> Auditoría
+          </h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Creado por:</span>
+              <span class="detail-value">{{ salidaSeleccionada?.usuariocreacion }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="detail-label">Fecha Creación:</span>
+              <span class="detail-value">{{ inventarioSalidaService.formatearFechaHora(salidaSeleccionada?.fechacreacion) }}</span>
+            </div>
+            
+            <div class="detail-item" *ngIf="salidaSeleccionada?.usuariomodificacion">
+              <span class="detail-label">Modificado por:</span>
+              <span class="detail-value">{{ salidaSeleccionada?.usuariomodificacion }}</span>
+            </div>
+            
+            <div class="detail-item" *ngIf="salidaSeleccionada?.fechamodificacion">
+              <span class="detail-label">Fecha Modificación:</span>
+              <span class="detail-value">{{ inventarioSalidaService.formatearFechaHora(salidaSeleccionada?.fechamodificacion) }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="detail-label">Estado:</span>
+              <span 
+                class="badge" 
+                [class.badge-active]="salidaSeleccionada?.estado === 1"
+                [class.badge-inactive]="salidaSeleccionada?.estado === 0"
+              >
+                {{ inventarioSalidaService.obtenerEstadoTexto(salidaSeleccionada?.estado!) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalDetalle()">
+          <i class="fas fa-times"></i> Cerrar
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-danger" 
+          (click)="anularSalida(salidaSeleccionada!)"
+          *ngIf="salidaSeleccionada?.estado === 1"
+        >
+          <i class="fas fa-ban"></i> Anular Salida
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
