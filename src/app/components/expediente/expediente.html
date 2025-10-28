@@ -27,13 +27,34 @@
           [(ngModel)]="terminoBusqueda"
           (input)="filtrarExpedientes()"
         >
-         <!-- BOTON SE ESCONDE DE MOMENTO
+        
+        <!-- ✅ NUEVO: Filtro por clínica -->
+        <select 
+          class="select-clinica"
+          [(ngModel)]="clinicaSeleccionada"
+          (change)="onClinicaChange()"
+        >
+          <option [value]="0">Todas las clínicas</option>
+          <option *ngFor="let clinica of clinicas" [value]="clinica.idclinica">
+            {{ clinica.nombreclinica }}
+          </option>
+        </select>
+        
+        <!-- BOTON SE ESCONDE DE MOMENTO
         <button class="boton-agregar" (click)="mostrarFormulario()" *ngIf="vistaActual === 'lista'">
           <i class="fas fa-plus"></i>
         </button>
         -->
+      </div>
+      
+      <div class="informacion-encabezado">
+        <div class="informacion-fecha">
+          Fecha: {{ fechaActual | date:'dd/MM/yyyy' }}
+        </div>
+      </div>
+    </div>
 
-            <!-- Estadísticas rápidas -->
+    <!-- Estadísticas rápidas -->
     <div class="fila-estadisticas" *ngIf="vistaActual === 'lista' && estadisticas">
       <div class="tarjeta-estadistica">
         <div class="valor-estadistica">{{ estadisticas.totalExpedientes }}</div>
@@ -42,15 +63,6 @@
       <div class="tarjeta-estadistica">
         <div class="valor-estadistica">{{ estadisticas.expedientesRecientes }}</div>
         <div class="etiqueta-estadistica">Creados (últimos 7 días)</div>
-      </div>
-
-    </div>
-      </div>
-      
-      <div class="informacion-encabezado">
-        <div class="informacion-fecha">
-          Fecha: {{ fechaActual | date:'dd/MM/yyyy' }}
-        </div>
       </div>
     </div>
   </div>

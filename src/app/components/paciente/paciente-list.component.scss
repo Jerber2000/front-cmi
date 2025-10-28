@@ -133,6 +133,41 @@ $text-secondary: #6c757d;
   min-width: 300px;
 }
 
+// Estilos para select de clínica
+.select-clinica {
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  min-width: 200px;
+  margin: 0 10px;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+  }
+
+  &:hover {
+    border-color: #999;
+  }
+}
+
+// Badge para mostrar clínica en tabla
+.badge-clinica {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 .entrada-busqueda {
   padding: 12px 20px;
   border: 2px solid #e1e5e9;
@@ -1672,4 +1707,5 @@ $text-secondary: #6c757d;
     align-items: flex-start;
     gap: 10px;
   }
+  
 }

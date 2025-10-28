@@ -60,22 +60,12 @@ export class SidebarComponent {
         { label: 'Documentos', route: '/documentos', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
         { label: 'Inventario', route: '/inventario', roles: [1,5,10] },
         { label: 'Salida Inventario', route: '/salida-inventario', roles: [1,5,10] },
-        { label: 'Administración', route: '/administracion', roles: [1,5,8] },
-        { label: 'Educación Inclusiva', route: '/educacion-inclusiva', roles: [1,5,15,16] },
-        { label: 'Fisioterapia', route: '/fisioterapia', roles: [1,5,6,14] },
-        { label: 'Medicina General', route: '/medicina-general', roles: [1,2,3,5,14] },
-        { label: 'Nutrición', route: '/nutricion', roles: [1,5,13,14] },
-        { label: 'Psicología', route: '/psicologia', roles: [1,5,7,11] }
-      ]
-    },
-    {
-      label: 'Acerca de',
-      icon: 'fas fa-info-circle',
-      roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
-      children: [
-        { label: 'Quienes somos', route: '/acerca/nosotros', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
-        { label: 'Misión y visión', route: '/acerca/mision', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
-        { label: 'Contáctanos', route: '/acerca/contacto', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] }
+        //{ label: 'Administración', route: '/administracion', roles: [1,5,8] },
+        //{ label: 'Educación Inclusiva', route: '/educacion-inclusiva', roles: [1,5,15,16] },
+        //{ label: 'Fisioterapia', route: '/fisioterapia', roles: [1,5,6,14] },
+        //{ label: 'Medicina General', route: '/medicina-general', roles: [1,2,3,5,14] },
+       //{ label: 'Nutrición', route: '/nutricion', roles: [1,5,13,14] },
+        //{ label: 'Psicología', route: '/psicologia', roles: [1,5,7,11] }
       ]
     },
     {
