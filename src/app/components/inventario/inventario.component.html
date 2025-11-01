@@ -378,6 +378,15 @@
               >
             </div>
 
+            <div class="form-group">
+              <label class="form-label">Fecha de Vencimiento</label>
+              <input 
+                type="date"
+                formControlName="fechavencimiento"
+                class="form-input"
+              >
+            </div>
+
           </div>
 
           <div class="form-group">
@@ -457,7 +466,7 @@
           <h4><i class="fas fa-calendar"></i> Fechas</h4>
           <div class="detalle-content">
             <p><strong>Fecha de Ingreso:</strong> {{ inventarioService.formatearFecha(medicamentoSeleccionado.fechaingreso) }}</p>
-            <p *ngIf="medicamentoSeleccionado.fechaegreso"><strong>Fecha de Egreso:</strong> {{ inventarioService.formatearFecha(medicamentoSeleccionado.fechaegreso) }}</p>
+            <p *ngIf="medicamentoSeleccionado.fechavencimiento"><strong>Fecha de Vencimiento:</strong> {{ inventarioService.formatearFecha(medicamentoSeleccionado.fechavencimiento) }}</p>
             <p><strong>Fecha de Creación:</strong> {{ inventarioService.formatearFecha(medicamentoSeleccionado.fechacreacion) }}</p>
             <p *ngIf="medicamentoSeleccionado.fechamodificacion"><strong>Última Modificación:</strong> {{ inventarioService.formatearFecha(medicamentoSeleccionado.fechamodificacion) }}</p>
           </div>
