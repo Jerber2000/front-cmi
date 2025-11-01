@@ -1040,12 +1040,23 @@ verHistorialClinicoDesdeModal(paciente: Paciente): void {
     setTimeout(() => {
       if (this.componenteExpediente) {
         this.componenteExpediente.abrirModalDesdePacientes(this.datosExpedientePaciente);
+        
+        // ✅ SUSCRIBIRSE AL EVENTO DE EXPEDIENTE CREADO
+        this.componenteExpediente.expedienteCreado.subscribe(() => {
+          console.log('Expediente creado, recargando pacientes...');
+          this.cerrarModalExpediente();
+        });
       }
     }, 100);
   }
+
   // Método vacío para expedientes (manteniendo compatibilidad)
   cerrarModalExpediente(): void {
     this.vistaActual = 'lista';
+    this.datosExpedientePaciente = null;
+    
+    // ✅ RECARGAR PACIENTES DESPUÉS DE CERRAR EL MODAL
+    this.cargarPacientes();
   }
 
   /**

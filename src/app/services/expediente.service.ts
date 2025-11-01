@@ -64,13 +64,21 @@ export interface Expediente {
   fechamodificacion?: string;
   estado?: number;
   
-  // Relaciones incluidas
-  paciente?: Array<{
-    idpaciente: number;
-    nombres: string;
-    apellidos: string;
-    cui: string;
-  }>;
+  // ✅ ACTUALIZADO: Relación con paciente (incluye clínica)
+paciente?: {
+  idpaciente: number;
+  nombres: string;
+  apellidos: string;
+  cui: string;
+  fkclinica?: number;
+  clinica?: {
+    idclinica: number;
+    nombreclinica: string;
+  };
+};
+  
+  // ⚠️ OPCIONAL: Solo si usas el sistema de referencias entre clínicas
+  // Puedes dejarlo comentado o eliminarlo si no lo usas
   detallereferirpaciente?: Array<{
     idrefpaciente: number;
     comentario: string;

@@ -378,14 +378,6 @@
               >
             </div>
 
-            <div class="form-group">
-              <label class="form-label">Fecha de Egreso</label>
-              <input 
-                type="date"
-                formControlName="fechaegreso"
-                class="form-input"
-              >
-            </div>
           </div>
 
           <div class="form-group">
@@ -500,12 +492,6 @@
       <div class="modal-footer">
         <button class="btn-cancelar" (click)="cerrarModalDetalle()">
           <i class="fas fa-times"></i> Cerrar
-        </button>
-        <button 
-          class="btn-editar-grande" 
-          (click)="cerrarModalDetalle(); abrirModalEditar(medicamentoSeleccionado!)"
-        >
-          <i class="fas fa-edit"></i> Editar
         </button>
       </div>
     </div>

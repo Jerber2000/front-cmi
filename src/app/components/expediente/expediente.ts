@@ -343,9 +343,8 @@ verExpedienteConOpciones(expediente: Expediente): void {
  * Obtiene el nombre del paciente de forma segura
  */
 private obtenerNombrePaciente(expediente: Expediente): string {
-  if (expediente.paciente && expediente.paciente.length > 0) {
-    const paciente = expediente.paciente[0];
-    return `${paciente.nombres || ''} ${paciente.apellidos || ''}`.trim();
+  if (expediente.paciente) {
+    return `${expediente.paciente.nombres || ''} ${expediente.paciente.apellidos || ''}`.trim();
   } else if (expediente.fkpaciente) {
     return `Paciente ID: ${expediente.fkpaciente}`;
   } else {
@@ -405,44 +404,49 @@ private obtenerNombrePaciente(expediente: Expediente): string {
   /**
    * Carga la lista de expedientes desde el servidor - ESTRUCTURA ARREGLADA
    */
-  cargarExpedientes(): void {
-    this.cargando = true;
-    this.error = '';
+cargarExpedientes(): void {
+  this.cargando = true;
+  this.error = '';
 
-    // ✅ NUEVO: Pasar filtro de clínica
-    const clinicaFiltro = this.clinicaSeleccionada > 0 ? this.clinicaSeleccionada : undefined;
+  const clinicaFiltro = this.clinicaSeleccionada > 0 ? this.clinicaSeleccionada : undefined;
 
-    this.servicioExpediente.obtenerTodosLosExpedientes(
-      this.paginaActual,
-      this.tamanoPagina,
-      this.terminoBusqueda,
-      clinicaFiltro  // ✅ AGREGAR ESTE PARÁMETRO
-    ).subscribe({
-      next: (respuesta: RespuestaListaExpedientes) => {
-        if (respuesta.exito) {
-          this.expedientes = respuesta.datos || [];
-          this.expedientesFiltrados = [...this.expedientes];
-          
-          if (respuesta.paginacion) {
-            this.totalElementos = respuesta.paginacion.total;
-            this.totalPaginas = respuesta.paginacion.totalPaginas;
-          }
-          
-          this.updatePagination();
-        } else {
-          this.error = 'Error al cargar expedientes';
-          this.servicioAlerta.alertaError(this.error);
+  this.servicioExpediente.obtenerTodosLosExpedientes(
+    this.paginaActual,
+    this.tamanoPagina,
+    this.terminoBusqueda,
+    clinicaFiltro
+  ).subscribe({
+    next: (respuesta: RespuestaListaExpedientes) => {
+      if (respuesta.exito) {
+        this.expedientes = respuesta.datos || [];
+        this.expedientesFiltrados = [...this.expedientes];
+        
+        // ✅ AGREGAR ESTOS LOGS
+        console.log('📦 Total expedientes:', this.expedientes.length);
+        console.log('📦 Primer expediente completo:', this.expedientes[0]);
+        console.log('👤 Estructura de paciente:', this.expedientes[0]?.paciente);
+        console.log('🏥 Estructura de clínica:', this.expedientes[0]?.paciente?.clinica);
+        
+        if (respuesta.paginacion) {
+          this.totalElementos = respuesta.paginacion.total;
+          this.totalPaginas = respuesta.paginacion.totalPaginas;
         }
-        this.cargando = false;
-      },
-      error: (error) => {
-        console.error('Error al cargar expedientes:', error);
-        this.error = 'Error al cargar los expedientes';
+        
+        this.updatePagination();
+      } else {
+        this.error = 'Error al cargar expedientes';
         this.servicioAlerta.alertaError(this.error);
-        this.cargando = false;
       }
-    });
-  }
+      this.cargando = false;
+    },
+    error: (error) => {
+      console.error('❌ Error al cargar expedientes:', error);
+      this.error = 'Error al cargar los expedientes';
+      this.servicioAlerta.alertaError(this.error);
+      this.cargando = false;
+    }
+  });
+}
 
   /**
    * Carga las estadísticas de expedientes
@@ -497,13 +501,13 @@ private obtenerNombrePaciente(expediente: Expediente): string {
       this.expedientesFiltrados = this.expedientes.filter(expediente =>
         expediente.numeroexpediente.toLowerCase().includes(termino) ||
         (expediente.historiaenfermedad && expediente.historiaenfermedad.toLowerCase().includes(termino)) ||
-        (expediente.paciente && expediente.paciente.length > 0 && 
-         (expediente.paciente[0].nombres.toLowerCase().includes(termino) ||
-          expediente.paciente[0].apellidos.toLowerCase().includes(termino) ||
-          expediente.paciente[0].cui.toLowerCase().includes(termino)))
+        (expediente.paciente && 
+        (expediente.paciente.nombres.toLowerCase().includes(termino) ||
+          expediente.paciente.apellidos.toLowerCase().includes(termino) ||
+          expediente.paciente.cui.toLowerCase().includes(termino)))
       );
     }
-  
+
     this.currentPage = 1;
     this.updatePagination();
   }
@@ -1123,6 +1127,16 @@ limpiarFiltroClinica(): void {
   this.clinicaSeleccionada = 0;
   this.currentPage = 1;
   this.cargarExpedientes();
+}
+
+/**
+ * Obtiene el nombre de la clínica del paciente
+ */
+obtenerNombreClinica(expediente: Expediente): string {
+  if (expediente.paciente?.clinica) {
+    return expediente.paciente.clinica.nombreclinica;
+  }
+  return 'Sin clínica asignada';
 }
   
 }
