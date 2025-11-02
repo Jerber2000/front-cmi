@@ -15,7 +15,7 @@ export interface Medicamento {
   precio?: number;
   observaciones?: string;
   fechaingreso?: string;
-  fechaegreso?: string;
+  fechavencimiento?: string;
   usuariocreacion: string;
   fechacreacion: string;
   usuariomodificacion?: string;
@@ -39,7 +39,7 @@ export interface CrearMedicamentoRequest {
   precio?: number;
   observaciones?: string;
   fechaingreso?: string;
-  fechaegreso?: string;
+  fechavencimiento?: string;
   usuariocreacion: string;
 }
 
@@ -51,7 +51,7 @@ export interface ActualizarMedicamentoRequest {
   precio?: number;
   observaciones?: string;
   fechaingreso?: string;
-  fechaegreso?: string;
+  fechavencimiento?: string;
   usuariomodificacion: string;
 }
 

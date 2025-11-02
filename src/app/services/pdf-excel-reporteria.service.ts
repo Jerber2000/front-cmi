@@ -104,13 +104,8 @@ export class PdfExcelReporteriaService {
       // ENCABEZADO DEL CONTENIDO
       yPosition = this.agregarEncabezadoExpediente(doc, yPosition);
       
-      // INFORMACIÓN BÁSICA DEL EXPEDIENTE
+      // INFORMACIÓN BÁSICA DEL EXPEDIENTE (ya incluye datos del paciente)
       yPosition = this.agregarInformacionBasicaExpediente(doc, expediente, yPosition);
-      
-      // INFORMACIÓN DEL PACIENTE
-      if (expediente.paciente && expediente.paciente.length > 0) {
-        yPosition = await this.agregarInformacionPacienteExpediente(doc, expediente.paciente[0], yPosition, membretes);
-      }
       
       // ANTECEDENTES MÉDICOS
       if (this.tieneAntecedentes(expediente)) {
@@ -168,55 +163,59 @@ export class PdfExcelReporteriaService {
     doc.text('INFORMACIÓN DEL EXPEDIENTE', 20, yPosition);
     yPosition += 10;
     
-    // Datos en tabla
-    const datosBasicos = [
-      ['Número de Expediente:', expediente.numeroexpediente || 'N/A'],
-      ['Fecha de Creación:', this.formatearFecha(expediente.fechacreacion)],
-      ['Usuario que Creó:', expediente.usuariocreacion || 'N/A'],
-      ['Estado:', expediente.estado === 1 ? 'Activo' : 'Inactivo']
-    ];
+  const paciente = expediente.paciente || (expediente.paciente && expediente.paciente[0]) || null;
+  
+  // Datos en tabla
+  const datosBasicos = [
+    ['Número de Expediente:', expediente.numeroexpediente || 'N/A']
+  ];
 
-    if (expediente.usuariomodificacion) {
-      datosBasicos.push(['Última Modificación por:', expediente.usuariomodificacion]);
-    }
+    // ✅ AGREGAR DATOS DEL PACIENTE SI EXISTEN
+  if (paciente) {
+    datosBasicos.push(['Nombre del Paciente:', `${paciente.nombres || ''} ${paciente.apellidos || ''}`]);
+    datosBasicos.push(['CUI:', paciente.cui || 'N/A']);
+    datosBasicos.push(['Fecha de Nacimiento:', this.formatearFecha(paciente.fechanacimiento)]);
     
-    if (expediente.fechamodificacion) {
-      datosBasicos.push(['Fecha de Modificación:', this.formatearFecha(expediente.fechamodificacion)]);
+    // Calcular edad
+    if (paciente.fechanacimiento) {
+      const edad = this.calcularEdad(paciente.fechanacimiento);
+      datosBasicos.push(['Edad:', `${edad} años`]);
     }
-
-    autoTable(doc, {
-      startY: yPosition,
-      body: datosBasicos,
-      theme: 'plain',
-      styles: {
-        fontSize: 10,
-        cellPadding: 3
-      },
-      columnStyles: {
-        0: { fontStyle: 'bold', cellWidth: 50 },
-        1: { cellWidth: 120 }
-      },
-      margin: { left: 20 }
-    });
-
-    yPosition = (doc as any).lastAutoTable.finalY + 15;
-
-    // Historia de enfermedad
-    if (expediente.historiaenfermedad) {
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Historia de Enfermedad:', 20, yPosition);
-      yPosition += 8;
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      const lineas = doc.splitTextToSize(expediente.historiaenfermedad, 170);
-      doc.text(lineas, 20, yPosition);
-      yPosition += lineas.length * 5 + 10;
-    }
-
-    return yPosition;
   }
+
+  autoTable(doc, {
+    startY: yPosition,
+    body: datosBasicos,
+    theme: 'plain',
+    styles: {
+      fontSize: 10,
+      cellPadding: 3
+    },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 60 },  // ✅ Aumentado de 50 a 60
+      1: { cellWidth: 110 }  // ✅ Aumentado de 120 a 110
+    },
+    margin: { left: 20 }
+  });
+
+  yPosition = (doc as any).lastAutoTable.finalY + 15;
+
+  // Historia de enfermedad
+  if (expediente.historiaenfermedad) {
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Historia de Enfermedad:', 20, yPosition);
+    yPosition += 8;
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    const lineas = doc.splitTextToSize(expediente.historiaenfermedad, 170);
+    doc.text(lineas, 20, yPosition);
+    yPosition += lineas.length * 5 + 10;
+  }
+
+  return yPosition;
+}
 
   private async agregarInformacionPacienteExpediente(
     doc: jsPDF, 

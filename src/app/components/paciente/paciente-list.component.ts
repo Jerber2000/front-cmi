@@ -4,7 +4,7 @@ import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, CUSTOM_ELEMENTS
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
-import { ServicioPaciente, Paciente, RespuestaPaciente } from '../../services/paciente.service';
+import { ServicioPaciente, Paciente, RespuestaPaciente, Clinica } from '../../services/paciente.service';
 import { ServicioExpediente } from '../../services/expediente.service'; 
 import { ArchivoService } from '../../services/archivo.service';
 import { AlertaService } from '../../services/alerta.service';
@@ -13,6 +13,7 @@ import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { ExpedienteListaComponent } from '../expediente/expediente';
 import { HostListener } from '@angular/core';
+
 
 // ✅ AGREGAR LA DIRECTIVA DE TELÉFONO
 import { FormatoTelefonicoDirective } from '../../directives/numeroFormato';
@@ -75,6 +76,10 @@ onEscapeKey(event: KeyboardEvent): void {
   pacientes: Paciente[] = [];
   pacientesFiltrados: Paciente[] = [];
   pacienteSeleccionado: Paciente | null = null;
+
+  // Lista de clínicas
+ clinicas: Clinica[] = []; 
+ clinicaSeleccionada: number = 0;
   
   // Formulario
   formularioPaciente: FormGroup;
@@ -151,7 +156,23 @@ obtenerIniciales(nombres?: string, apellidos?: string): string {
 
   ngOnInit(): void {
     this.cargarInformacionUsuario();
+    this.cargarClinicas(); 
     this.cargarPacientes();
+  }
+
+  /**
+   * ✅ NUEVO: Carga lista de clínicas para el filtro
+   */
+  cargarClinicas(): void {
+    this.servicioUsuario.obtenerClinicas().subscribe({
+      next: (clinicas) => {
+        this.clinicas = clinicas;
+        console.log('Clínicas cargadas:', clinicas);
+      },
+      error: (error) => {
+        console.error('Error al cargar clínicas:', error);
+      }
+    });
   }
 
   ngAfterViewInit(): void {
@@ -272,6 +293,7 @@ obtenerIniciales(nombres?: string, apellidos?: string): string {
       cui: ['', [Validators.required, Validators.pattern(/^\d{13}$/)]],
       fechanacimiento: ['', Validators.required],
       genero: ['', Validators.required],
+      fkclinica: [null],
       tipoconsulta: ['', Validators.required],
       tipodiscapacidad: ['Ninguna'],
       telefonopersonal: [''],
@@ -425,44 +447,46 @@ reiniciarFormulario(): void {
   // ==========================================
 
   
-// Carga la lista de pacientes desde el servidor
-cargarPacientes(): void {
+  // Carga la lista de pacientes desde el servidor
+  cargarPacientes(): void {
     this.cargando = true;
     this.error = '';
 
-    this.servicioUsuario.obtenerTodosLosPacientes(this.paginaActual, this.tamanoPagina, this.terminoBusqueda)
-      .pipe(takeUntil(this.destruir$))
-      .subscribe({
-        next: (respuesta: RespuestaPaciente) => {
-          if (respuesta.exito && Array.isArray(respuesta.datos)) {
-            this.pacientes = respuesta.datos;
-            this.pacientesFiltrados = [...this.pacientes];
-            
-            // AGREGAR ESTA LÍNEA para inicializar la paginación
-            this.updatePagination();
-            
-            if (respuesta.paginacion) {
-              this.totalElementos = respuesta.paginacion.total;
-              this.totalPaginas = respuesta.paginacion.totalPaginas;
-              this.paginaActual = respuesta.paginacion.pagina;
-            }
-          } else {
-            this.error = 'Error al cargar pacientes';
-            this.pacientes = [];
-            this.pacientesFiltrados = [];
-            this.servicioAlerta.alertaError('Error al cargar pacientes');
+    // ✅ NUEVO: Pasar filtro de clínica
+    const clinicaFiltro = this.clinicaSeleccionada > 0 ? this.clinicaSeleccionada : undefined;
+
+    this.servicioUsuario.obtenerTodosLosPacientes(
+      this.paginaActual,
+      this.tamanoPagina,
+      this.terminoBusqueda,
+      clinicaFiltro  // ✅ AGREGAR ESTE PARÁMETRO
+    ).subscribe({
+      next: (respuesta: RespuestaPaciente) => {
+        if (respuesta.exito) {
+          this.pacientes = Array.isArray(respuesta.datos) 
+            ? respuesta.datos 
+            : [respuesta.datos];
+          this.pacientesFiltrados = [...this.pacientes];
+          
+          if (respuesta.paginacion) {
+            this.totalElementos = respuesta.paginacion.total;
+            this.totalPaginas = respuesta.paginacion.totalPaginas;
           }
-          this.cargando = false;
-        },
-        error: (error) => {
-          console.error('Error cargando pacientes:', error);
-          this.error = 'Error de conexión';
-          this.cargando = false;
-          this.pacientes = [];
-          this.pacientesFiltrados = [];
-          this.servicioAlerta.alertaError('Error de conexión');
+          
+          this.updatePagination();
+        } else {
+          this.error = respuesta.mensaje || 'Error desconocido';
+          this.servicioAlerta.alertaError(this.error);
         }
-      });
+        this.cargando = false;
+      },
+      error: (error) => {
+        console.error('Error al cargar pacientes:', error);
+        this.error = 'Error al cargar los pacientes';
+        this.servicioAlerta.alertaError(this.error);
+        this.cargando = false;
+      }
+    });
   }
 
  //Filtra los pacientes según el término de búsqueda
@@ -822,6 +846,7 @@ private async subirTodosLosArchivos(pacienteId: number): Promise<{ rutaFotoPacie
       fechanacimiento: paciente.fechanacimiento ? 
         new Date(paciente.fechanacimiento).toISOString().split('T')[0] : '',
       genero: paciente.genero,
+      fkclinica: paciente.fkclinica || null,  
       tipoconsulta: paciente.tipoconsulta,
       tipodiscapacidad: paciente.tipodiscapacidad || 'Ninguna',
       telefonopersonal: paciente.telefonopersonal,
@@ -1015,11 +1040,46 @@ verHistorialClinicoDesdeModal(paciente: Paciente): void {
     setTimeout(() => {
       if (this.componenteExpediente) {
         this.componenteExpediente.abrirModalDesdePacientes(this.datosExpedientePaciente);
+        
+        // ✅ SUSCRIBIRSE AL EVENTO DE EXPEDIENTE CREADO
+        this.componenteExpediente.expedienteCreado.subscribe(() => {
+          console.log('Expediente creado, recargando pacientes...');
+          this.cerrarModalExpediente();
+        });
       }
     }, 100);
   }
+
   // Método vacío para expedientes (manteniendo compatibilidad)
   cerrarModalExpediente(): void {
     this.vistaActual = 'lista';
+    this.datosExpedientePaciente = null;
+    
+    // ✅ RECARGAR PACIENTES DESPUÉS DE CERRAR EL MODAL
+    this.cargarPacientes();
+  }
+
+  /**
+   * ✅ NUEVO: Maneja cambio en select de clínica
+   */
+  onClinicaChange(): void {
+    this.currentPage = 1;
+    this.cargarPacientes();
+  }
+
+  /**
+   * ✅ NUEVO: Limpia el filtro de clínica
+   */
+  limpiarFiltroClinica(): void {
+    this.clinicaSeleccionada = 0;
+    this.currentPage = 1;
+    this.cargarPacientes();
+  }
+
+  /**
+   * ✅ NUEVO: Obtiene el nombre de la clínica de un paciente
+   */
+  obtenerNombreClinica(paciente: Paciente): string {
+    return paciente.clinica?.nombreclinica || 'Sin clínica';
   }
 }

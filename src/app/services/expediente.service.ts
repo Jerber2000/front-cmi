@@ -64,13 +64,21 @@ export interface Expediente {
   fechamodificacion?: string;
   estado?: number;
   
-  // Relaciones incluidas
-  paciente?: Array<{
-    idpaciente: number;
-    nombres: string;
-    apellidos: string;
-    cui: string;
-  }>;
+  // ✅ ACTUALIZADO: Relación con paciente (incluye clínica)
+paciente?: {
+  idpaciente: number;
+  nombres: string;
+  apellidos: string;
+  cui: string;
+  fkclinica?: number;
+  clinica?: {
+    idclinica: number;
+    nombreclinica: string;
+  };
+};
+  
+  // ⚠️ OPCIONAL: Solo si usas el sistema de referencias entre clínicas
+  // Puedes dejarlo comentado o eliminarlo si no lo usas
   detallereferirpaciente?: Array<{
     idrefpaciente: number;
     comentario: string;
@@ -80,6 +88,14 @@ export interface Expediente {
       nombreclinica: string;
     };
   }>;
+}
+
+/**
+ * Interface para clínica
+ */
+export interface Clinica {
+  idclinica: number;
+  nombreclinica: string;
 }
 
 /**
@@ -105,6 +121,7 @@ export interface RespuestaListaExpedientes {
     totalPaginas: number;
   };
 }
+
 
 /**
  * Respuesta genérica para expedientes
@@ -164,13 +181,24 @@ export class ServicioExpediente {
    * @param limite - Elementos por página (por defecto 10)
    * @param busqueda - Término de búsqueda opcional
    */
-  obtenerTodosLosExpedientes(pagina: number = 1, limite: number = 10, busqueda: string = ''): Observable<RespuestaListaExpedientes> {
+
+  obtenerTodosLosExpedientes(
+    pagina: number = 1, 
+    limite: number = 10, 
+    busqueda: string = '',
+    fkclinica?: number
+  ): Observable<RespuestaListaExpedientes> {
     let parametros = new HttpParams()
       .set('pagina', pagina.toString())
       .set('limite', limite.toString());
     
     if (busqueda.trim()) {
       parametros = parametros.set('busqueda', busqueda);
+    }
+
+    // ✅ NUEVO: Agregar filtro de clínica
+    if (fkclinica && fkclinica > 0) {
+      parametros = parametros.set('fkclinica', fkclinica.toString());
     }
 
     return this.http.get<RespuestaListaExpedientes>(this.urlApi, { params: parametros });
@@ -511,6 +539,14 @@ formatearParaBackend(expediente: Partial<Expediente>): any {
     }
     
     return resumen.join(' | ') || 'Sin información adicional';
+  }
+  
+
+  /**
+   * ✅ NUEVO: Obtiene lista de clínicas para el filtro
+   */
+  obtenerClinicas(): Observable<{ exito: boolean; datos: Clinica[] }> {
+    return this.http.get<{ exito: boolean; datos: Clinica[] }>(`${this.urlApi}/clinicas`);
   }
 
   // ==========================================

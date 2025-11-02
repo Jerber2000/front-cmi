@@ -27,13 +27,34 @@
           [(ngModel)]="terminoBusqueda"
           (input)="filtrarExpedientes()"
         >
-         <!-- BOTON SE ESCONDE DE MOMENTO
+        
+        <!-- ✅ NUEVO: Filtro por clínica -->
+        <select 
+          class="select-clinica"
+          [(ngModel)]="clinicaSeleccionada"
+          (change)="onClinicaChange()"
+        >
+          <option [value]="0">Todas las clínicas</option>
+          <option *ngFor="let clinica of clinicas" [value]="clinica.idclinica">
+            {{ clinica.nombreclinica }}
+          </option>
+        </select>
+        
+        <!-- BOTON SE ESCONDE DE MOMENTO
         <button class="boton-agregar" (click)="mostrarFormulario()" *ngIf="vistaActual === 'lista'">
           <i class="fas fa-plus"></i>
         </button>
         -->
+      </div>
+      
+      <div class="informacion-encabezado">
+        <div class="informacion-fecha">
+          Fecha: {{ fechaActual | date:'dd/MM/yyyy' }}
+        </div>
+      </div>
+    </div>
 
-            <!-- Estadísticas rápidas -->
+    <!-- Estadísticas rápidas -->
     <div class="fila-estadisticas" *ngIf="vistaActual === 'lista' && estadisticas">
       <div class="tarjeta-estadistica">
         <div class="valor-estadistica">{{ estadisticas.totalExpedientes }}</div>
@@ -42,15 +63,6 @@
       <div class="tarjeta-estadistica">
         <div class="valor-estadistica">{{ estadisticas.expedientesRecientes }}</div>
         <div class="etiqueta-estadistica">Creados (últimos 7 días)</div>
-      </div>
-
-    </div>
-      </div>
-      
-      <div class="informacion-encabezado">
-        <div class="informacion-fecha">
-          Fecha: {{ fechaActual | date:'dd/MM/yyyy' }}
-        </div>
       </div>
     </div>
   </div>
@@ -61,62 +73,67 @@
       <table class="tabla-datos">
         <thead>
           <tr>
-            <th>Número de Expediente</th>
+            <th>Expediente</th>
+            <th>Paciente</th>
             <th>Historia de Enfermedad</th>
-            <th>Paciente Asignado</th>
+            <th>Clínica</th>
             <th>Fecha de Creación</th>
             <th>Editar</th>
             <th>Eliminar</th>
           </tr>
         </thead>
 
-        <!-- TABLA CORREGIDA - Reemplaza la sección de la tabla en tu HTML -->
-
         <tbody>
           <tr *ngFor="let expediente of paginatedExpedientes" class="fila-tabla">
+            
+            <!-- COLUMNA 1: Número de Expediente (SIMPLE, sin iconos) -->
             <td class="numero-expediente" (click)="verExpediente(expediente)">
               {{ expediente.numeroexpediente }}
             </td>
+
+            <!-- COLUMNA 2: Paciente (NUEVA COLUMNA SEPARADA) -->
+            <td>
+              <span *ngIf="expediente.paciente">
+                {{ expediente.paciente.nombres }} {{ expediente.paciente.apellidos }}
+              </span>
+              <span *ngIf="!expediente.paciente" class="sin-paciente">
+                Sin paciente asignado
+              </span>
+            </td>
+
+            <!-- COLUMNA 3: Historia de Enfermedad -->
             <td class="vista-previa-historia">
               {{ expediente.historiaenfermedad ? 
                   (expediente.historiaenfermedad.length > 50 ? 
                     expediente.historiaenfermedad.substring(0, 50) + '...' : 
                     expediente.historiaenfermedad) : 'No especificada' }}
             </td>
+
+            <!-- COLUMNA 4: Clínica -->
             <td>
-              <div *ngIf="expediente.paciente && expediente.paciente.length > 0" class="informacion-paciente">
-                <div class="nombre-paciente">
-                  {{ expediente.paciente[0].nombres || 'N/A' }} {{ expediente.paciente[0].apellidos || '' }}
-                </div>
-                <div class="cui-paciente">
-                  CUI: {{ expediente.paciente[0].cui || 'N/A' }}
-                </div>
-              </div>
-              
-              <div *ngIf="expediente.fkpaciente && (!expediente.paciente || expediente.paciente.length === 0)" class="paciente-no-cargado">
-                <div class="id-paciente">ID Paciente: {{ expediente.fkpaciente }}</div>
-                <div class="estado-carga">Datos no disponibles</div>
-              </div>
-              
-              <div *ngIf="!expediente.fkpaciente" class="sin-paciente">
-                Sin paciente asignado
-              </div>
+              <span *ngIf="expediente.paciente?.clinica">
+                {{ expediente.paciente?.clinica?.nombreclinica }}
+              </span>
+              <span *ngIf="!expediente.paciente?.clinica" class="sin-clinica">
+                Sin clínica asignada
+              </span>
             </td>
+
+            <!-- COLUMNA 5: Fecha de Creación -->
             <td>{{ expediente.fechacreacion | date:'dd/MM/yyyy' }}</td>
 
-                        
-            <!-- BOTÓN EDITAR -->
+            <!-- COLUMNA 6: Editar -->
             <td>
               <button 
                 class="boton-accion boton-editar" 
                 (click)="editarExpediente(expediente)"
                 title="Editar"
               >
-              Editar
+                Editar
               </button>
             </td>
             
-            <!-- BOTÓN ELIMINAR -->
+            <!-- COLUMNA 7: Eliminar -->
             <td>
               <button 
                 class="boton-accion boton-eliminar" 
@@ -130,84 +147,73 @@
         </tbody>
       </table>
 
-    <!-- 🆕 CONTROLES DE PAGINACIÓN - AGREGAR ESTA SECCIÓN COMPLETA -->
-    <div class="pagination-container" *ngIf="totalItems > 0">
-      <!-- Navegación de páginas (solo si hay más de 1 página) -->
-      <div class="pagination" *ngIf="totalPages > 1">
-        <!-- Botón anterior -->
-        <button 
-          class="pagination-btn" 
-          [class.disabled]="currentPage === 1"
-          (click)="previousPage()"
-          [disabled]="currentPage === 1"
-        >
-          <i class="fas fa-chevron-left"></i>
-        </button>
+      <!-- Paginación -->
+      <div class="pagination-container" *ngIf="totalItems > 0">
+        <div class="pagination" *ngIf="totalPages > 1">
+          <button 
+            class="pagination-btn" 
+            [class.disabled]="currentPage === 1"
+            (click)="previousPage()"
+            [disabled]="currentPage === 1"
+          >
+            <i class="fas fa-chevron-left"></i>
+          </button>
 
-        <!-- Primera página -->
-        <button 
-          *ngIf="getPages()[0] > 1"
-          class="pagination-btn"
-          (click)="goToPage(1)"
-        >
-          1
-        </button>
-        
-        <!-- Puntos suspensivos si hay salto -->
-        <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
+          <button 
+            *ngIf="getPages()[0] > 1"
+            class="pagination-btn"
+            (click)="goToPage(1)"
+          >
+            1
+          </button>
+          
+          <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
 
-        <!-- Páginas visibles -->
-        <button 
-          *ngFor="let page of getPages()"
-          class="pagination-btn"
-          [class.active]="page === currentPage"
-          (click)="goToPage(page)"
-        >
-          {{ page }}
-        </button>
+          <button 
+            *ngFor="let page of getPages()"
+            class="pagination-btn"
+            [class.active]="page === currentPage"
+            (click)="goToPage(page)"
+          >
+            {{ page }}
+          </button>
 
-        <!-- Puntos suspensivos si hay salto al final -->
-        <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
+          <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
 
-        <!-- Última página -->
-        <button 
-          *ngIf="getPages()[getPages().length - 1] < totalPages"
-          class="pagination-btn"
-          (click)="goToPage(totalPages)"
-        >
-          {{ totalPages }}
-        </button>
+          <button 
+            *ngIf="getPages()[getPages().length - 1] < totalPages"
+            class="pagination-btn"
+            (click)="goToPage(totalPages)"
+          >
+            {{ totalPages }}
+          </button>
 
-        <!-- Botón siguiente -->
-        <button 
-          class="pagination-btn" 
-          [class.disabled]="currentPage === totalPages"
-          (click)="nextPage()"
-          [disabled]="currentPage === totalPages"
-        >
-          <i class="fas fa-chevron-right"></i>
-        </button>
+          <button 
+            class="pagination-btn" 
+            [class.disabled]="currentPage === totalPages"
+            (click)="nextPage()"
+            [disabled]="currentPage === totalPages"
+          >
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+
+        <div *ngIf="totalPages <= 1" class="pagination-single">
+          Página 1 de 1
+        </div>
+
+        <div class="items-per-page">
+          <label>Mostrar:</label>
+          <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
+            <option [value]="5">5</option>
+            <option [value]="10">10</option>
+            <option [value]="20">20</option>
+            <option [value]="50">50</option>
+          </select>
+          <span>por página</span>
+        </div>
       </div>
-
-      <!-- Mostrar mensaje si solo hay una página -->
-      <div *ngIf="totalPages <= 1" class="pagination-single">
-        Página 1 de 1
-      </div>
-
-      <!-- Selector de elementos por página -->
-      <div class="items-per-page">
-        <label>Mostrar:</label>
-        <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
-          <option [value]="5">5</option>
-          <option [value]="10">10</option>
-          <option [value]="20">20</option>
-          <option [value]="50">50</option>
-        </select>
-        <span>por página</span>
-      </div>
-    </div>
-
-        
+      
       <!-- Estado sin datos -->
       <div *ngIf="expedientesFiltrados.length === 0 && !cargando" class="estado-vacio">
         <i class="fas fa-folder-open"></i>
@@ -712,11 +718,7 @@
           </div>
           <div class="grupo-formulario">
             <label>Fecha de Creación:</label>
-            <div class="campo-lectura">{{ expedienteSeleccionado.fechacreacion | date:'dd/MM/yyyy HH:mm' }}</div>
-          </div>
-          <div class="grupo-formulario">
-            <label>Usuario que Creó:</label>
-            <div class="campo-lectura">{{ expedienteSeleccionado.usuariocreacion || 'N/A' }}</div>
+            <div class="campo-lectura">{{ expedienteSeleccionado.fechacreacion | date:'dd/MM/yyyy' }}</div>
           </div>
           <div class="grupo-formulario ancho-completo" *ngIf="expedienteSeleccionado.historiaenfermedad">
             <label>Historia de Enfermedad:</label>
@@ -726,18 +728,18 @@
       </div>
 
       <!-- Paciente asignado -->
-      <div class="seccion-formulario" *ngIf="expedienteSeleccionado.paciente && expedienteSeleccionado.paciente.length > 0">
+      <div class="seccion-formulario" *ngIf="expedienteSeleccionado.paciente">
         <h4 class="titulo-seccion">
           <i class="fas fa-user"></i> Paciente Asignado
         </h4>
         <div class="grilla-formulario">
           <div class="grupo-formulario">
             <label>Nombre Completo:</label>
-            <div class="campo-lectura">{{ expedienteSeleccionado.paciente[0].nombres }} {{ expedienteSeleccionado.paciente[0].apellidos }}</div>
+            <div class="campo-lectura">{{ expedienteSeleccionado.paciente.nombres }} {{ expedienteSeleccionado.paciente.apellidos }}</div>
           </div>
           <div class="grupo-formulario">
             <label>CUI:</label>
-            <div class="campo-lectura">{{ expedienteSeleccionado.paciente[0].cui }}</div>
+            <div class="campo-lectura">{{ expedienteSeleccionado.paciente.cui }}</div>
           </div>
         </div>
       </div>

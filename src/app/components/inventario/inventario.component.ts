@@ -71,7 +71,7 @@ export class InventarioComponent implements OnInit, AfterViewInit {
       precio: [0, [Validators.min(0)]],
       observaciones: [''],
       fechaingreso: [''],
-      fechaegreso: ['']
+      fechavencimiento: ['']
     });
   }
 
@@ -272,7 +272,7 @@ export class InventarioComponent implements OnInit, AfterViewInit {
       precio: this.medicamentoForm.value.precio || undefined,
       observaciones: this.medicamentoForm.value.observaciones || undefined,
       fechaingreso: this.medicamentoForm.value.fechaingreso || undefined,
-      fechaegreso: this.medicamentoForm.value.fechaegreso || undefined,
+      fechavencimiento: this.medicamentoForm.value.fechavencimiento || undefined,
       usuariocreacion: this.usuarioActual.usuario
     };
 
@@ -303,7 +303,7 @@ export class InventarioComponent implements OnInit, AfterViewInit {
       precio: medicamento.precio,
       observaciones: medicamento.observaciones,
       fechaingreso: medicamento.fechaingreso ? medicamento.fechaingreso.split('T')[0] : '',
-      fechaegreso: medicamento.fechaegreso ? medicamento.fechaegreso.split('T')[0] : ''
+      fechavencimiento: medicamento.fechavencimiento ? medicamento.fechavencimiento.split('T')[0] : ''
     });
     
     this.mostrarModalEditar = true;
@@ -332,7 +332,7 @@ export class InventarioComponent implements OnInit, AfterViewInit {
       precio: this.medicamentoForm.value.precio,
       observaciones: this.medicamentoForm.value.observaciones,
       fechaingreso: this.medicamentoForm.value.fechaingreso,
-      fechaegreso: this.medicamentoForm.value.fechaegreso,
+      fechavencimiento: this.medicamentoForm.value.fechavencimiento, 
       usuariomodificacion: this.usuarioActual.usuario
     };
 

@@ -36,9 +36,22 @@
           [(ngModel)]="terminoBusqueda"
           (input)="filtrarPacientes()"
         >
+        
         <button class="boton-agregar" (click)="mostrarFormulario()" *ngIf="vistaActual === 'lista'">
           <i class="fas fa-plus"></i>
         </button>
+
+        <!-- Filtro por clínica -->
+        <select 
+          class="select-clinica"
+          [(ngModel)]="clinicaSeleccionada"
+          (change)="onClinicaChange()"
+        >
+          <option [value]="0">Todas las clínicas</option>
+          <option *ngFor="let clinica of clinicas" [value]="clinica.idclinica">
+            {{ clinica.nombreclinica }}
+          </option>
+        </select>
       </div>
       
       <div class="informacion-encabezado">
@@ -59,6 +72,7 @@
           <th>Edad</th>
           <th>CUI</th>
           <th>Teléfono</th>
+          <th>Clínica</th>
           <th>Historial</th>
           <th>Acciones</th>
         </tr>
@@ -72,6 +86,11 @@
           <td>{{ calcularEdad(paciente.fechanacimiento) }} años</td>
           <td>{{ paciente.cui }}</td>
           <td>{{ paciente.telefonopersonal || 'No registrado' }}</td>
+          <td>
+            <span class="badge-clinica">
+              {{ obtenerNombreClinica(paciente) }}
+            </span>
+          </td>
           <td>
             <span *ngIf="obtenerInformacionExpedientePaciente(paciente).tieneExpediente" 
                   class="insignia-expediente expediente-existe">
@@ -473,6 +492,16 @@
                   <option value="F">Femenino</option>
                 </select>
                 <div *ngIf="esCampoInvalido('genero')" class="texto-error">{{ obtenerErrorCampo('genero') }}</div>
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Clínica</label>
+                <select formControlName="fkclinica" class="entrada-formulario">
+                  <option [value]="null">Sin clínica asignada</option>
+                  <option *ngFor="let clinica of clinicas" [value]="clinica.idclinica">
+                    {{ clinica.nombreclinica }}
+                  </option>
+                </select>
               </div>
 
               <div class="grupo-formulario">

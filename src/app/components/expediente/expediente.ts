@@ -70,6 +70,10 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
   informacionUsuario: any = { name: 'Usuario', avatar: null };
   error = '';
 
+  //Variables para filtro de clínica
+  clinicas: any[] = [];
+  clinicaSeleccionada: number = 0; // 0 = Todas las clínicas
+
   constructor(
     private servicioExpediente: ServicioExpediente,
     private fb: FormBuilder,
@@ -83,6 +87,7 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
 
   ngOnInit(): void {
     this.cargarInformacionUsuario();
+    this.cargarClinicas();
     this.cargarExpedientes();
     this.cargarEstadisticas();
   }
@@ -338,9 +343,8 @@ verExpedienteConOpciones(expediente: Expediente): void {
  * Obtiene el nombre del paciente de forma segura
  */
 private obtenerNombrePaciente(expediente: Expediente): string {
-  if (expediente.paciente && expediente.paciente.length > 0) {
-    const paciente = expediente.paciente[0];
-    return `${paciente.nombres || ''} ${paciente.apellidos || ''}`.trim();
+  if (expediente.paciente) {
+    return `${expediente.paciente.nombres || ''} ${expediente.paciente.apellidos || ''}`.trim();
   } else if (expediente.fkpaciente) {
     return `Paciente ID: ${expediente.fkpaciente}`;
   } else {
@@ -401,63 +405,48 @@ private obtenerNombrePaciente(expediente: Expediente): string {
    * Carga la lista de expedientes desde el servidor - ESTRUCTURA ARREGLADA
    */
 cargarExpedientes(): void {
-    console.log('📥 Cargando expedientes...');
-    this.cargando = true;
-    this.error = '';
+  this.cargando = true;
+  this.error = '';
 
-    this.servicioExpediente.obtenerTodosLosExpedientes(this.paginaActual, this.tamanoPagina, this.terminoBusqueda)
-      .pipe(takeUntil(this.destruir$))
-      .subscribe({
-        next: (respuesta: RespuestaListaExpedientes) => {
-          console.log('📦 Respuesta completa del servidor:', respuesta);
-          
-          if (respuesta.exito && Array.isArray(respuesta.datos)) {
-            console.log('📋 Expedientes recibidos:', respuesta.datos.length);
-            
-            // Normalizar la estructura del paciente
-            const expedientesNormalizados = respuesta.datos.map(exp => {
-              if (exp.paciente) {
-                if (!Array.isArray(exp.paciente)) {
-                  exp.paciente = [exp.paciente];
-                }
-              } else if (exp.fkpaciente) {
-                exp.paciente = [];
-              } else {
-                exp.paciente = [];
-              }
-              return exp;
-            });
-            
-            this.expedientes = expedientesNormalizados;
-            this.expedientesFiltrados = [...this.expedientes];
-            
-            // AGREGAR ESTA LÍNEA para inicializar la paginación
-            this.updatePagination();
-            
-            if (respuesta.paginacion) {
-              this.totalElementos = respuesta.paginacion.total;
-              this.totalPaginas = respuesta.paginacion.totalPaginas;
-              this.paginaActual = respuesta.paginacion.pagina;
-            }
-          } else {
-            console.warn('⚠️ Respuesta no válida:', respuesta);
-            this.error = 'Error al cargar expedientes';
-            this.expedientes = [];
-            this.expedientesFiltrados = [];
-            this.servicioAlerta.alertaError('Error al cargar expedientes');
-          }
-          this.cargando = false;
-        },
-        error: (error: any) => {
-          console.error('❌ Error al cargar expedientes:', error);
-          this.error = 'Error de conexión';
-          this.cargando = false;
-          this.expedientes = [];
-          this.expedientesFiltrados = [];
-          this.servicioAlerta.alertaError('Error de conexión al cargar expedientes');
+  const clinicaFiltro = this.clinicaSeleccionada > 0 ? this.clinicaSeleccionada : undefined;
+
+  this.servicioExpediente.obtenerTodosLosExpedientes(
+    this.paginaActual,
+    this.tamanoPagina,
+    this.terminoBusqueda,
+    clinicaFiltro
+  ).subscribe({
+    next: (respuesta: RespuestaListaExpedientes) => {
+      if (respuesta.exito) {
+        this.expedientes = respuesta.datos || [];
+        this.expedientesFiltrados = [...this.expedientes];
+        
+        // ✅ AGREGAR ESTOS LOGS
+        console.log('📦 Total expedientes:', this.expedientes.length);
+        console.log('📦 Primer expediente completo:', this.expedientes[0]);
+        console.log('👤 Estructura de paciente:', this.expedientes[0]?.paciente);
+        console.log('🏥 Estructura de clínica:', this.expedientes[0]?.paciente?.clinica);
+        
+        if (respuesta.paginacion) {
+          this.totalElementos = respuesta.paginacion.total;
+          this.totalPaginas = respuesta.paginacion.totalPaginas;
         }
-      });
-  }
+        
+        this.updatePagination();
+      } else {
+        this.error = 'Error al cargar expedientes';
+        this.servicioAlerta.alertaError(this.error);
+      }
+      this.cargando = false;
+    },
+    error: (error) => {
+      console.error('❌ Error al cargar expedientes:', error);
+      this.error = 'Error al cargar los expedientes';
+      this.servicioAlerta.alertaError(this.error);
+      this.cargando = false;
+    }
+  });
+}
 
   /**
    * Carga las estadísticas de expedientes
@@ -478,6 +467,30 @@ cargarExpedientes(): void {
   }
 
   /**
+   * ✅ NUEVO: Carga lista de clínicas para el filtro
+   */
+  cargarClinicas(): void {
+    console.log('🔍 Llamando a obtenerClinicas()...');
+    this.servicioExpediente.obtenerClinicas().subscribe({
+      next: (respuesta) => {
+        console.log('📦 Respuesta completa:', respuesta);
+        console.log('✅ respuesta.exito:', respuesta.exito);
+        console.log('📋 respuesta.datos:', respuesta.datos);
+        
+        if (respuesta.exito) {
+          this.clinicas = respuesta.datos;
+          console.log('🏥 Clínicas asignadas:', this.clinicas);
+        } else {
+          console.warn('⚠️ Respuesta sin éxito:', respuesta);
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error al cargar clínicas:', error);
+      }
+    });
+  }
+
+  /**
    * Filtra los expedientes según el término de búsqueda
    */
   filtrarExpedientes(): void {
@@ -488,13 +501,13 @@ cargarExpedientes(): void {
       this.expedientesFiltrados = this.expedientes.filter(expediente =>
         expediente.numeroexpediente.toLowerCase().includes(termino) ||
         (expediente.historiaenfermedad && expediente.historiaenfermedad.toLowerCase().includes(termino)) ||
-        (expediente.paciente && expediente.paciente.length > 0 && 
-         (expediente.paciente[0].nombres.toLowerCase().includes(termino) ||
-          expediente.paciente[0].apellidos.toLowerCase().includes(termino) ||
-          expediente.paciente[0].cui.toLowerCase().includes(termino)))
+        (expediente.paciente && 
+        (expediente.paciente.nombres.toLowerCase().includes(termino) ||
+          expediente.paciente.apellidos.toLowerCase().includes(termino) ||
+          expediente.paciente.cui.toLowerCase().includes(termino)))
       );
     }
-  
+
     this.currentPage = 1;
     this.updatePagination();
   }
@@ -1098,5 +1111,32 @@ llenarFormulario(expediente: Expediente): void {
     const end = Math.min(this.currentPage * this.itemsPerPage, this.totalItems);
     return `${start} - ${end}`;
   }
+
+  /**
+ * ✅ NUEVO: Maneja cambio en select de clínica
+ */
+onClinicaChange(): void {
+  this.currentPage = 1;
+  this.cargarExpedientes();
+}
+
+/**
+ * ✅ NUEVO: Limpia el filtro de clínica
+ */
+limpiarFiltroClinica(): void {
+  this.clinicaSeleccionada = 0;
+  this.currentPage = 1;
+  this.cargarExpedientes();
+}
+
+/**
+ * Obtiene el nombre de la clínica del paciente
+ */
+obtenerNombreClinica(expediente: Expediente): string {
+  if (expediente.paciente?.clinica) {
+    return expediente.paciente.clinica.nombreclinica;
+  }
+  return 'Sin clínica asignada';
+}
   
 }

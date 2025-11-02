@@ -1038,6 +1038,29 @@
   box-shadow: 0 4px 8px rgba(108, 117, 125, 0.4);
 }
 
+
+.btn-crear-referido {
+  background: linear-gradient(135deg, #2f6e66, #245851);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(36, 88, 81, 0.3);
+}
+
+.btn-crear-referido:hover {
+  background: linear-gradient(135deg, #245851, #1d4640);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(36, 88, 81, 0.4);
+}
+
 /* ====================================
    VISTA DE NOTAS RÁPIDAS
    ==================================== */
