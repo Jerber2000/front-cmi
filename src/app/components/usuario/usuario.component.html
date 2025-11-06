@@ -59,13 +59,7 @@
               {{ user.nombres }} {{ user.apellidos}}
             </td>
             <td>
-              {{ user.fkrol == 1 ? 'Administrador' : 
-                user.fkrol == 2 ? 'Doctor' : 
-                user.fkrol == 3 ? 'Enfermero' : 
-                user.fkrol == 4 ? 'Psicólogo' : 
-                user.fkrol == 5 ? 'Fisioterapeuta' : 
-                user.fkrol == 6 ? 'Nutricionista' : 
-                user.fkrol == 7 ? 'Recepcionista' : 'Sin rol' }}
+              {{ getRoleName(user.fkrol) }}
             </td>
             <td>{{ user.correo }}</td>
             <td>{{ user.telinstitucional }}</td>

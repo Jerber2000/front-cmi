@@ -151,7 +151,13 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
     }
     return '';
   }
+  
+  getRoleName(fkrol: number): string {
+    const rol = this.roles.find(r => r.idrol === fkrol);
+    return rol ? rol.nombre : 'Sin rol';
+  }
 
+  
   private getFieldDisplayName(fieldName: string): string {
     const fieldNames: { [key: string]: string } = {
       'nombres': 'Nombres',

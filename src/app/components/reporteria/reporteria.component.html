@@ -1045,13 +1045,13 @@
               <div>{{ item.usuario?.nombres }} {{ item.usuario?.apellidos }}</div>
               <div class="text-muted small" *ngIf="item.usuario?.rol">{{ item.usuario.rol }}</div>
             </td>
-            <td>
-              <span class="badge-estado" 
-                    [class.activo]="item.activo === 1" 
-                    [class.anulado]="item.activo === 0">
-                {{ item.activo === 1 ? 'Activa' : 'Anulada' }}
-              </span>
-            </td>
+              <td>
+                <span class="badge-estado" 
+                      [class.activo]="item.estado === 1" 
+                      [class.anulado]="item.estado === 0">
+                  {{ item.estado === 1 ? 'ACTIVA' : 'ANULADA' }}
+                </span>
+              </td>
           </tr>
           <tr *ngIf="datosPaginados.length === 0">
             <td colspan="7" class="empty-state">

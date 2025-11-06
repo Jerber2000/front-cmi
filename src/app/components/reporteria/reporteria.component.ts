@@ -57,7 +57,8 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
   filtrosReferenciasForm: FormGroup;
   filtrosSalidas: FiltrosSalidas = {
     page: 1,
-    limit: 10
+    limit: 10,
+    estado: ''
   };
   
   aniosDisponibles: number[] = [];
