@@ -701,20 +701,25 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
       }
       
       try {
-        // 1. SUBIR ARCHIVOS PRIMERO (si hay)
+        // ========================================================================
+        // ✅ MANEJO DE FOTO - Backend elimina automáticamente la anterior
+        // ========================================================================
         let rutaFoto = '';
-        let rutaDocumento = '';
         
-        const usuarioId = this.selectedUser?.idusuario || 0; // Para creación usar 0
-        
-        if (this.selectedPhoto || this.selectedDocument) {
-          const archivos: { foto?: File, documento?: File } = {};
-          if (this.selectedPhoto) archivos.foto = this.selectedPhoto;
-          if (this.selectedDocument) archivos.documento = this.selectedDocument;
+        if (this.selectedPhoto) {
+          const usuarioId = this.selectedUser?.idusuario || 0;
           
-          const resultadoArchivos = await this.archivoService.subirArchivos('usuarios', usuarioId, archivos);
-          rutaFoto = resultadoArchivos.rutaFoto || '';
-          rutaDocumento = resultadoArchivos.rutaDocumento || '';
+          // ✅ Enviar ruta anterior (si existe) para que el backend la elimine
+          const rutaAnterior = this.selectedUser?.rutafotoperfil || '';
+          
+          rutaFoto = await this.archivoService.subirFoto(
+            'usuarios',
+            usuarioId,
+            this.selectedPhoto,
+            rutaAnterior  // ✅ Backend eliminará esta si viene
+          );
+          
+          console.log('✅ Foto subida:', rutaFoto);
         }
 
         const currentUserId = this.getCurrentUserId();

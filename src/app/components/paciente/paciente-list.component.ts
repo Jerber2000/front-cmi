@@ -683,8 +683,14 @@ private limpiarArchivosSeleccionados(): void {
     return !!(this.selectedFotoPaciente || this.selectedFotoEncargado || this.selectedCartaAutorizacion);
   }
   
-//Sube todos los archivos seleccionados
-private async subirTodosLosArchivos(pacienteId: number): Promise<{ rutaFotoPaciente?: string, rutaFotoEncargado?: string, rutaCartaAutorizacion?: string }> {
+/**
+ * ✅ Sube todos los archivos seleccionados con eliminación automática de anteriores
+ */
+private async subirTodosLosArchivos(pacienteId: number): Promise<{ 
+  rutaFotoPaciente?: string, 
+  rutaFotoEncargado?: string, 
+  rutaCartaAutorizacion?: string 
+}> {
   if (!this.tieneArchivosParaSubir()) {
     return {};
   }
@@ -692,39 +698,58 @@ private async subirTodosLosArchivos(pacienteId: number): Promise<{ rutaFotoPacie
   this.subiendoArchivos = true;
 
   try {
-    const resultados: { rutaFotoPaciente?: string, rutaFotoEncargado?: string, rutaCartaAutorizacion?: string } = {};
+    const resultados: { 
+      rutaFotoPaciente?: string, 
+      rutaFotoEncargado?: string, 
+      rutaCartaAutorizacion?: string 
+    } = {};
 
-    // Subir todos los archivos de una vez usando subirArchivos
-    // Preparar archivos para subida múltiple
-    const archivosParaSubir: { foto?: File, documento?: File } = {};
+    // ✅ OBTENER RUTAS ANTERIORES del paciente actual
+    const pacienteActual = this.pacienteSeleccionado;
+    const rutaFotoPacienteAnterior = pacienteActual?.rutafotoperfil || '';
+    const rutaFotoEncargadoAnterior = pacienteActual?.rutafotoencargado || '';
+    const rutaCartaAnterior = pacienteActual?.rutacartaautorizacion || '';
 
-    // Priorizar foto del paciente como 'foto' principal
+    // ✅ 1. SUBIR FOTO DEL PACIENTE (elimina anterior automáticamente)
     if (this.selectedFotoPaciente) {
-      archivosParaSubir.foto = this.selectedFotoPaciente;
+      console.log('📸 Subiendo foto del paciente...');
+      resultados.rutaFotoPaciente = await this.archivoService.subirFoto(
+        'pacientes',
+        pacienteId,
+        this.selectedFotoPaciente,
+        rutaFotoPacienteAnterior  // ✅ Backend eliminará esta
+      );
+      console.log('✅ Foto paciente subida:', resultados.rutaFotoPaciente);
     }
 
-    // Si hay carta de autorización, usar como 'documento'
-    if (this.selectedCartaAutorizacion) {
-      archivosParaSubir.documento = this.selectedCartaAutorizacion;
-    }
-
-    // Subir foto del paciente y carta de autorización juntos
-    if (Object.keys(archivosParaSubir).length > 0) {
-      const resultado = await this.archivoService.subirArchivos('pacientes', pacienteId, archivosParaSubir);
-      if (resultado.rutaFoto) resultados.rutaFotoPaciente = resultado.rutaFoto;
-      if (resultado.rutaDocumento) resultados.rutaCartaAutorizacion = resultado.rutaDocumento;
-    }
-
-    // Subir foto del encargado por separado usando subirFoto
+    // ✅ 2. SUBIR FOTO DEL ENCARGADO (elimina anterior automáticamente)
     if (this.selectedFotoEncargado) {
-      const rutaEncargado = await this.archivoService.subirFoto('pacientes', pacienteId, this.selectedFotoEncargado);
-      resultados.rutaFotoEncargado = rutaEncargado;
+      console.log('📸 Subiendo foto del encargado...');
+      resultados.rutaFotoEncargado = await this.archivoService.subirFoto(
+        'pacientes',
+        pacienteId,
+        this.selectedFotoEncargado,
+        rutaFotoEncargadoAnterior  // ✅ Backend eliminará esta
+      );
+      console.log('✅ Foto encargado subida:', resultados.rutaFotoEncargado);
+    }
+
+    // ✅ 3. SUBIR CARTA DE AUTORIZACIÓN (elimina anterior automáticamente)
+    if (this.selectedCartaAutorizacion) {
+      console.log('📄 Subiendo carta de autorización...');
+      resultados.rutaCartaAutorizacion = await this.archivoService.subirDocumento(
+        'pacientes',
+        pacienteId,
+        this.selectedCartaAutorizacion,
+        rutaCartaAnterior  // ✅ Backend eliminará esta
+      );
+      console.log('✅ Carta autorización subida:', resultados.rutaCartaAutorizacion);
     }
 
     return resultados;
     
   } catch (error) {
-    console.error('Error subiendo archivos:', error);
+    console.error('❌ Error subiendo archivos de paciente:', error);
     throw error;
   } finally {
     this.subiendoArchivos = false;

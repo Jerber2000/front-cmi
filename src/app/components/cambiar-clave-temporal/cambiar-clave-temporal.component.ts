@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, AbstractControl, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router'; // ← Agregar Router
+import { Router, RouterLink } from '@angular/router';
 import { AuthService, CambiarClaveRequest } from '../../services/auth.service';
 import { AlertaService } from '../../services/alerta.service';
 
@@ -10,7 +10,8 @@ import { AlertaService } from '../../services/alerta.service';
   standalone: true,
   imports: [
     CommonModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    RouterLink  
   ],
   templateUrl: './cambiar-clave-temporal.component.html',
   styleUrls: ['./cambiar-clave-temporal.component.css']

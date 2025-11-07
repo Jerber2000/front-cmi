@@ -1,5 +1,5 @@
-// historialMedico.component.ts - ADAPTADO PARA ArchivoService
-import { Component, OnInit, AfterViewInit } from '@angular/core';
+// historialMedico.ts
+import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
@@ -27,7 +27,8 @@ import { ReferidosComponent } from '../referidos/referidos.component';
   templateUrl: './historialMedico.html',
   styleUrls: ['./historialMedico.scss']
 })
-export class HistorialMedicoComponent implements OnInit, AfterViewInit {
+
+export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestroy {
   currentView: 'historial' | 'nueva-sesion' | 'diagnostico' | 'notas-rapidas' = 'historial';
   sidebarExpanded = true;
   loading = false;
@@ -81,6 +82,88 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit {
     });
   }
 
+
+/**
+ * ✅ Elimina el archivo de una sesión (sin obtenerSesion)
+ */
+async eliminarArchivoExistente(archivo: any): Promise<void> {
+  if (!this.sesionActual) {
+    this.alerta.alertaError('No hay sesión seleccionada');
+    return;
+  }
+
+  const confirmado = await this.alerta.alertaConfirmacion(
+    '¿Eliminar archivo?',
+    `Se eliminará "${archivo.nombre}" de forma permanente`,
+    'Sí, eliminar',
+    'Cancelar'
+  );
+
+  if (!confirmado) return;
+
+  this.loading = true;
+
+  try {
+    // 1. Eliminar archivo físico del servidor
+    const rutaEliminar = archivo.rutaServicio || archivo.ruta;
+    
+    if (rutaEliminar) {
+      await this.archivoService.eliminarArchivo(rutaEliminar);
+      console.log('✅ Archivo físico eliminado:', rutaEliminar);
+    }
+
+    // 2. Actualizar BD (sin archivo)
+    await this.historialService.actualizarRutaArchivos(
+      this.sesionActual.idhistorial,
+      ''  // ✅ Sin archivo
+    ).toPromise();
+
+    // 3. Actualizar memoria
+    this.sesionActual.rutahistorialclinico = '';
+
+    // 4. Recargar archivos
+    await this.cargarArchivosExistentes(this.sesionActual.idhistorial);
+
+    this.alerta.alertaExito('Archivo eliminado correctamente');
+
+  } catch (error: any) {
+    console.error('❌ Error eliminando archivo:', error);
+    this.alerta.alertaError(error.message || 'Error al eliminar archivo');
+  } finally {
+    this.loading = false;
+  }
+}
+
+/**
+ * ✅ Obtiene el ícono según el tipo de archivo
+ */
+obtenerIconoArchivo(archivo: any): string {
+  const nombre = archivo.nombre || archivo.nombreOriginal || '';
+  const extension = nombre.toLowerCase().split('.').pop();
+
+  switch (extension) {
+    case 'pdf': return '📄';
+    case 'jpg':
+    case 'jpeg':
+    case 'png':
+    case 'webp':
+    case 'gif': return '🖼️';
+    case 'doc':
+    case 'docx': return '📝';
+    case 'xls':
+    case 'xlsx': return '📊';
+    default: return '📎';
+  }
+}
+
+/**
+ * ✅ Verifica si es imagen
+ */
+esImagen(archivo: any): boolean {
+  const nombre = archivo.nombre || archivo.nombreOriginal || '';
+  const extension = nombre.toLowerCase().split('.').pop();
+  return ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(extension || '');
+}
   //abrir modal de referido
   abrirModalReferido(): void {
     if (!this.infoPaciente) {
@@ -168,59 +251,64 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit {
     }
   }
 
-  // ✅ CAMBIO 3: Cargar datos del paciente con foto
-  cargarDatosPaciente(): void {
-    this.loading = true;
-    
-    // Intentar obtener datos del sessionStorage
-    const datosPacienteStr = sessionStorage.getItem('datosPacienteHistorial');
-    
-    if (datosPacienteStr) {
-      try {
-        const datosFromPacientes = JSON.parse(datosPacienteStr);
-        
-        // Transformar los datos del formato de Paciente al formato de InfoPaciente
-        this.infoPaciente = {
-          idpaciente: datosFromPacientes.idpaciente,
-          nombres: datosFromPacientes.nombres,
-          apellidos: datosFromPacientes.apellidos,
-          cui: datosFromPacientes.cui,
-          fechanacimiento: datosFromPacientes.fechanacimiento,
-          expedientes: datosFromPacientes.expedientes || []
-        };
-        
-        // ✅ OBTENER FOTO DEL PACIENTE
-        if (datosFromPacientes.rutafotoperfil) {
-          this.fotoPacienteUrl = this.archivoService.obtenerUrlPublica(datosFromPacientes.rutafotoperfil);
-        }
-        
-        // Limpiar sessionStorage después de usar los datos
-        sessionStorage.removeItem('datosPacienteHistorial');
-        
-        this.loading = false;
-        this.cargarHistorial();
-        return;
-        
-      } catch (error) {
-        console.error('Error parseando datos del paciente desde sessionStorage:', error);
+// ✅ VERSIÓN CORREGIDA - NO elimina sessionStorage inmediatamente
+cargarDatosPaciente(): void {
+  this.loading = true;
+  
+  // Intentar obtener datos del sessionStorage
+  const datosPacienteStr = sessionStorage.getItem('datosPacienteHistorial');
+  
+  if (datosPacienteStr) {
+    try {
+      const datosFromPacientes = JSON.parse(datosPacienteStr);
+      
+      // Transformar los datos del formato de Paciente al formato de InfoPaciente
+      this.infoPaciente = {
+        idpaciente: datosFromPacientes.idpaciente,
+        nombres: datosFromPacientes.nombres,
+        apellidos: datosFromPacientes.apellidos,
+        cui: datosFromPacientes.cui,
+        fechanacimiento: datosFromPacientes.fechanacimiento,
+        expedientes: datosFromPacientes.expedientes || []
+      };
+      
+      // ✅ OBTENER FOTO DEL PACIENTE
+      if (datosFromPacientes.rutafotoperfil) {
+        this.fotoPacienteUrl = this.archivoService.obtenerUrlPublica(datosFromPacientes.rutafotoperfil);
       }
+      
+      // ❌ NO ELIMINAR sessionStorage AQUÍ
+      // sessionStorage.removeItem('datosPacienteHistorial');
+      
+      this.loading = false;
+      this.cargarHistorial();
+      return;
+      
+    } catch (error) {
+      console.error('Error parseando datos del paciente desde sessionStorage:', error);
     }
-    
-    // Fallback: Si no hay datos en sessionStorage, intentar cargar del backend
-    this.historialService.obtenerInfoPaciente(this.idPaciente).subscribe({
-      next: (info: InfoPaciente) => {
-        this.infoPaciente = info;
-        // TODO: Aquí necesitarías obtener la foto del paciente desde el servicio de pacientes
-        this.cargarHistorial();
-      },
-      error: (error: any) => {
-        console.error('Error cargando info del paciente:', error);
-        this.loading = false;
-        this.alerta.alertaError('Error al cargar información del paciente');
-      }
-    });
   }
   
+  // Fallback: Si no hay datos en sessionStorage, intentar cargar del backend
+  this.historialService.obtenerInfoPaciente(this.idPaciente).subscribe({
+    next: (info: InfoPaciente) => {
+      this.infoPaciente = info;
+      
+      // ✅ OBTENER FOTO DEL PACIENTE DESDE EL BACKEND
+      if (info.rutafotoperfil) {
+        this.fotoPacienteUrl = this.archivoService.obtenerUrlPublica(info.rutafotoperfil);
+      }
+      
+      this.cargarHistorial();
+    },
+    error: (error: any) => {
+      console.error('Error cargando info del paciente:', error);
+      this.loading = false;
+      this.alerta.alertaError('Error al cargar información del paciente');
+    }
+  });
+}
+
 
   cargarHistorial(): void {
     this.historialService.obtenerHistorialPorPaciente(this.idPaciente).subscribe({
@@ -277,97 +365,41 @@ mostrarDiagnostico(sesion: HistorialMedico): void {
     this.limpiarInputArchivos();
   }
 
-  // ✅ CAMBIO 4: Método para seleccionar archivos mejorado
-  onFilesSelected(event: any): void {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
+// ✅ LIMITAR A 1 SOLO ARCHIVO (como pacientes)
+onFilesSelected(event: any): void {
+  const files = event.target.files;
+  if (!files || files.length === 0) return;
 
-    // Validar número total de archivos
-    if (this.selectedFiles.length + files.length > this.maxArchivos) {
-      this.alerta.alertaError(`Máximo ${this.maxArchivos} archivos permitidos`);
-      return;
-    }
-
-    // Procesar cada archivo
-    for (let i = 0; i < files.length; i++) {
-      const archivo = files[i];
-      
-      // Verificar duplicados
-      const yaExiste = this.selectedFiles.some(f => 
-        f.name === archivo.name && f.size === archivo.size
-      );
-      
-      if (yaExiste) {
-        this.alerta.alertaPreventiva(`${archivo.name} ya está seleccionado`);
-        continue;
-      }
-      
-      // Validar usando ArchivoService
-      const validation = this.archivoService.validarArchivo(
-        archivo,
-        archivo.type.startsWith('image/') ? 'image' : 'document',
-        this.tamañoMaximoMB
-      );
-
-      if (!validation.valido) {
-        this.alerta.alertaError(`${archivo.name}: ${validation.error}`);
-        continue;
-      }
-
-      this.selectedFiles.push(archivo);
-    }
-
-    // Validar tamaño total
-    const tamañoTotal = this.selectedFiles.reduce((sum, file) => sum + file.size, 0);
-    const tamañoTotalMB = tamañoTotal / (1024 * 1024);
-    
-    if (tamañoTotalMB > this.tamañoTotalMaximoMB) {
-      this.alerta.alertaError(`Tamaño total no puede superar ${this.tamañoTotalMaximoMB}MB`);
-      // Remover el último archivo agregado
-      this.selectedFiles.pop();
-    }
-
-    // Limpiar input
+  // ✅ SOLO PERMITIR 1 ARCHIVO
+  if (files.length > 1) {
+    this.alerta.alertaError('Solo puedes subir 1 archivo por sesión');
     event.target.value = '';
+    return;
   }
 
-// REEMPLAZAR TODO EL MÉTODO subirArchivos en historial por este:
-async subirArchivos(): Promise<boolean> {
-  if (this.selectedFiles.length === 0) {
-    return true;
+  const archivo = files[0];
+  
+  // Validar usando ArchivoService
+  const validation = this.archivoService.validarArchivo(
+    archivo,
+    archivo.type.startsWith('image/') ? 'image' : 'document',
+    this.tamañoMaximoMB
+  );
+
+  if (!validation.valido) {
+    this.alerta.alertaError(`${archivo.name}: ${validation.error}`);
+    event.target.value = '';
+    return;
   }
 
-  this.archivosSubiendo = true;
+  // ✅ REEMPLAZAR (no agregar)
+  this.selectedFiles = [archivo];
 
-  try {
-    // Usar el mismo patrón que usuarios
-    const archivos: { foto?: File, documento?: File } = {};
-    
-    // Separar archivos por tipo
-    this.selectedFiles.forEach(archivo => {
-      if (archivo.type.startsWith('image/')) {
-        archivos.foto = archivo; // Solo tomar la primera imagen
-      } else {
-        archivos.documento = archivo; // Solo tomar el primer documento
-      }
-    });
-
-    // Usar el mismo método que usuarios
-    await this.archivoService.subirArchivos('historiales', this.idPaciente, archivos);
-    
-    this.selectedFiles = [];
-    return true;
-    
-  } catch (error) {
-    console.error('Error subiendo archivos:', error);
-    this.alerta.alertaError('Error al subir archivos');
-    return false;
-  } finally {
-    this.archivosSubiendo = false;
-  }
+  // Limpiar input
+  event.target.value = '';
 }
 
-// ✅ CORRECCIÓN 3: Tipado correcto para errores
+// ✅ CREAR SESIÓN (sin rutaAnterior porque es nuevo)
 async crearSesion(): Promise<void> {
   if (this.sesionForm.valid && this.infoPaciente) {
     this.loading = true;
@@ -382,7 +414,6 @@ async crearSesion(): Promise<void> {
     const usuario = JSON.parse(usuarioData);
     const formData = this.sesionForm.value;
     
-    // ✅ CORRECCIÓN: Definir nuevaSesion
     const nuevaSesion: CrearSesionRequest = {
       fkpaciente: this.idPaciente,
       fkusuario: usuario.idusuario,
@@ -398,23 +429,42 @@ async crearSesion(): Promise<void> {
       // 1. Crear la sesión primero
       const sesionCreada = await this.historialService.crearSesion(nuevaSesion).toPromise();
       
-      // ✅ CORRECCIÓN: Validar que sesionCreada no sea undefined
       if (!sesionCreada) {
         throw new Error('Error al crear la sesión');
       }
       
-      // 2. Subir archivos si existen
+      // 2. Si hay UN archivo, subirlo (SIN rutaAnterior porque es nuevo)
       let mensajeFinal = 'Sesión creada correctamente';
       
       if (this.selectedFiles.length > 0) {
-        const rutasSubidas = await this.subirArchivosHistorial(sesionCreada.idhistorial);
+        // ✅ TOMAR SOLO EL PRIMER ARCHIVO
+        const archivo = this.selectedFiles[0];
         
-        if (rutasSubidas.length > 0) {
-          const rutaArchivos = rutasSubidas.join(',');
-          // Actualizar la sesión con las rutas de archivos
-          await this.historialService.actualizarRutaArchivos(sesionCreada.idhistorial, rutaArchivos).toPromise();
-          mensajeFinal = 'Sesión creada con archivos correctamente';
+        let rutaArchivo: string;
+        
+        if (archivo.type.startsWith('image/')) {
+          rutaArchivo = await this.archivoService.subirFoto(
+            'historiales', 
+            sesionCreada.idhistorial, 
+            archivo
+            // ✅ SIN rutaAnterior porque es sesión nueva
+          );
+        } else {
+          rutaArchivo = await this.archivoService.subirDocumento(
+            'historiales', 
+            sesionCreada.idhistorial, 
+            archivo
+            // ✅ SIN rutaAnterior porque es sesión nueva
+          );
         }
+        
+        // Actualizar la sesión con la ruta del archivo
+        await this.historialService.actualizarRutaArchivos(
+          sesionCreada.idhistorial, 
+          rutaArchivo
+        ).toPromise();
+        
+        mensajeFinal = 'Sesión creada con archivo correctamente';
       }
       
       this.alerta.alertaExito(mensajeFinal);
@@ -426,41 +476,13 @@ async crearSesion(): Promise<void> {
       
     } catch (error: any) {
       console.error('Error creando sesión:', error);
-      let mensaje = 'Error al crear la sesión';
-      if (error?.error?.message) {
-        mensaje = error.error.message;
-      }
-      
-      this.alerta.alertaError(mensaje);
+      this.alerta.alertaError(error?.error?.message || 'Error al crear la sesión');
     } finally {
       this.loading = false;
     }
   }
 }
 
-async subirArchivosHistorial(idHistorial: number): Promise<string[]> {
-  const rutasSubidas: string[] = [];
-  
-  for (const archivo of this.selectedFiles) {
-    try {
-      let ruta: string;
-      
-      if (archivo.type.startsWith('image/')) {
-        // Usar tu endpoint genérico para fotos
-        ruta = await this.archivoService.subirFoto('historiales', idHistorial, archivo);
-      } else {
-        // Usar tu endpoint genérico para documentos
-        ruta = await this.archivoService.subirDocumento('historiales', idHistorial, archivo);
-      }
-      
-      rutasSubidas.push(ruta);
-    } catch (error) {
-      console.error(`Error subiendo ${archivo.name}:`, error);
-    }
-  }
-  
-  return rutasSubidas;
-}
 
     // ✅ 7. MÉTODO PARA ELIMINAR ARCHIVO INDIVIDUAL
 eliminarArchivoSeleccionado(index: number): void {
@@ -530,7 +552,7 @@ validarArchivosAntesDeEnviar(): boolean {
   }
 
 
-// ✅ CORRECCIÓN 4: Tipado correcto para guardarDiagnostico
+// ✅ VERSIÓN CORRECTA (como pacientes/usuarios - con rutaAnterior)
 async guardarDiagnostico(): Promise<void> {
   if (this.sesionActual) {
     this.loading = true;
@@ -546,40 +568,62 @@ async guardarDiagnostico(): Promise<void> {
     };
 
     try {
-      // 1. Actualizar la sesión
-      const sesionActualizada = await this.historialService.actualizarSesion(
+      // 1. Actualizar datos de la sesión
+      await this.historialService.actualizarSesion(
         this.sesionActual.idhistorial, 
         datosActualizacion
       ).toPromise();
       
-      // 2. Subir archivos si existen
+      // 2. Si hay UN archivo nuevo, REEMPLAZAR el anterior
       if (this.selectedFiles.length > 0) {
-        const rutasSubidas = await this.subirArchivosHistorial(this.sesionActual.idhistorial);
+        // ✅ TOMAR SOLO EL PRIMER ARCHIVO (límite de 1 por sesión)
+        const archivoNuevo = this.selectedFiles[0];
         
-        if (rutasSubidas.length > 0) {
-          const rutaArchivos = rutasSubidas.join(',');
-          await this.historialService.actualizarRutaArchivos(this.sesionActual.idhistorial, rutaArchivos).toPromise();
-          this.alerta.alertaExito('Sesión actualizada con archivos correctamente');
+        // ✅ OBTENER RUTA ANTERIOR (para que el backend la elimine)
+        const rutaAnterior = this.sesionActual.rutahistorialclinico || '';
+        
+        // ✅ SUBIR CON rutaAnterior (backend elimina automáticamente)
+        let rutaNueva: string;
+        
+        if (archivoNuevo.type.startsWith('image/')) {
+          rutaNueva = await this.archivoService.subirFoto(
+            'historiales', 
+            this.sesionActual.idhistorial, 
+            archivoNuevo,
+            rutaAnterior  // ✅ Backend elimina esta automáticamente
+          );
         } else {
-          this.alerta.alertaExito('Sesión actualizada correctamente');
+          rutaNueva = await this.archivoService.subirDocumento(
+            'historiales', 
+            this.sesionActual.idhistorial, 
+            archivoNuevo,
+            rutaAnterior  // ✅ Backend elimina esta automáticamente
+          );
         }
+        
+        // ✅ GUARDAR NUEVA RUTA (solo 1 archivo, no lista)
+        await this.historialService.actualizarRutaArchivos(
+          this.sesionActual.idhistorial, 
+          rutaNueva  // ✅ Solo la ruta nueva, sin comas
+        ).toPromise();
+        
+        // ✅ ACTUALIZAR LA SESIÓN EN MEMORIA
+        this.sesionActual.rutahistorialclinico = rutaNueva;
+        
+        this.alerta.alertaExito('Sesión actualizada - archivo reemplazado correctamente');
       } else {
         this.alerta.alertaExito('Sesión actualizada correctamente');
       }
       
       // 3. Limpiar y recargar
       this.limpiarInputArchivos();
+      await this.cargarArchivosExistentes(this.sesionActual.idhistorial);
       this.cargarHistorial();
       this.mostrarHistorial();
       
     } catch (error: any) {
       console.error('Error actualizando sesión:', error);
-      let mensaje = 'Error al actualizar la sesión';
-      if (error?.error?.message) {
-        mensaje = error.error.message;
-      }
-      
-      this.alerta.alertaError(mensaje);
+      this.alerta.alertaError(error?.error?.message || 'Error al actualizar la sesión');
     } finally {
       this.loading = false;
     }
@@ -747,5 +791,10 @@ descargarArchivo(archivo: any): void {
 
   volver(): void {
     this.router.navigate(['/pacientes']);
+  }
+
+  ngOnDestroy(): void {
+    // Limpiar sessionStorage solo al salir del componente
+    sessionStorage.removeItem('datosPacienteHistorial');
   }
 }
