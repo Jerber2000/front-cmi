@@ -1,0 +1,414 @@
+<!-- perfil/perfil.component.html -->
+<div class="content-area" [class.sidebar-expanded]="sidebarExpanded" (keydown)="onKeydown($event)">
+  
+  <app-sidebar [userInfo]="userInfo"></app-sidebar>
+  
+  <!-- Header adaptado como en usuarios -->
+  <div class="menu-container">
+    <header class="header">
+      <div class="header-content">
+        <div class="header-left">
+          <div class="header-text">
+            <h1 class="title">Perfil</h1>
+          </div>
+          <img src="assets/img/LogoFraijanes.png" alt="Logo Fraijanes" class="logo">
+        </div>
+      </div>
+    </header>
+  </div>
+
+  <!-- Tarjeta de controles superiores -->
+  <div class="control-card">
+    <div class="perfil-controls">
+      <div class="perfil-info">
+        <div class="perfil-icon">
+          <i class="fas fa-user"></i>
+        </div>
+        <div class="section-title">Mi Perfil</div>
+      </div>
+      
+      <!-- Fecha y acciones -->
+      <div class="header-info">
+        <div class="date-info">
+          Fecha: {{ currentDate | date:'dd/MM/yy' }}
+        </div>
+        <button 
+          class="btn-edit" 
+          (click)="openEditModal()"
+          title="Editar perfil"
+          [disabled]="loading"
+        >
+          <i class="fas fa-pencil-alt"></i>
+          Editar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tarjeta principal del perfil -->
+  <div class="main-card">
+    
+    <!-- Sección de foto de perfil -->
+    <div class="photo-section">
+      <div class="photo-container">
+        <div class="photo-preview">
+          <img 
+            *ngIf="photoPreview" 
+            [src]="photoPreview" 
+            alt="Foto de perfil" 
+            class="photo-img"
+          >
+          <div *ngIf="!photoPreview" class="photo-placeholder">
+            <i class="fas fa-user-circle"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Información del usuario en dos columnas -->
+    <div class="info-section">
+      <div class="info-grid-two-columns">
+        <!-- Columna izquierda -->
+        <div class="info-column">
+          <div class="info-card">
+            <div class="info-label">Nombre completo</div>
+            <div class="info-content highlighted">
+              {{ usuario?.nombres || '' }} {{ usuario?.apellidos || '' }}
+            </div>
+          </div>
+
+          <div class="info-card">
+            <div class="info-label">Usuario</div>
+            <div class="info-content">
+              {{ usuario?.usuario || 'No especificado' }}
+            </div>
+          </div>
+
+          <div class="info-card">
+            <div class="info-label">Teléfono institucional</div>
+            <div class="info-content">
+              {{ usuario?.telinstitucional || 'No especificado' }}
+            </div>
+          </div>
+
+          <div class="info-card">
+            <div class="info-label">Teléfono personal</div>
+            <div class="info-content">
+              {{ usuario?.telefonopersonal || 'No especificado' }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna derecha -->
+        <div class="info-column">
+          <div class="info-card">
+            <div class="info-label">Profesión</div>
+            <div class="info-content">
+              {{ usuario?.profesion || 'No especificada' }}
+            </div>
+          </div>
+
+          <div class="info-card">
+            <div class="info-label">Correo institucional</div>
+            <div class="info-content">
+              {{ usuario?.correo || 'No especificado' }}
+            </div>
+          </div>
+
+          <div class="info-card">
+            <div class="info-label">Extensión</div>
+            <div class="info-content">
+              {{ usuario?.extension || 'No especificada' }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE EDICIÓN -->
+  <div *ngIf="showEditModal" class="modal-backdrop" (click)="onBackdropClick($event)">
+    <div class="modal-content-large" (click)="$event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fas fa-user-edit"></i>
+          Editar Perfil
+        </div>
+        <button class="modal-close" (click)="closeEditModal()" title="Cerrar">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body-scroll">
+        <form [formGroup]="perfilForm" (ngSubmit)="onSubmit()">
+          
+          <!-- Sección de foto de perfil -->
+          <div class="photo-section">
+            <div class="photo-container">
+              <div class="photo-preview">
+                <img 
+                  *ngIf="photoPreview" 
+                  [src]="photoPreview" 
+                  alt="Foto de perfil" 
+                  class="photo-img"
+                >
+                <div *ngIf="!photoPreview" class="photo-placeholder">
+                  <i class="fas fa-user-circle"></i>
+                </div>
+              </div>
+              
+              <!-- Botón para cambiar foto -->
+              <div class="photo-upload">
+                <input 
+                  type="file" 
+                  #fileInput 
+                  (change)="onPhotoSelected($event)" 
+                  accept="image/*" 
+                  style="display: none;"
+                >
+                <button 
+                  type="button" 
+                  class="btn-photo" 
+                  (click)="fileInput.click()"
+                  title="Cambiar foto"
+                >
+                  <i class="fas fa-camera"></i>
+                  Cambiar foto
+                </button>
+                
+                <button 
+                  *ngIf="photoPreview"
+                  type="button" 
+                  class="btn-photo btn-remove" 
+                  (click)="removePhoto()"
+                  title="Eliminar foto"
+                >
+                  <i class="fas fa-trash"></i>
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información no editable -->
+          <div class="readonly-section">
+            <h3><i class="fas fa-user"></i> Información Personal</h3>
+            <div class="info-grid-readonly">
+              <div class="info-item readonly">
+                <label>Nombre completo</label>
+                <div class="info-value highlighted">
+                  {{ usuario?.nombres || '' }} {{ usuario?.apellidos || '' }}
+                </div>
+              </div>
+
+              <div class="info-item readonly">
+                <label>Usuario</label>
+                <div class="info-value">
+                  {{ usuario?.usuario || '' }}
+                </div>
+              </div>
+
+              <div class="info-item readonly">
+                <label>Profesión</label>
+                <div class="info-value">
+                  {{ usuario?.profesion || 'No especificada' }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sección de contraseña -->
+          <div class="form-section">
+            <h3><i class="fas fa-lock"></i> Cambiar Contraseña</h3>
+            <div class="password-section">
+              <div class="form-row">
+                <div class="form-group" [class.required]="perfilForm.get('password')?.value">
+                  <label>Nueva contraseña</label>
+                  <div class="input-with-icon">
+                    <input 
+                      [type]="showPassword ? 'text' : 'password'"
+                      formControlName="password"
+                      class="form-input"
+                      [class.invalid]="isFieldInvalid('password')"
+                      placeholder="Ingrese nueva contraseña (opcional)"
+                    >
+                    <button 
+                      type="button" 
+                      class="toggle-password"
+                      (click)="togglePasswordVisibility()"
+                      title="{{ showPassword ? 'Ocultar' : 'Mostrar' }} contraseña"
+                    >
+                      <i class="fas" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
+                    </button>
+                  </div>
+                  <div class="error-message" *ngIf="isFieldInvalid('password')">
+                    {{ getFieldError('password') }}
+                  </div>
+                  <div class="help-text">
+                    Mínimo 8 caracteres, debe incluir mayúsculas, minúsculas y números
+                  </div>
+                </div>
+
+                <div class="form-group" [class.required]="perfilForm.get('confirmPassword')?.value">
+                  <label>Confirmar contraseña</label>
+                  <div class="input-with-icon">
+                    <input 
+                      [type]="showConfirmPassword ? 'text' : 'password'"
+                      formControlName="confirmPassword"
+                      class="form-input"
+                      [class.invalid]="isFieldInvalid('confirmPassword')"
+                      placeholder="Confirme la nueva contraseña"
+                    >
+                    <button 
+                      type="button" 
+                      class="toggle-password"
+                      (click)="toggleConfirmPasswordVisibility()"
+                      title="{{ showConfirmPassword ? 'Ocultar' : 'Mostrar' }} contraseña"
+                    >
+                      <i class="fas" [class.fa-eye]="!showConfirmPassword" [class.fa-eye-slash]="showConfirmPassword"></i>
+                    </button>
+                  </div>
+                  <div class="error-message" *ngIf="isFieldInvalid('confirmPassword')">
+                    {{ getFieldError('confirmPassword') }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información de contacto -->
+          <div class="form-section">
+            <h3><i class="fas fa-address-book"></i> Información de Contacto</h3>
+            
+            <!-- Correo -->
+            <div class="form-row">
+              <div class="form-group required">
+                <label>Correo institucional</label>
+                <input 
+                  type="email" 
+                  formControlName="correo"
+                  class="form-input"
+                  [class.invalid]="isFieldInvalid('correo')"
+                  placeholder="correo@institucion.com"
+                >
+                <div class="error-message" *ngIf="isFieldInvalid('correo')">
+                  {{ getFieldError('correo') }}
+                </div>
+              </div>
+
+              <div class="form-group required">
+                <label>Confirmar correo</label>
+                <input 
+                  type="email" 
+                  formControlName="confirmCorreo"
+                  class="form-input"
+                  [class.invalid]="isFieldInvalid('confirmCorreo')"
+                  placeholder="Confirme el correo"
+                >
+                <div class="error-message" *ngIf="isFieldInvalid('confirmCorreo')">
+                  {{ getFieldError('confirmCorreo') }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Teléfonos institucionales -->
+            <div class="form-row">
+              <div class="form-group required">
+                <label>Teléfono institucional</label>
+                <input 
+                  type="text" 
+                  formControlName="telinstitucional"
+                  class="form-input"
+                  [class.invalid]="isFieldInvalid('telinstitucional')"
+                  appPhoneFormat
+                  maxlength="14"
+                  placeholder="+502 0000-0000"
+                >
+                <div class="error-message" *ngIf="isFieldInvalid('telinstitucional')">
+                  {{ getFieldError('telinstitucional') }}
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Extensión</label>
+                <input 
+                  type="text" 
+                  formControlName="extension"
+                  class="form-input"
+                  [class.invalid]="isFieldInvalid('extension')"
+                  placeholder="1234"
+                  appInputValidator
+                  inputType="numbers"
+                  [maxLength]="4"
+                >
+                <div class="error-message" *ngIf="isFieldInvalid('extension')">
+                  {{ getFieldError('extension') }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Teléfono personal -->
+            <div class="form-group required">
+              <label>Teléfono personal</label>
+              <input 
+                type="text" 
+                formControlName="telPersonal"
+                class="form-input"
+                [class.invalid]="isFieldInvalid('telPersonal')"
+                appPhoneFormat
+                maxlength="14"
+                placeholder="+502 0000-0000"
+              >
+              <div class="error-message" *ngIf="isFieldInvalid('telPersonal')">
+                {{ getFieldError('telPersonal') }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Nota informativa -->
+          <div class="info-note">
+            <i class="fas fa-info-circle"></i>
+            <span>Los campos marcados con (*) son obligatorios. Deje la contraseña en blanco si no desea cambiarla.</span>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer">
+        <button 
+          type="button"
+          class="btn-cancel" 
+          (click)="closeEditModal()"
+          [disabled]="loading"
+        >
+          <i class="fas fa-times"></i>
+          Cancelar
+        </button>
+        
+        <button 
+          type="button"
+          class="btn-save" 
+          (click)="onSubmit()"
+          [disabled]="perfilForm.invalid || loading"
+        >
+          <i class="fas fa-save" *ngIf="!loading"></i>
+          <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
+          {{ loading ? 'Guardando...' : 'Guardar Cambios' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading overlay global -->
+  <div *ngIf="loading && !showEditModal" class="loading-overlay">
+    <div class="loading-content">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Cargando perfil...</span>
+    </div>
+  </div>
+
+</div>

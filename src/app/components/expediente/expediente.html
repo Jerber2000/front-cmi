@@ -1,0 +1,925 @@
+<!-- expediente.html -->
+<div class="content-area" [class.sidebar-expanded]="barraLateralExpandida">
+  
+  <app-sidebar [userInfo]="informacionUsuario"></app-sidebar>
+  
+  <div class="contenedor-menu">
+    <header class="encabezado">
+      <div class="contenido-encabezado">
+        <div class="izquierda-encabezado">
+          <div class="texto-encabezado">
+            <h1 class="titulo">EXPEDIENTES</h1>
+          </div>
+          <img src="assets/img/LogoFraijanes.png" alt="Logo Fraijanes" class="logo">
+        </div>
+      </div>
+    </header>
+  </div>
+
+  <!-- Controles de búsqueda y acciones -->
+  <div class="tarjeta-control">
+    <div class="controles-busqueda">
+      <div class="contenedor-busqueda">
+        <input 
+          type="text" 
+          class="entrada-busqueda" 
+          placeholder="Buscar"
+          [(ngModel)]="terminoBusqueda"
+          (input)="filtrarExpedientes()"
+        >
+        
+        <!-- ✅ NUEVO: Filtro por clínica -->
+        <select 
+          class="select-clinica"
+          [(ngModel)]="clinicaSeleccionada"
+          (change)="onClinicaChange()"
+        >
+          <option [value]="0">Todas las clínicas</option>
+          <option *ngFor="let clinica of clinicas" [value]="clinica.idclinica">
+            {{ clinica.nombreclinica }}
+          </option>
+        </select>
+        
+        <!-- BOTON SE ESCONDE DE MOMENTO
+        <button class="boton-agregar" (click)="mostrarFormulario()" *ngIf="vistaActual === 'lista'">
+          <i class="fas fa-plus"></i>
+        </button>
+        -->
+      </div>
+      
+      <div class="informacion-encabezado">
+        <div class="informacion-fecha">
+          Fecha: {{ fechaActual | date:'dd/MM/yyyy' }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Estadísticas rápidas -->
+    <div class="fila-estadisticas" *ngIf="vistaActual === 'lista' && estadisticas">
+      <div class="tarjeta-estadistica">
+        <div class="valor-estadistica">{{ estadisticas.totalExpedientes }}</div>
+        <div class="etiqueta-estadistica">Total de Expedientes</div>
+      </div>
+      <div class="tarjeta-estadistica">
+        <div class="valor-estadistica">{{ estadisticas.expedientesRecientes }}</div>
+        <div class="etiqueta-estadistica">Creados (últimos 7 días)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de expedientes -->
+  <div class="tarjeta-principal" *ngIf="vistaActual === 'lista'">
+    <div class="contenedor-tabla">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Expediente</th>
+            <th>Paciente</th>
+            <th>Historia de Enfermedad</th>
+            <th>Clínica</th>
+            <th>Fecha de Creación</th>
+            <th>Editar</th>
+            <th>Eliminar</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let expediente of paginatedExpedientes" class="fila-tabla">
+            
+            <!-- COLUMNA 1: Número de Expediente (SIMPLE, sin iconos) -->
+            <td class="numero-expediente" (click)="verExpediente(expediente)">
+              {{ expediente.numeroexpediente }}
+            </td>
+
+            <!-- COLUMNA 2: Paciente (NUEVA COLUMNA SEPARADA) -->
+            <td>
+              <span *ngIf="expediente.paciente">
+                {{ expediente.paciente.nombres }} {{ expediente.paciente.apellidos }}
+              </span>
+              <span *ngIf="!expediente.paciente" class="sin-paciente">
+                Sin paciente asignado
+              </span>
+            </td>
+
+            <!-- COLUMNA 3: Historia de Enfermedad -->
+            <td class="vista-previa-historia">
+              {{ expediente.historiaenfermedad ? 
+                  (expediente.historiaenfermedad.length > 50 ? 
+                    expediente.historiaenfermedad.substring(0, 50) + '...' : 
+                    expediente.historiaenfermedad) : 'No especificada' }}
+            </td>
+
+            <!-- COLUMNA 4: Clínica -->
+            <td>
+              <span *ngIf="expediente.paciente?.clinica">
+                {{ expediente.paciente?.clinica?.nombreclinica }}
+              </span>
+              <span *ngIf="!expediente.paciente?.clinica" class="sin-clinica">
+                Sin clínica asignada
+              </span>
+            </td>
+
+            <!-- COLUMNA 5: Fecha de Creación -->
+            <td>{{ expediente.fechacreacion | date:'dd/MM/yyyy' }}</td>
+
+            <!-- COLUMNA 6: Editar -->
+            <td>
+              <button 
+                class="boton-accion boton-editar" 
+                (click)="editarExpediente(expediente)"
+                title="Editar"
+              >
+                Editar
+              </button>
+            </td>
+            
+            <!-- COLUMNA 7: Eliminar -->
+            <td>
+              <button 
+                class="boton-accion boton-eliminar" 
+                (click)="eliminarExpediente(expediente.idexpediente!)"
+                title="Eliminar"
+              >
+                Eliminar
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Paginación -->
+      <div class="pagination-container" *ngIf="totalItems > 0">
+        <div class="pagination" *ngIf="totalPages > 1">
+          <button 
+            class="pagination-btn" 
+            [class.disabled]="currentPage === 1"
+            (click)="previousPage()"
+            [disabled]="currentPage === 1"
+          >
+            <i class="fas fa-chevron-left"></i>
+          </button>
+
+          <button 
+            *ngIf="getPages()[0] > 1"
+            class="pagination-btn"
+            (click)="goToPage(1)"
+          >
+            1
+          </button>
+          
+          <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
+
+          <button 
+            *ngFor="let page of getPages()"
+            class="pagination-btn"
+            [class.active]="page === currentPage"
+            (click)="goToPage(page)"
+          >
+            {{ page }}
+          </button>
+
+          <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
+
+          <button 
+            *ngIf="getPages()[getPages().length - 1] < totalPages"
+            class="pagination-btn"
+            (click)="goToPage(totalPages)"
+          >
+            {{ totalPages }}
+          </button>
+
+          <button 
+            class="pagination-btn" 
+            [class.disabled]="currentPage === totalPages"
+            (click)="nextPage()"
+            [disabled]="currentPage === totalPages"
+          >
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+
+        <div *ngIf="totalPages <= 1" class="pagination-single">
+          Página 1 de 1
+        </div>
+
+        <div class="items-per-page">
+          <label>Mostrar:</label>
+          <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
+            <option [value]="5">5</option>
+            <option [value]="10">10</option>
+            <option [value]="20">20</option>
+            <option [value]="50">50</option>
+          </select>
+          <span>por página</span>
+        </div>
+      </div>
+      
+      <!-- Estado sin datos -->
+      <div *ngIf="expedientesFiltrados.length === 0 && !cargando" class="estado-vacio">
+        <i class="fas fa-folder-open"></i>
+        <h3>No se encontraron expedientes</h3>
+        <p>No hay expedientes que coincidan con su búsqueda</p>
+        <button class="boton-crear-primero" (click)="mostrarFormulario()">
+          <i class="fas fa-plus"></i> Crear primer expediente
+        </button>
+      </div>
+
+      <!-- Estado de carga -->
+      <div *ngIf="cargando" class="estado-carga">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Cargando expedientes...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de formulario -->
+  <div class="fondo-modal" *ngIf="vistaActual === 'formulario'" (click)="cerrarModalInterno()">
+    <div class="contenido-modal-grande" (click)="$event.stopPropagation()">
+      
+      <!-- Encabezado del modal -->
+      <div class="encabezado-modal">
+        <h3>{{ modoEdicion ? 'Editar Expediente Médico' : 'Nuevo Expediente Médico' }}</h3>
+        <button class="cerrar-modal" (click)="cerrarModalInterno()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Cuerpo del modal con scroll -->
+      <div class="cuerpo-modal-scroll">
+        
+        <form [formGroup]="formularioExpediente" class="formulario-expediente">
+          
+          <!-- Información básica del expediente -->
+          <div class="seccion-formulario">
+            <h4 class="titulo-seccion">
+              <i class="fas fa-file-medical"></i> Información del Expediente
+            </h4>
+            <div class="grilla-formulario">
+              
+              <!-- Opción de generación automática -->
+              <div class="grupo-formulario ancho-completo">
+                <div class="grupo-checkbox">
+                  <label class="etiqueta-checkbox">
+                    <input 
+                      type="checkbox" 
+                      formControlName="generarAutomatico"
+                      (change)="alCambiarGeneracionAutomatica()"
+                    >
+                    <span class="marca-verificacion"></span>
+                    Generar número de expediente automáticamente
+                  </label>
+                </div>
+              </div>
+
+              <!-- Número de expediente manual -->
+              <div class="grupo-formulario" *ngIf="!formularioExpediente.get('generarAutomatico')?.value">
+                <label>Número de Expediente *</label>
+                <div class="entrada-con-boton">
+                  <input 
+                    type="text" 
+                    formControlName="numeroexpediente"
+                    class="entrada-formulario"
+                    [class.error]="esCampoInvalido('numeroexpediente')"
+                    placeholder="Ej: EXP-2024-001, CARDIO-001"
+                  >
+                  <button 
+                    type="button" 
+                    class="boton-sugerir" 
+                    (click)="sugerirNumero()"
+                    title="Sugerir número automático"
+                  >
+                    <i class="fas fa-lightbulb"></i>
+                  </button>
+                </div>
+                <div *ngIf="esCampoInvalido('numeroexpediente')" class="texto-error">
+                  {{ obtenerErrorCampo('numeroexpediente') }}
+                </div>
+              </div>
+
+              <!-- Historia de enfermedad -->
+              <div class="grupo-formulario ancho-completo">
+                <label>Historia de Enfermedad *</label>
+                <textarea
+                  formControlName="historiaenfermedad"
+                  class="area-texto-formulario grande"
+                  rows="4"
+                  placeholder="Describa la historia de enfermedad del paciente..."
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Antecedentes médicos -->
+          <div class="seccion-formulario">
+            <h4 class="titulo-seccion">
+              <i class="fas fa-notes-medical"></i> Antecedentes Médicos
+            </h4>
+            <div class="grilla-formulario">
+              <div class="grupo-formulario">
+                <label>Antecedentes Médicos</label>
+                <textarea
+                  formControlName="antmedico"
+                  class="area-texto-formulario"
+                  rows="3"
+                  placeholder="Diabetes, hipertensión, cardiopatías, etc."
+                ></textarea>
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Antecedentes de Medicamentos</label>
+                <textarea
+                  formControlName="antmedicamento"
+                  class="area-texto-formulario"
+                  rows="3"
+                  placeholder="Medicamentos actuales o previos"
+                ></textarea>
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Antecedentes Traumáticos</label>
+                <textarea
+                  formControlName="anttraumaticos"
+                  class="area-texto-formulario"
+                  rows="3"
+                  placeholder="Fracturas, accidentes, cirugías previas"
+                ></textarea>
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Antecedentes Familiares</label>
+                <textarea
+                  formControlName="antfamiliar"
+                  class="area-texto-formulario"
+                  rows="3"
+                  placeholder="Enfermedades hereditarias en la familia"
+                ></textarea>
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Antecedentes Alérgicos</label>
+                <textarea
+                  formControlName="antalergico"
+                  class="area-texto-formulario"
+                  rows="3"
+                  placeholder="Alergias conocidas a medicamentos, alimentos, etc."
+                ></textarea>
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Antecedentes de Sustancias</label>
+                <textarea
+                  formControlName="antsustancias"
+                  class="area-texto-formulario"
+                  rows="3"
+                  placeholder="Consumo de alcohol, tabaco, drogas"
+                ></textarea>
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Intolerancia a Lactosa</label>
+                <select formControlName="antintolerantelactosa" class="entrada-formulario">
+                  <option value="">No especificado</option>
+                  <option value="0">No</option>
+                  <option value="1">Sí</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Antecedentes fisiológicos -->
+          <div class="seccion-formulario">
+            <h4 class="titulo-seccion">
+              <i class="fas fa-child"></i> Antecedentes Fisiológicos
+            </h4>
+            <div class="grilla-formulario">
+              <div class="grupo-formulario">
+                <label>Inmunizaciones</label>
+                <textarea
+                  formControlName="antfisoinmunizacion"
+                  class="area-texto-formulario"
+                  rows="3"
+                  placeholder="Esquema de vacunación completo"
+                ></textarea>
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Crecimiento y Desarrollo</label>
+                <textarea
+                  formControlName="antfisocrecimiento"
+                  class="area-texto-formulario"
+                  rows="3"
+                  placeholder="Desarrollo psicomotor normal/anormal"
+                ></textarea>
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Hábitos de Vida</label>
+                <textarea
+                  formControlName="antfisohabitos"
+                  class="area-texto-formulario"
+                  rows="3"
+                  placeholder="Ejercicio, sueño, actividades recreativas"
+                ></textarea>
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Hábitos Alimenticios</label>
+                <textarea
+                  formControlName="antfisoalimentos"
+                  class="area-texto-formulario"
+                  rows="3"
+                  placeholder="Tipo de alimentación, restricciones dietéticas"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Antecedentes gineco-obstétricos -->
+          <div class="seccion-formulario">
+            <h4 class="titulo-seccion">
+              <i class="fas fa-female"></i> Antecedentes Gineco-Obstétricos
+            </h4>
+            <div class="grilla-formulario">
+              <div class="grupo-formulario">
+                <label>Antecedentes Prenatales</label>
+                <textarea
+                  formControlName="gineobsprenatales"
+                  class="area-texto-formulario"
+                  rows="2"
+                  placeholder="Embarazos previos, complicaciones"
+                ></textarea>
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Antecedentes Natales</label>
+                <textarea
+                  formControlName="gineobsnatales"
+                  class="area-texto-formulario"
+                  rows="2"
+                  placeholder="Partos previos, tipo de parto"
+                ></textarea>
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Antecedentes Postnatales</label>
+                <textarea
+                  formControlName="gineobspostnatales"
+                  class="area-texto-formulario"
+                  rows="2"
+                  placeholder="Puerperios, complicaciones postparto"
+                ></textarea>
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Número de Gestas</label>
+                <input 
+                  type="number" 
+                  formControlName="gineobsgestas"
+                  class="entrada-formulario"
+                  min="0"
+                  placeholder="Total de embarazos"
+                >
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Número de Partos</label>
+                <input 
+                  type="number" 
+                  formControlName="gineobspartos"
+                  class="entrada-formulario"
+                  min="0"
+                  placeholder="Partos a término"
+                >
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Número de Abortos</label>
+                <input 
+                  type="number" 
+                  formControlName="gineobsabortos"
+                  class="entrada-formulario"
+                  min="0"
+                  placeholder="Abortos espontáneos o inducidos"
+                >
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Número de Cesáreas</label>
+                <input 
+                  type="number" 
+                  formControlName="gineobscesareas"
+                  class="entrada-formulario"
+                  min="0"
+                  placeholder="Partos por cesárea"
+                >
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Fecha de Última Regla (FUR)</label>
+                <input 
+                  type="date" 
+                  formControlName="gineobsfur"
+                  class="entrada-formulario"
+                >
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Ciclos Menstruales</label>
+                <input 
+                  type="text" 
+                  formControlName="gineobsciclos"
+                  class="entrada-formulario"
+                  placeholder="Ej: 28 días, regulares/irregulares"
+                >
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Menarquia</label>
+                <input 
+                  type="text" 
+                  formControlName="gineobsmenarquia"
+                  class="entrada-formulario"
+                  placeholder="Edad de primera menstruación"
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Examen físico -->
+          <div class="seccion-formulario">
+            <h4 class="titulo-seccion">
+              <i class="fas fa-stethoscope"></i> Examen Físico y Signos Vitales
+            </h4>
+            <div class="grilla-formulario">
+              <div class="grupo-formulario">
+                <label>Temperatura Corporal (°C)</label>
+                <input 
+                  type="number" 
+                  formControlName="examenfistc"
+                  class="entrada-formulario"
+                  step="0.1"
+                  min="0"
+                  max="999.99"
+                  placeholder="36.5"
+                >
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Presión Arterial (mmHg)</label>
+                <input 
+                  type="text" 
+                  formControlName="examenfispa"
+                  class="entrada-formulario"
+                  placeholder="120/80"
+                  pattern="^\d{2,3}/\d{2,3}$"
+                >
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Frecuencia Cardíaca (lpm)</label>
+                <input 
+                  type="number" 
+                  formControlName="examenfisfc"
+                  class="entrada-formulario"
+                  min="0"
+                  max="999"
+                  placeholder="80"
+                >
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Frecuencia Respiratoria (rpm)</label>
+                <input 
+                  type="number" 
+                  formControlName="examenfisfr"
+                  class="entrada-formulario"
+                  min="0"
+                  max="999"
+                  placeholder="18"
+                >
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Saturación de Oxígeno (%)</label>
+                <input 
+                  type="number" 
+                  formControlName="examenfissao2"
+                  class="entrada-formulario"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  placeholder="98.5"
+                >
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Peso (kg)</label>
+                <input 
+                  type="number" 
+                  formControlName="examenfispeso"
+                  class="entrada-formulario"
+                  step="0.1"
+                  min="0"
+                  max="9999.99"
+                  placeholder="70.5"
+                  (input)="calcularIMC()"
+                >
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Talla (metros)</label>
+                <input 
+                  type="number" 
+                  formControlName="examenfistalla"
+                  class="entrada-formulario"
+                  step="0.01"
+                  min="0"
+                  max="999.99"
+                  placeholder="1.75"
+                  (input)="calcularIMC()"
+                >
+              </div>
+
+              <div class="grupo-formulario">
+                <label>Índice de Masa Corporal (kg/m²)</label>
+                <input 
+                  type="number" 
+                  formControlName="examenfisimc"
+                  class="entrada-formulario imc-solo-lectura"
+                  step="0.1"
+                  readonly
+                  placeholder="Calculado automáticamente"
+                >
+                <small class="informacion-imc">{{ obtenerCategoriaIMC() }}</small>
+              </div>
+
+              <div class="grupo-formulario ancho-completo">
+                <label>Examen Físico General</label>
+                <textarea
+                  formControlName="examenfisgmt"
+                  class="area-texto-formulario grande"
+                  rows="4"
+                  placeholder="Descripción detallada del examen físico general del paciente..."
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- Pie del modal fijo -->
+      <div class="pie-modal">
+        <button type="button" class="boton-cancelar" (click)="cerrarModalInterno()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button 
+          type="button"
+          class="boton-guardar" 
+          (click)="alEnviarConDepuracion()"
+          [disabled]="formularioExpediente.invalid || cargando"
+        >
+          <span *ngIf="cargando">
+            <i class="fas fa-spinner fa-spin"></i> Guardando...
+          </span>
+          <span *ngIf="!cargando">
+            <i class="fas fa-save"></i> {{ modoEdicion ? 'Actualizar' : 'Crear' }} Expediente
+          </span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+<!-- Vista de detalles - MODAL COMPLETO -->
+<div class="fondo-modal" *ngIf="vistaActual === 'detalle'" (click)="mostrarLista()">
+  <div class="contenido-modal-grande" (click)="$event.stopPropagation()">
+    
+    <!-- Encabezado del modal -->
+    <div class="encabezado-modal">
+      <h3>Detalles del Expediente: {{ expedienteSeleccionado?.numeroexpediente }}</h3>
+      <button class="cerrar-modal" (click)="mostrarLista()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Cuerpo del modal con scroll -->
+    <div class="cuerpo-modal-scroll" *ngIf="expedienteSeleccionado">
+      
+      <!-- Información básica del expediente -->
+      <div class="seccion-formulario">
+        <h4 class="titulo-seccion">
+          <i class="fas fa-file-medical"></i> Información del Expediente
+        </h4>
+        <div class="grilla-formulario">
+          <div class="grupo-formulario">
+            <label>Número de Expediente:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.numeroexpediente || 'N/A' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Fecha de Creación:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.fechacreacion | date:'dd/MM/yyyy' }}</div>
+          </div>
+          <div class="grupo-formulario ancho-completo" *ngIf="expedienteSeleccionado.historiaenfermedad">
+            <label>Historia de Enfermedad:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.historiaenfermedad }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paciente asignado -->
+      <div class="seccion-formulario" *ngIf="expedienteSeleccionado.paciente">
+        <h4 class="titulo-seccion">
+          <i class="fas fa-user"></i> Paciente Asignado
+        </h4>
+        <div class="grilla-formulario">
+          <div class="grupo-formulario">
+            <label>Nombre Completo:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.paciente.nombres }} {{ expedienteSeleccionado.paciente.apellidos }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>CUI:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.paciente.cui }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Antecedentes médicos -->
+      <div class="seccion-formulario">
+        <h4 class="titulo-seccion">
+          <i class="fas fa-notes-medical"></i> Antecedentes Médicos
+        </h4>
+        <div class="grilla-formulario">
+          <div class="grupo-formulario">
+            <label>Antecedentes Médicos:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.antmedico || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Antecedentes de Medicamentos:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.antmedicamento || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Antecedentes Traumáticos:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.anttraumaticos || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Antecedentes Familiares:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.antfamiliar || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Antecedentes Alérgicos:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.antalergico || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Antecedentes de Sustancias:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.antsustancias || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Intolerancia a Lactosa:</label>
+            <div class="campo-lectura">{{ obtenerTextoIntoleranciaLactosa(expedienteSeleccionado.antintolerantelactosa) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Antecedentes fisiológicos -->
+      <div class="seccion-formulario">
+        <h4 class="titulo-seccion">
+          <i class="fas fa-child"></i> Antecedentes Fisiológicos
+        </h4>
+        <div class="grilla-formulario">
+          <div class="grupo-formulario">
+            <label>Inmunizaciones:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.antfisoinmunizacion || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Crecimiento y Desarrollo:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.antfisocrecimiento || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Hábitos de Vida:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.antfisohabitos || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Hábitos Alimenticios:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.antfisoalimentos || 'No especificado' }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Antecedentes gineco-obstétricos -->
+      <div class="seccion-formulario">
+        <h4 class="titulo-seccion">
+          <i class="fas fa-female"></i> Antecedentes Gineco-Obstétricos
+        </h4>
+        <div class="grilla-formulario">
+          <div class="grupo-formulario">
+            <label>Antecedentes Prenatales:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobsprenatales || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Antecedentes Natales:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobsnatales || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Antecedentes Postnatales:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobspostnatales || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Número de Gestas:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobsgestas ?? 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Número de Partos:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobspartos ?? 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Número de Abortos:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobsabortos ?? 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Número de Cesáreas:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobscesareas ?? 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Fecha de Última Regla (FUR):</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobsfur ? (expedienteSeleccionado.gineobsfur | date:'dd/MM/yyyy') : 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Ciclos Menstruales:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobsciclos || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Menarquia:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.gineobsmenarquia || 'No especificado' }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Examen físico -->
+      <div class="seccion-formulario">
+        <h4 class="titulo-seccion">
+          <i class="fas fa-stethoscope"></i> Examen Físico y Signos Vitales
+        </h4>
+        <div class="grilla-formulario">
+          <div class="grupo-formulario">
+            <label>Temperatura Corporal (°C):</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.examenfistc || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Presión Arterial (mmHg):</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.examenfispa || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Frecuencia Cardíaca (lpm):</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.examenfisfc || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Frecuencia Respiratoria (rpm):</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.examenfisfr || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Saturación de Oxígeno (%):</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.examenfissao2 || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Peso (kg):</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.examenfispeso || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Talla (metros):</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.examenfistalla || 'No especificado' }}</div>
+          </div>
+          <div class="grupo-formulario">
+            <label>Índice de Masa Corporal (kg/m²):</label>
+            <div class="campo-lectura">
+              {{ expedienteSeleccionado.examenfisimc ? 
+                  (expedienteSeleccionado.examenfisimc + ' (' + obtenerCategoriaIMCDesdeValor(expedienteSeleccionado.examenfisimc) + ')') : 
+                  'No especificado' }}
+            </div>
+          </div>
+          <div class="grupo-formulario ancho-completo">
+            <label>Examen Físico General:</label>
+            <div class="campo-lectura">{{ expedienteSeleccionado.examenfisgmt || 'No especificado' }}</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Pie del modal fijo -->
+    <div class="pie-modal">
+      <button type="button" class="boton-pdf" (click)="descargarPDFExpediente(expedienteSeleccionado!)">
+        <i class="fas fa-file-pdf"></i> Descargar PDF
+      </button>
+      <button type="button" class="boton-editar" (click)="editarExpediente(expedienteSeleccionado!)">
+        <i class="fas fa-edit"></i> Editar Expediente
+      </button>
+      <button type="button" class="boton-cancelar" (click)="mostrarLista()">
+        <i class="fas fa-times"></i> Cerrar
+      </button>
+    </div>
+
+  </div>
+</div>
+
+</div>

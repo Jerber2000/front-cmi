@@ -1,0 +1,508 @@
+<!-- inventario.component.html -->
+<div class="content-area" [class.sidebar-expanded]="sidebarExpanded">
+  <app-sidebar [userInfo]="userInfo"></app-sidebar>
+  
+  <!-- HEADER -->
+  <div class="menu-container">
+    <header class="header">
+      <div class="header-content">
+        <div class="header-left">
+          <div class="header-text">
+            <h1 class="title">Inventario Médico</h1>
+          </div>
+          <img src="assets/img/LogoFraijanes.png" alt="Logo Fraijanes" class="logo">
+        </div>
+      </div>
+    </header>
+  </div>
+
+  <!-- ESTADÍSTICAS -->
+  <div class="stats-container">
+    <div class="stat-card">
+      <div class="stat-icon activo">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ obtenerContadorActivos() }}</span>
+        <span class="stat-label">Activos</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon inactivo">
+        <i class="fas fa-times-circle"></i>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ obtenerContadorInactivos() }}</span>
+        <span class="stat-label">Inactivos</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon total">
+        <i class="fas fa-boxes"></i>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ medicamentos.length }}</span>
+        <span class="stat-label">Total</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon valor">
+        <i class="fas fa-dollar-sign"></i>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ inventarioService.formatearPrecio(obtenerValorTotalInventario()) }}</span>
+        <span class="stat-label">Valor Total</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTROS Y BÚSQUEDA -->
+  <div class="control-card">
+    <div class="filtros-container">
+      <div class="filtros-grupo">
+        <button 
+          class="btn-filtro" 
+          [class.active]="filtroEstado === 'todos'"
+          (click)="cambiarFiltroEstado('todos')"
+        >
+          <i class="fas fa-list"></i>
+          Todos
+        </button>
+        
+        <button 
+          class="btn-filtro" 
+          [class.active]="filtroEstado === 'activos'"
+          (click)="cambiarFiltroEstado('activos')"
+        >
+          <i class="fas fa-check-circle"></i>
+          Activos
+        </button>
+        
+        <button 
+          class="btn-filtro" 
+          [class.active]="filtroEstado === 'inactivos'"
+          (click)="cambiarFiltroEstado('inactivos')"
+        >
+          <i class="fas fa-ban"></i>
+          Inactivos
+        </button>
+      </div>
+
+      <div class="busqueda-grupo">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input 
+            type="text" 
+            placeholder="Buscar medicamento..."
+            [(ngModel)]="busqueda"
+            (input)="buscarMedicamentos()"
+          >
+          <button 
+            class="btn-clear" 
+            *ngIf="busqueda"
+            (click)="limpiarBusqueda()"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <button class="btn-nuevo-medicamento" (click)="abrirModalNuevo()">
+          <i class="fas fa-plus"></i> Nuevo Medicamento
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA DE MEDICAMENTOS -->
+  <div class="main-card">
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      Cargando medicamentos...
+    </div>
+
+    <div class="table-container" *ngIf="!loading">
+      <table class="medicamentos-table">
+        <thead>
+          <tr>
+            <th>Medicamento</th>
+            <th>Código</th>
+            <th>Unidades</th>
+            <th>Precio Unit.</th>
+            <th>Valor Total</th>
+            <th>Fecha Ingreso</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let medicamento of medicamentosPaginados" class="medicamento-row">
+            <td class="medicamento-cell">
+              <div class="medicamento-info">
+                <strong>{{ medicamento.nombre }}</strong>
+                <small *ngIf="medicamento.descripcion">{{ medicamento.descripcion }}</small>
+              </div>
+            </td>
+            <td>
+              <span class="codigo-badge">
+                {{ medicamento.codigoproducto || 'Sin código' }}
+              </span>
+            </td>
+            
+            <td class="unidades-cell">
+              <span class="badge-unidades" [class.bajo]="medicamento.unidades < 10">
+                {{ medicamento.unidades }}
+              </span>
+            </td>
+            
+            <td class="precio-cell">
+              {{ inventarioService.formatearPrecio(medicamento.precio) }}
+            </td>
+            
+            <td class="total-cell">
+              <strong>{{ inventarioService.formatearPrecio(inventarioService.calcularValorTotal(medicamento)) }}</strong>
+            </td>
+            
+            <td class="fecha-cell">
+              {{ inventarioService.formatearFecha(medicamento.fechaingreso) }}
+            </td>
+            
+            <td class="estado-cell">
+              <span 
+                class="badge-estado" 
+                [class.activo]="medicamento.estado === 1"
+                [class.inactivo]="medicamento.estado === 0"
+              >
+                {{ inventarioService.obtenerEstadoTexto(medicamento.estado) }}
+              </span>
+            </td>
+            
+            <td class="acciones-cell">
+              <button 
+                class="btn-accion btn-ver" 
+                (click)="verDetalleMedicamento(medicamento)"
+                title="Ver detalle"
+              >
+                <i class="fas fa-eye"></i>
+              </button>
+              
+              <button 
+                class="btn-accion btn-editar" 
+                (click)="abrirModalEditar(medicamento)"
+                title="Editar"
+              >
+                <i class="fas fa-edit"></i>
+              </button>
+              
+              <button 
+                class="btn-accion"
+                [class.btn-activar]="medicamento.estado === 0"
+                [class.btn-desactivar]="medicamento.estado === 1"
+                (click)="cambiarEstado(medicamento)"
+                [title]="medicamento.estado === 1 ? 'Desactivar' : 'Activar'"
+              >
+                <i class="fas" [class.fa-toggle-on]="medicamento.estado === 1" [class.fa-toggle-off]="medicamento.estado === 0"></i>
+              </button>
+            </td>
+          </tr>
+          
+          <tr *ngIf="medicamentos.length === 0">
+            <td colspan="7" class="empty-state">
+              <i class="fas fa-folder-open"></i>
+              <p>No hay medicamentos registrados</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PAGINACIÓN -->
+    <div class="pagination-container" *ngIf="totalItems > 0">
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button 
+          class="pagination-btn" 
+          [class.disabled]="currentPage === 1"
+          (click)="previousPage()"
+          [disabled]="currentPage === 1"
+        >
+          <i class="fas fa-chevron-left"></i>
+        </button>
+
+        <button 
+          *ngIf="getPages()[0] > 1"
+          class="pagination-btn"
+          (click)="goToPage(1)"
+        >
+          1
+        </button>
+        
+        <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
+
+        <button 
+          *ngFor="let page of getPages()"
+          class="pagination-btn"
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)"
+        >
+          {{ page }}
+        </button>
+
+        <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
+
+        <button 
+          *ngIf="getPages()[getPages().length - 1] < totalPages"
+          class="pagination-btn"
+          (click)="goToPage(totalPages)"
+        >
+          {{ totalPages }}
+        </button>
+
+        <button 
+          class="pagination-btn" 
+          [class.disabled]="currentPage === totalPages"
+          (click)="nextPage()"
+          [disabled]="currentPage === totalPages"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <div *ngIf="totalPages <= 1" class="pagination-single">
+        Página 1 de 1
+      </div>
+
+      <div class="items-per-page">
+        <label>Mostrar:</label>
+        <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
+          <option [value]="5">5</option>
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+        </select>
+        <span>por página</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL NUEVO/EDITAR MEDICAMENTO -->
+  <div class="modal-backdrop" *ngIf="mostrarModalNuevo || mostrarModalEditar" (click)="modoEdicion ? cerrarModalEditar() : cerrarModalNuevo()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ modoEdicion ? 'Editar Medicamento' : 'Nuevo Medicamento' }}</h3>
+        <button class="modal-close" (click)="modoEdicion ? cerrarModalEditar() : cerrarModalNuevo()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <form [formGroup]="medicamentoForm" class="medicamento-form">
+          <div class="form-group">
+            <label class="form-label">Nombre del Medicamento *</label>
+            <input 
+              type="text"
+              formControlName="nombre"
+              class="form-input"
+              placeholder="Ej: Paracetamol 500mg"
+              [class.invalid]="isFieldInvalid('nombre')"
+            >
+            <div class="error-message" *ngIf="isFieldInvalid('nombre')">
+              {{ getFieldError('nombre') }}
+            </div>
+          </div>
+
+          <div class="form-group full-width">
+            <label>Código de Producto <span class="optional">(opcional)</span></label>
+            <input 
+              type="text" 
+              formControlName="codigoproducto"
+              class="form-input"
+              [class.invalid]="isFieldInvalid('codigoproducto')"
+              placeholder="Ej: MED-001, PARA-500"
+              maxlength="50"
+            >
+            <div class="error-message" *ngIf="isFieldInvalid('codigoproducto')">
+              {{ getFieldError('codigoproducto') }}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Descripción</label>
+            <textarea 
+              formControlName="descripcion"
+              class="form-textarea"
+              rows="3"
+              placeholder="Descripción del medicamento..."
+            ></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Unidades</label>
+              <input 
+                type="number"
+                formControlName="unidades"
+                class="form-input"
+                min="0"
+                [class.invalid]="isFieldInvalid('unidades')"
+              >
+              <div class="error-message" *ngIf="isFieldInvalid('unidades')">
+                {{ getFieldError('unidades') }}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Precio (Q)</label>
+              <input 
+                type="number"
+                formControlName="precio"
+                class="form-input"
+                step="0.01"
+                min="0"
+                [class.invalid]="isFieldInvalid('precio')"
+              >
+              <div class="error-message" *ngIf="isFieldInvalid('precio')">
+                {{ getFieldError('precio') }}
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Fecha de Ingreso</label>
+              <input 
+                type="date"
+                formControlName="fechaingreso"
+                class="form-input"
+              >
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Fecha de Vencimiento</label>
+              <input 
+                type="date"
+                formControlName="fechavencimiento"
+                class="form-input"
+              >
+            </div>
+
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Observaciones</label>
+            <textarea 
+              formControlName="observaciones"
+              class="form-textarea"
+              rows="3"
+              placeholder="Observaciones adicionales..."
+            ></textarea>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancelar" (click)="modoEdicion ? cerrarModalEditar() : cerrarModalNuevo()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button 
+          class="btn-guardar" 
+          (click)="modoEdicion ? actualizarMedicamento() : guardarMedicamento()"
+          [disabled]="medicamentoForm.invalid || guardando"
+        >
+          <span *ngIf="guardando">
+            <i class="fas fa-spinner fa-spin"></i> Guardando...
+          </span>
+          <span *ngIf="!guardando">
+            <i class="fas fa-save"></i> {{ modoEdicion ? 'Actualizar' : 'Guardar' }}
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DETALLE MEDICAMENTO -->
+  <div class="modal-backdrop" *ngIf="mostrarModalDetalle" (click)="cerrarModalDetalle()">
+    <div class="modal-content modal-detalle" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Detalle del Medicamento</h3>
+        <button class="modal-close" (click)="cerrarModalDetalle()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body" *ngIf="medicamentoSeleccionado">
+        <!-- Información Principal -->
+        <div class="detalle-section">
+          <h4><i class="fas fa-pills"></i> Información Principal</h4>
+          <div class="detalle-content">
+            <p><strong>Nombre:</strong> {{ medicamentoSeleccionado.nombre }}</p>
+            <p *ngIf="medicamentoSeleccionado.descripcion"><strong>Descripción:</strong> {{ medicamentoSeleccionado.descripcion }}</p>
+            <p>
+              <strong>Estado:</strong> 
+              <span 
+                class="badge-estado inline" 
+                [class.activo]="medicamentoSeleccionado.estado === 1"
+                [class.inactivo]="medicamentoSeleccionado.estado === 0"
+              >
+                {{ inventarioService.obtenerEstadoTexto(medicamentoSeleccionado.estado) }}
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Inventario -->
+        <div class="detalle-section">
+          <h4><i class="fas fa-box"></i> Inventario</h4>
+          <div class="detalle-content">
+            <p><strong>Unidades:</strong> {{ medicamentoSeleccionado.unidades }}</p>
+            <p><strong>Precio Unitario:</strong> {{ inventarioService.formatearPrecio(medicamentoSeleccionado.precio) }}</p>
+            <p><strong>Valor Total:</strong> {{ inventarioService.formatearPrecio(inventarioService.calcularValorTotal(medicamentoSeleccionado)) }}</p>
+          </div>
+        </div>
+
+        <!-- Fechas -->
+        <div class="detalle-section">
+          <h4><i class="fas fa-calendar"></i> Fechas</h4>
+          <div class="detalle-content">
+            <p><strong>Fecha de Ingreso:</strong> {{ inventarioService.formatearFecha(medicamentoSeleccionado.fechaingreso) }}</p>
+            <p *ngIf="medicamentoSeleccionado.fechavencimiento"><strong>Fecha de Vencimiento:</strong> {{ inventarioService.formatearFecha(medicamentoSeleccionado.fechavencimiento) }}</p>
+            <p><strong>Fecha de Creación:</strong> {{ inventarioService.formatearFecha(medicamentoSeleccionado.fechacreacion) }}</p>
+            <p *ngIf="medicamentoSeleccionado.fechamodificacion"><strong>Última Modificación:</strong> {{ inventarioService.formatearFecha(medicamentoSeleccionado.fechamodificacion) }}</p>
+          </div>
+        </div>
+
+        <!-- Usuario -->
+        <div class="detalle-section">
+          <h4><i class="fas fa-user"></i> Usuario Responsable</h4>
+          <div class="detalle-content">
+            <p *ngIf="medicamentoSeleccionado.usuario">
+              <strong>Nombre:</strong> {{ medicamentoSeleccionado.usuario.nombres }} {{ medicamentoSeleccionado.usuario.apellidos }}
+            </p>
+            <p *ngIf="medicamentoSeleccionado.usuario?.profesion">
+              <strong>Profesión:</strong> {{ medicamentoSeleccionado.usuario?.profesion }}
+            </p>
+            <p><strong>Creado por:</strong> {{ medicamentoSeleccionado.usuariocreacion }}</p>
+            <p *ngIf="medicamentoSeleccionado.usuariomodificacion">
+              <strong>Modificado por:</strong> {{ medicamentoSeleccionado.usuariomodificacion }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Observaciones -->
+        <div class="detalle-section" *ngIf="medicamentoSeleccionado.observaciones">
+          <h4><i class="fas fa-comment"></i> Observaciones</h4>
+          <div class="detalle-content">
+            <p class="observaciones-text">{{ medicamentoSeleccionado.observaciones }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancelar" (click)="cerrarModalDetalle()">
+          <i class="fas fa-times"></i> Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,951 @@
+/* Layout principal mejorado */
+.content-area {
+  padding: 0;
+  min-height: calc(100vh - 80px);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin-left: 70px;
+  transition: margin-left 0.3s ease;
+  box-sizing: border-box;
+  background: #f8f9fa;
+  /* AÑADIDO: Forzar recalculo cuando cambia */
+  width: calc(100vw - 70px);
+}
+
+/* Cuando el sidebar está expandido */
+.content-area.sidebar-expanded {
+  margin-left: 280px;
+  /* AÑADIDO: Forzar recalculo del ancho */
+  width: calc(100vw - 280px);
+}
+
+.menu-container {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 20px;
+  box-sizing: border-box;
+  /* AÑADIDO: Forzar que use todo el espacio disponible */
+  min-width: 0;
+}
+
+/* Header igual al de usuarios */
+.header {
+  background-color: #2c6662;
+  color: white;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.header-content {
+  width: 100%;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.header-text {
+  flex: 1;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.logo {
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  height: 60px;
+  z-index: 10;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.header-right .fecha {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.fecha {
+  background: white;
+  color: #666;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+}
+
+/* Toolbar igual al de usuarios */
+.toolbar {
+  background: rgba(240, 240, 240, 0.95);
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-shrink: 0;
+}
+
+.toolbar-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-shrink: 0;
+}
+
+/* Search container */
+.search-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex: 1;
+  min-width: 300px;
+}
+
+.search-input {
+  padding: 12px 20px;
+  border: 2px solid #e1e5e9;
+  border-radius: 25px;
+  font-size: 14px;
+  width: 100%;
+  max-width: 350px;
+  outline: none;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.search-input:focus {
+  border-color: #5ba892;
+  box-shadow: 0 0 0 3px rgba(91, 168, 146, 0.1);
+}
+
+/* Botón agregar igual al de usuarios */
+.btn-add {
+  background: linear-gradient(135deg, #5ba892, #4a9d7e);
+  color: white;
+  border: none;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(91, 168, 146, 0.3);
+  flex-shrink: 0;
+}
+
+.btn-add:hover {
+  background: linear-gradient(135deg, #4a9d7e, #3e8a6b);
+  transform: scale(1.1);
+  box-shadow: 0 6px 12px rgba(91, 168, 146, 0.4);
+}
+
+/* Controles de agenda */
+.agenda-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-select {
+  min-width: 200px;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 5px;
+}
+
+/* Calendar wrapper - CRÍTICO: Force reflow cuando cambia el sidebar */
+.calendar-wrapper {
+  background: white;
+  border-radius: 15px;
+  padding: 25px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  /* AÑADIDO: Forzar recalculo cuando cambia el tamaño */
+  width: 100%;
+  min-width: 0; /* Crítico para flex shrinking */
+}
+
+/* Header personalizado del calendario */
+.calendar-header {
+  margin-bottom: 20px;
+  padding: 15px 0;
+  border-bottom: 1px solid #dee2e6;
+  flex-shrink: 0;
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.calendar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.calendar-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #495057;
+  text-transform: capitalize;
+  flex: 1;
+  text-align: center;
+}
+
+/* Controles de vista */
+.view-controls {
+  display: flex;
+  gap: 0;
+  border: 1px solid #dee2e6;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.view-controls .btn {
+  border: 1px solid #dee2e6 !important;
+  border-radius: 0 !important;
+  background: white !important;
+  color: #495057 !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+}
+
+.view-controls .btn:first-child {
+  border-top-left-radius: 5px !important;
+  border-bottom-left-radius: 5px !important;
+}
+
+.view-controls .btn:last-child {
+  border-top-right-radius: 5px !important;
+  border-bottom-right-radius: 5px !important;
+}
+
+.view-controls .btn:not(:first-child) {
+  border-left: none !important;
+}
+
+.view-controls .btn:hover {
+  background: #f8f9fa !important;
+  color: #5CBDB2 !important;
+  z-index: 1;
+}
+
+.view-controls .btn.active {
+  background: #5CBDB2 !important;
+  color: white !important;
+  border-color: #5CBDB2 !important;
+  z-index: 2;
+}
+
+/* Loading overlay */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  border-radius: 15px;
+}
+
+/* Leyenda de colores */
+.calendar-legend {
+  background: white;
+  border-radius: 15px;
+  padding: 20px;
+  margin-top: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+  flex-shrink: 0;
+}
+
+.calendar-legend h6 {
+  margin-bottom: 15px;
+  color: #495057;
+  font-weight: 600;
+}
+
+.legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-box {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* PERSONALIZACIÓN DE FULLCALENDAR - MEJORADO */
+:host ::ng-deep .fc {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  height: 100% !important;
+  flex: 1;
+  /* CRÍTICO: Forzar que el calendario use todo el ancho disponible */
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+/* CRÍTICO: Contenedor principal del calendario */
+:host ::ng-deep .fc-view-harness {
+  width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden;
+}
+
+/* Ocultar la toolbar original de FullCalendar */
+:host ::ng-deep .fc-toolbar {
+  display: none;
+}
+
+:host ::ng-deep .fc-header-toolbar {
+  display: none;
+}
+
+/* Tabla del calendario - MEJORADO */
+:host ::ng-deep .fc-scrollgrid {
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  overflow: hidden;
+  width: 100% !important;
+  height: 100% !important;
+  /* AÑADIDO: Forzar recalculo de la tabla */
+  table-layout: fixed !important;
+  min-width: 0 !important;
+}
+
+/* CRÍTICO: Forzar que las columnas se distribuyan equitativamente */
+:host ::ng-deep .fc-scrollgrid-sync-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+}
+
+/* Header de días de la semana */
+:host ::ng-deep .fc-col-header {
+  background: #2c6662;
+  border-bottom: 2px solid #2c6662;
+}
+
+/* CRÍTICO: Celdas del header */
+:host ::ng-deep .fc-col-header-cell {
+  padding: 15px 12px;
+  text-align: center;
+  font-weight: 700;
+  border: none;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: white!important;
+  /* AÑADIDO: Forzar ancho equitativo */
+  width: 14.285714% !important; /* 100% / 7 días */
+  min-width: 0 !important;
+  box-sizing: border-box;
+}
+
+:host ::ng-deep .fc-col-header-cell:first-child {
+  border-top-left-radius: 10px;
+}
+
+:host ::ng-deep .fc-col-header-cell:last-child {
+  border-top-right-radius: 10px;
+}
+
+/* Forzar color blanco en los encabezados */
+:host ::ng-deep .fc-col-header-cell .fc-col-header-cell-cushion {
+  color: white !important;
+  font-weight: 700 !important;
+}
+
+/* CRÍTICO: Celdas de días - forzar distribución equitativa */
+:host ::ng-deep .fc-daygrid-day {
+  background: white;
+  transition: background-color 0.2s ease;
+  border-right: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
+  min-height: 100px;
+  position: relative;
+  /* CRÍTICO: Forzar ancho equitativo */
+  width: 14.285714% !important; /* 100% / 7 días */
+  min-width: 0 !important;
+  box-sizing: border-box;
+}
+
+:host ::ng-deep .fc-daygrid-day:hover {
+  background: #f8f9fa;
+  cursor: pointer;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+:host ::ng-deep .fc-daygrid-day.fc-day-today {
+  background: rgba(44, 102, 98, 0.1);
+}
+
+:host ::ng-deep .fc-daygrid-day:last-child {
+  border-right: none;
+}
+
+:host ::ng-deep .table-row:last-child .fc-daygrid-day {
+  border-bottom: none;
+}
+
+:host ::ng-deep .table-row:last-child .fc-daygrid-day:first-child {
+  border-bottom-left-radius: 10px;
+}
+
+:host ::ng-deep .table-row:last-child .fc-daygrid-day:last-child {
+  border-bottom-right-radius: 10px;
+}
+
+/* AÑADIDO: Forzar que el contenido interno se ajuste */
+:host ::ng-deep .fc-daygrid-day-frame {
+  width: 100% !important;
+  min-height: 100px;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* AÑADIDO: Contenedor de eventos que se ajuste al ancho */
+:host ::ng-deep .fc-daygrid-day-events {
+  width: 100% !important;
+  box-sizing: border-box;
+  padding: 0 4px;
+}
+
+/* Números de día */
+:host ::ng-deep .fc-daygrid-day-number {
+  color: #495057;
+  font-weight: 500;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+:host ::ng-deep .fc-day-today .fc-daygrid-day-number {
+  color: #2c6662;
+  font-weight: 700;
+  background: #2c6662;
+  color: white;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* MEJORADO: Eventos que respeten el ancho de la celda */
+:host ::ng-deep .fc-event {
+  border-radius: 4px;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  margin: 2px 0;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* CRÍTICO: Que use todo el ancho disponible */
+  width: 100% !important;
+  box-sizing: border-box;
+  max-width: none !important;
+}
+
+:host ::ng-deep .fc-event:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+:host ::ng-deep .fc-event-title {
+  font-weight: 500;
+}
+
+/* Contenedor de eventos en cada día */
+:host ::ng-deep .fc-daygrid-event-harness {
+  margin: 1px 2px;
+}
+
+/* Botón "más eventos" */
+:host ::ng-deep .fc-daygrid-more-link {
+  color: #2c6662;
+  font-weight: 600;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(44, 102, 98, 0.1);
+}
+
+:host ::ng-deep .fc-daygrid-more-link:hover {
+  background: rgba(44, 102, 98, 0.2);
+  text-decoration: none;
+}
+
+/* Modal personalizado */
+.modal.show {
+  display: block !important;
+}
+
+.modal-backdrop.show {
+  opacity: 0.5;
+}
+
+.modal-header {
+  background: linear-gradient(135deg, #2c6662, #1f4540);
+  color: white;
+  padding: 20px 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* border-radius: 15px 15px 0 0; */
+  flex-shrink: 0;
+}
+
+.modal-footer .btn-save {
+  background: linear-gradient(135deg, #2c6662, #1f4540);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cita-details h6 {
+  color: #2c6662;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.cita-details p {
+  margin-bottom: 10px;
+  color: #495057;
+}
+
+/* Formulario */
+.form-label {
+  font-weight: 600;
+  color: #495057;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #2c6662;
+  box-shadow: 0 0 0 0.2rem rgba(44, 102, 98, 0.25);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .toolbar-left {
+    min-width: auto;
+  }
+  
+  .toolbar-right {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .content-area {
+    padding: 15px;
+    margin-left: 0 !important;
+  }
+  
+  .content-area.sidebar-expanded {
+    margin-left: 0 !important;
+  }
+  
+  .toolbar {
+    padding: 15px;
+  }
+  
+  .search-container {
+    min-width: auto;
+  }
+  
+  .search-input {
+    max-width: none;
+  }
+  
+  .calendar-wrapper {
+    padding: 15px;
+  }
+  
+  .calendar-nav {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .calendar-title {
+    order: -1;
+    font-size: 1.25rem;
+  }
+  
+  .view-controls {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .view-controls .btn {
+    flex: 1;
+  }
+  
+  .legend-items {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .calendar-legend {
+    padding: 15px;
+    margin-top: 15px;
+  }
+
+  .logo {
+    position: relative;
+    top: auto;
+    right: auto;
+    transform: none;
+    height: 40px;
+    margin-top: 10px;
+  }
+  
+  .header-content {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+}
+
+/* Animaciones suaves */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.calendar-wrapper,
+.toolbar,
+.calendar-legend {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Mejoras para accesibilidad */
+.btn-add:focus,
+.view-controls .btn:focus,
+.search-input:focus {
+  outline: 2px solid #2c6662;
+  outline-offset: 2px;
+}
+
+/* Estados de hover más suaves */
+* {
+  transition: all 0.2s ease;
+}
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+/* ============================================
+   ESTILOS PARA EL MODAL DE DETALLES DE CITA
+   ============================================ */
+
+/* Contenedor general de detalles */
+.cita-details {
+  padding: 0.5rem 0;
+}
+
+/* Tarjetas de información */
+.info-card {
+  background-color: #f8f9fa;
+  border-left: 4px solid #3b7d7d;
+  padding: 1rem;
+  border-radius: 8px;
+  height: 100%;
+  transition: all 0.3s ease;
+}
+
+.info-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Etiquetas de información */
+.info-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+}
+
+/* Valores principales */
+.info-value {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #212529;
+  margin-bottom: 0.5rem;
+}
+
+/* Detalles adicionales */
+.info-details {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #dee2e6;
+}
+
+.info-details small {
+  color: #6c757d;
+  line-height: 1.8;
+}
+
+.info-details strong {
+  color: #495057;
+  font-weight: 600;
+}
+
+/* Tarjeta especial para transporte */
+.transporte-card {
+  background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
+  border-left-color: #2196f3;
+}
+
+.transporte-details {
+  margin-top: 1rem;
+}
+
+.transporte-details small {
+  color: #495057;
+  font-size: 0.875rem;
+  line-height: 2;
+}
+
+.transporte-details strong {
+  color: #212529;
+  font-weight: 600;
+}
+
+/* Íconos en los detalles */
+.info-label i,
+.transporte-details i,
+.info-details i {
+  width: 20px;
+  text-align: center;
+}
+
+/* ============================================
+   ESTILOS PARA EL FOOTER DEL MODAL
+   ============================================ */
+
+.modal-footer {
+  padding: 1rem 1.5rem;
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Contenedor de botones de acción */
+.btn-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* Estilos de botones */
+.modal-footer .btn {
+  padding: 0.5rem 1.25rem;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal-footer .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.modal-footer .btn-secondary {
+  background-color: #6c757d;
+  border-color: #6c757d;
+}
+
+.modal-footer .btn-secondary:hover {
+  background-color: #5a6268;
+  border-color: #545b62;
+}
+
+.modal-footer .btn-primary {
+  background-color: #3b7d7d;
+  border-color: #3b7d7d;
+}
+
+.modal-footer .btn-primary:hover {
+  background-color: #2d6060;
+  border-color: #2d6060;
+}
+
+.modal-footer .btn-danger {
+  background-color: #dc3545;
+  border-color: #dc3545;
+}
+
+.modal-footer .btn-danger:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
+
+.modal-footer .btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+  .modal-footer {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .btn-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .modal-footer .btn {
+    width: 100%;
+  }
+  
+  .btn-actions .btn {
+    flex: 1;
+  }
+}
+
+/* Animación de entrada para las tarjetas */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.info-card {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+.row:nth-child(1) .info-card {
+  animation-delay: 0.1s;
+}
+
+.row:nth-child(2) .info-card {
+  animation-delay: 0.2s;
+}
+
+.row:nth-child(3) .info-card {
+  animation-delay: 0.3s;
+}
+
+.trans {
+  background-color: #3b7d7d;
+  border-color: #3b7d7d;
+}
+
+.form-select:disabled {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+  opacity: 0.7;
+}

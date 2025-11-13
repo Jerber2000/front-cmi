@@ -1,0 +1,342 @@
+<div class="content-area" [class.sidebar-expanded]="sidebarExpanded">
+  <app-sidebar [userInfo]="userInfo"></app-sidebar>
+  
+  <div class="menu-container">
+    <header class="header">
+      <div class="header-content">
+        <div class="header-left">
+          <div class="header-text">
+            <h1 class="title">Documentos</h1>
+          </div>
+          <img src="assets/img/LogoFraijanes.png" alt="Logo Fraijanes" class="logo">
+        </div>
+      </div>
+    </header>
+  </div>
+
+  <!-- Controles de búsqueda -->
+  <div class="control-card">
+    <div class="search-controls">
+      <div class="search-wrapper">
+        <input 
+          type="text" 
+          class="search-input" 
+          placeholder="Buscar documentos..."
+          [(ngModel)]="searchTerm"
+          (input)="buscarDocumentos()"
+        >        
+        <button class="btn-add" (click)="showForm()" *ngIf="currentView === 'list'" title="Nuevo Documento">
+          <i class="fas fa-plus"></i>
+        </button>
+        <!-- ← AGREGAR SELECT DE CLÍNICA -->
+        <select 
+          class="clinica-filter" 
+          [(ngModel)]="selectedClinicaFilter"
+          (ngModelChange)="filtrarPorClinica()"
+        >
+          <option [value]="null">Todas las clínicas</option>
+          <option *ngFor="let clinica of clinicas" [value]="clinica.idclinica">
+            {{ clinica.nombreclinica }}
+          </option>
+        </select>
+
+      </div>
+      
+      <div class="header-info">
+        <div class="date-info">
+          Fecha: {{ currentDate | date:'dd/MM/yy' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LISTA DE DOCUMENTOS -->
+  <div class="main-card" *ngIf="currentView === 'list'">
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nombre del Documento</th>
+            <th>Clínica</th> <!-- ← AGREGAR ESTA COLUMNA -->
+            <th>Descripción</th>
+            <th>Fecha Creación</th>
+            <th>Estado</th>
+            <th>Descargar</th>
+            <th>Editar</th>
+            <th>Eliminar</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let documento of paginatedDocumentos" class="table-row">
+            <td class="user-name">
+              {{ documento.nombredocumento }}
+            </td>
+            <!-- ← AGREGAR ESTA CELDA -->
+            <td>
+              <span class="clinica-badge">
+                {{ documento.clinica?.nombreclinica || 'Sin clínica' }}
+              </span>
+            </td>
+            <td>{{ documento.descripcion || 'Sin descripción' }}</td>
+            <td>{{ formatearFecha(documento.fechacreacion) }}</td>
+            <td>
+              <span class="status-badge" [class.status-active]="documento.estado === 1" [class.status-inactive]="documento.estado === 0">
+                {{ documento.estado === 1 ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td>
+              <button 
+                class="action-btn edit-btn" 
+                (click)="descargarDocumento(documento)"
+                title="Descargar"
+              >
+                <i class="fas fa-download"></i> Descargar
+              </button>
+            </td>
+            <td>
+              <button 
+                class="action-btn edit-btn" 
+                (click)="editarDocumento(documento)"
+                title="Editar"
+              >
+                Editar
+              </button>
+            </td>
+            <td>
+              <button 
+                class="action-btn delete-btn" 
+                (click)="eliminarDocumento(documento.iddocumento, documento.nombredocumento)"
+                title="Eliminar"
+              >
+                Eliminar
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Estado vacío -->
+      <div *ngIf="documentosFiltrados.length === 0 && !loading" class="empty-state">
+        <p>No se encontraron documentos</p>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="loading" class="loading-state">
+        <i class="fas fa-spinner fa-spin"></i>
+        Cargando documentos...
+      </div>
+    </div>
+
+    <!-- PAGINACIÓN -->
+    <div class="pagination-container" *ngIf="totalItems > 0">
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button 
+          class="pagination-btn" 
+          [class.disabled]="currentPage === 1"
+          (click)="previousPage()"
+          [disabled]="currentPage === 1"
+        >
+          <i class="fas fa-chevron-left"></i>
+        </button>
+
+        <button 
+          *ngIf="getPages()[0] > 1"
+          class="pagination-btn"
+          (click)="goToPage(1)"
+        >
+          1
+        </button>
+        
+        <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
+
+        <button 
+          *ngFor="let page of getPages()"
+          class="pagination-btn"
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)"
+        >
+          {{ page }}
+        </button>
+
+        <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
+
+        <button 
+          *ngIf="getPages()[getPages().length - 1] < totalPages"
+          class="pagination-btn"
+          (click)="goToPage(totalPages)"
+        >
+          {{ totalPages }}
+        </button>
+
+        <button 
+          class="pagination-btn" 
+          [class.disabled]="currentPage === totalPages"
+          (click)="nextPage()"
+          [disabled]="currentPage === totalPages"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <div *ngIf="totalPages <= 1" class="pagination-single">
+        Página 1 de 1
+      </div>
+
+      <div class="items-per-page">
+        <label>Mostrar:</label>
+        <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
+          <option [value]="5">5</option>
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+        </select>
+        <span>por página</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL FORMULARIO -->
+  <div class="modal-backdrop" *ngIf="currentView === 'form'" (click)="closeModal()">
+    <div class="modal-content-large" (click)="$event.stopPropagation()">
+      
+      <!-- Header -->
+      <div class="modal-header">
+        <h3>
+          <i class="fas fa-file-pdf"></i>
+          <span *ngIf="!isEditMode">Nuevo Documento</span>
+          <span *ngIf="isEditMode">Editar Documento</span>
+        </h3>
+        <button class="modal-close" (click)="closeModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body-scroll">
+        <form [formGroup]="documentoForm">
+          
+          <!-- Información del Documento -->
+          <div class="form-section">
+            <h4 class="section-title">
+              <i class="fas fa-info-circle"></i> Información del Documento
+            </h4>
+            <div class="form-grid">
+              <div class="form-group full-width">
+                <label>Nombre del Documento *</label>
+                <input 
+                  type="text" 
+                  formControlName="nombredocumento"
+                  class="form-input"
+                  [class.invalid]="isFieldInvalid('nombredocumento')"
+                  placeholder="Ej: Reglamento Interno 2025"
+                >
+                <div class="error-message" *ngIf="isFieldInvalid('nombredocumento')">
+                  {{ getFieldError('nombredocumento') }}
+                </div>
+              </div>
+
+              <!-- ← AGREGAR ESTE CAMPO DE CLÍNICA -->
+              <div class="form-group full-width">
+                <label>Clínica *</label>
+                <select 
+                  formControlName="fkclinica"
+                  class="form-select"
+                  [class.invalid]="isFieldInvalid('fkclinica')"
+                >
+                  <option [value]="null" disabled>Seleccione una clínica</option>
+                  <option *ngFor="let clinica of clinicas" [value]="clinica.idclinica">
+                    {{ clinica.nombreclinica }}
+                  </option>
+                </select>
+                <div class="error-message" *ngIf="isFieldInvalid('fkclinica')">
+                  {{ getFieldError('fkclinica') }}
+                </div>
+              </div>
+
+              <div class="form-group full-width">
+                <label>Descripción <span class="optional">(opcional)</span></label>
+                <textarea
+                  formControlName="descripcion"
+                  class="form-textarea"
+                  rows="3"
+                  placeholder="Descripción breve del documento..."
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Archivo PDF -->
+          <div class="form-section">
+            <h4 class="section-title">
+              <i class="fas fa-file-upload"></i> Archivo PDF
+            </h4>
+            <div class="form-grid">
+              <div class="form-group full-width">
+                <label>
+                  Documento PDF
+                  <span *ngIf="!isEditMode" class="required">*</span>
+                  <span *ngIf="isEditMode" class="optional">(opcional - dejar vacío para mantener el actual)</span>
+                </label>
+                
+                <input 
+                  type="file" 
+                  #fileInput 
+                  (change)="onDocumentSelected($event)" 
+                  accept="application/pdf" 
+                  style="display: none;"
+                >
+                
+                <div class="file-upload-area" (click)="fileInput.click()">
+                  <div *ngIf="!documentInfo" class="file-upload-placeholder">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Click para seleccionar archivo PDF</p>
+                    <span>Máximo 10MB</span>
+                  </div>
+                  
+                  <div *ngIf="documentInfo" class="file-info">
+                    <i class="fas fa-file-pdf"></i>
+                    <div class="file-details">
+                      <strong>{{ documentInfo.name }}</strong>
+                      <span *ngIf="documentInfo.size > 0">{{ formatearTamano(documentInfo.size) }}</span>
+                    </div>
+                    <button 
+                      type="button" 
+                      class="btn-remove-file" 
+                      (click)="removeDocument(); $event.stopPropagation()"
+                      title="Quitar archivo"
+                    >
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeModal()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button 
+          type="button"
+          class="btn-save" 
+          (click)="onSubmit()"
+          [disabled]="documentoForm.invalid || loading"
+        >
+          <span *ngIf="loading">
+            <i class="fas fa-spinner fa-spin"></i> Guardando...
+          </span>
+          <span *ngIf="!loading">
+            <i class="fas fa-save"></i> {{ isEditMode ? 'Actualizar' : 'Guardar' }} Documento
+          </span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
