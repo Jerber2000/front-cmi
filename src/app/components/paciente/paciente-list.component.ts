@@ -48,8 +48,8 @@ export class PacienteListaComponent implements OnInit, AfterViewInit, OnDestroy 
   private destruir$ = new Subject<void>();
 
 
-  @HostListener('document:keydown.escape', ['$event'])
-onEscapeKey(event: KeyboardEvent): void {
+@HostListener('document:keydown.escape', ['$event'])
+onEscapeKey(event: Event): void {
   if (this.modalAccionesAbierto) {
     this.cerrarModalAcciones();
   }
