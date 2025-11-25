@@ -1,0 +1,468 @@
+<!-- historialMedico/formulario-psicologia.component.html -->
+<div class="modal-backdrop" *ngIf="mostrarModal" (click)="cerrarModal()">
+  <div class="modal-content modal-psicologia" (click)="$event.stopPropagation()">
+    
+    <!-- HEADER -->
+    <div class="modal-header">
+      <h3>Examen del Estado Mental</h3>
+      <button class="modal-close" (click)="cerrarModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- BODY -->
+    <div class="modal-body">
+      
+      <!-- INFORMACIÓN DEL PACIENTE -->
+      <div class="paciente-info-header" *ngIf="pacienteInfo">
+        <div class="info-row">
+          <div class="info-item">
+            <label>Nombre del paciente:</label>
+            <span>{{ pacienteInfo.nombres }} {{ pacienteInfo.apellidos }}</span>
+          </div>
+          <div class="info-item">
+            <label>Sexo:</label>
+            <span>{{ obtenerGenero() }}</span>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-item">
+            <label>Fecha de aplicación:</label>
+            <span>{{ currentDate | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="info-item">
+            <label>No. de sesión:</label>
+            <input type="number" [(ngModel)]="numeroSesion" min="1" class="input-sesion">
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 1: ASPECTO GENERAL Y CONDUCTA -->
+      <div class="seccion-formulario">
+        <h4 class="seccion-titulo">1. Aspecto general y conducta</h4>
+        
+        <div class="subseccion">
+          <h5>1.1 Aspecto</h5>
+          
+          <div class="form-group">
+            <label>Atuendo e higiene:</label>
+            <textarea 
+              [(ngModel)]="aspectoConducta.atuendo" 
+              rows="2"
+              placeholder="Describir el atuendo e higiene del paciente..."
+              class="form-textarea"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Mirada y expresión:</label>
+            <textarea 
+              [(ngModel)]="aspectoConducta.mirada" 
+              rows="2"
+              placeholder="Describir la mirada y expresión del paciente..."
+              class="form-textarea"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Postura:</label>
+            <textarea 
+              [(ngModel)]="aspectoConducta.postura" 
+              rows="2"
+              placeholder="Describir la postura del paciente..."
+              class="form-textarea"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="subseccion">
+          <h5>1.2 Conducta</h5>
+          
+          <div class="checkbox-grid">
+            <div class="checkbox-columna">
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="aspectoConducta.conducta.coopera">
+                <span>Coopera</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="aspectoConducta.conducta.franco">
+                <span>Franco</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="aspectoConducta.conducta.abierto">
+                <span>Abierto</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="aspectoConducta.conducta.temeroso">
+                <span>Temeroso</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="aspectoConducta.conducta.hostil">
+                <span>Hostil</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="aspectoConducta.conducta.cauteloso">
+                <span>Cauteloso</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="aspectoConducta.conducta.tenso">
+                <span>Tenso</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="aspectoConducta.conducta.atento">
+                <span>Atento</span>
+              </label>
+            </div>
+
+            <div class="checkbox-columna">
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="aspectoConducta.conducta.relajado">
+                <span>Relajado</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="aspectoConducta.conducta.confiado">
+                <span>Confiado</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="aspectoConducta.conducta.ansioso">
+                <span>Ansioso</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="aspectoConducta.conducta.evasivo">
+                <span>Evasivo</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="aspectoConducta.conducta.amable">
+                <span>Amable</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="aspectoConducta.conducta.inseguro">
+                <span>Inseguro</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="aspectoConducta.conducta.retador">
+                <span>Retador</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="aspectoConducta.conducta.distraido">
+                <span>Distraído</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 2: CARACTERÍSTICAS DEL LENGUAJE -->
+      <div class="seccion-formulario">
+        <h4 class="seccion-titulo">2. Características del lenguaje</h4>
+        
+        <div class="subseccion">
+          <h5>2.1 Cuantitativas</h5>
+          <div class="checkbox-grid">
+            <div class="checkbox-columna">
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="lenguaje.cuantitativas.hablaIncesante">
+                <span>Habla incesante</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="lenguaje.cuantitativas.hablaEscueta">
+                <span>Habla escueta</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="lenguaje.cuantitativas.hablaExplosivo">
+                <span>Habla explosivo</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="lenguaje.cuantitativas.hablaFluido">
+                <span>Habla fluido</span>
+              </label>
+            </div>
+
+            <div class="checkbox-columna">
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="lenguaje.cuantitativas.discursoLento">
+                <span>Discurso lento</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="lenguaje.cuantitativas.discursoRapido">
+                <span>Discurso rápido</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="lenguaje.cuantitativas.volumenApropiado">
+                <span>Volumen apropiado</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="lenguaje.cuantitativas.tonoApropiado">
+                <span>Tono apropiado</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="subseccion">
+          <h5>2.2 Cualitativas</h5>
+          <div class="checkbox-grid">
+            <div class="checkbox-columna">
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="lenguaje.cualitativas.detalles">
+                <span>Detalles</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="lenguaje.cualitativas.autoreferencia">
+                <span>Autoreferencia</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="lenguaje.cualitativas.perseveracion">
+                <span>Perseveración</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="lenguaje.cualitativas.inconsecuencia">
+                <span>Inconsecuencia</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="lenguaje.cualitativas.fugaIdeas">
+                <span>Fuga de ideas</span>
+              </label>
+            </div>
+
+            <div class="checkbox-columna">
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="lenguaje.cualitativas.incoherencia">
+                <span>Incoherencia</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="lenguaje.cualitativas.incongruencia">
+                <span>Incongruencia</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="lenguaje.cualitativas.neologismos">
+                <span>Neologismos</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="lenguaje.cualitativas.tartamudeo">
+                <span>Tartamudeo</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="lenguaje.cualitativas.balbuceo">
+                <span>Balbuceo</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 3: ESTADO DE ÁNIMO Y AFECTO -->
+      <div class="seccion-formulario">
+        <h4 class="seccion-titulo">3. Estado de ánimo y afecto</h4>
+        
+        <div class="checkbox-grid">
+          <div class="checkbox-columna">
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="estadoAnimo.depresion">
+              <span>Depresión</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="estadoAnimo.ansiedad">
+              <span>Ansiedad</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="estadoAnimo.colera">
+              <span>Cólera</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="estadoAnimo.calma">
+              <span>Calma</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="estadoAnimo.culpa">
+              <span>Culpa</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="estadoAnimo.grandeza">
+              <span>Grandeza</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="estadoAnimo.panico">
+              <span>Pánico</span>
+            </label>
+          </div>
+
+          <div class="checkbox-columna">
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="estadoAnimo.miedo">
+              <span>Miedo</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="estadoAnimo.euforia">
+              <span>Euforia</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="estadoAnimo.hostilidad">
+              <span>Hostilidad</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="estadoAnimo.felicidad">
+              <span>Felicidad</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="estadoAnimo.afliccion">
+              <span>Aflicción</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="estadoAnimo.suspicacia">
+              <span>Suspicacia</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="estadoAnimo.tristeza">
+              <span>Tristeza</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 4: CONTENIDO DEL PENSAMIENTO -->
+      <div class="seccion-formulario">
+        <h4 class="seccion-titulo">4. Contenido del pensamiento</h4>
+        
+        <div class="form-group">
+          <label>Alucinaciones y percepciones defectuosas:</label>
+          <textarea 
+            [(ngModel)]="contenidoPensamiento.alucinaciones" 
+            rows="2"
+            placeholder="No se identificó"
+            class="form-textarea"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Ideas delirantes y malinterpretaciones:</label>
+          <textarea 
+            [(ngModel)]="contenidoPensamiento.ideasDelirantes" 
+            rows="2"
+            placeholder="No se identificó"
+            class="form-textarea"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Ideas obsesivas y fóbicas:</label>
+          <textarea 
+            [(ngModel)]="contenidoPensamiento.ideasObsesivas" 
+            rows="2"
+            placeholder="No se identificó"
+            class="form-textarea"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>¿Se considera que el estado de ánimo es adecuado al contenido del pensamiento?</label>
+          <textarea 
+            [(ngModel)]="contenidoPensamiento.estadoAnimoAdecuado" 
+            rows="2"
+            placeholder="Escribir observaciones..."
+            class="form-textarea"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>¿Se observa nivel de intensidad apropiado?</label>
+          <textarea 
+            [(ngModel)]="contenidoPensamiento.nivelIntensidad" 
+            rows="2"
+            placeholder="Escribir observaciones..."
+            class="form-textarea"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 5: ESTADO DE COGNICIÓN Y DEL SENSORIO -->
+      <div class="seccion-formulario">
+        <h4 class="seccion-titulo">5. Estado de cognición y del sensorio</h4>
+        
+        <div class="checkbox-grid">
+          <div class="checkbox-columna">
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="cognicionSensorio.persona">
+              <span>Persona</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="cognicionSensorio.tiempo">
+              <span>Tiempo</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="cognicionSensorio.lugar">
+              <span>Lugar</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="cognicionSensorio.memoria">
+              <span>Memoria</span>
+            </label>
+          </div>
+
+          <div class="checkbox-columna">
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="cognicionSensorio.atencion">
+              <span>Atención</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="cognicionSensorio.aprendizaje">
+              <span>Aprendizaje</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="cognicionSensorio.concentracion">
+              <span>Concentración</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN FINAL: IMPRESIÓN CLÍNICA Y OBSERVACIONES -->
+      <div class="seccion-formulario">
+        <div class="form-group">
+          <label>Impresión Clínica:</label>
+          <textarea 
+            [(ngModel)]="impresionClinica" 
+            rows="3"
+            placeholder="Escribir impresión clínica..."
+            class="form-textarea"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Observaciones generales:</label>
+          <textarea 
+            [(ngModel)]="observacionesGenerales" 
+            rows="3"
+            placeholder="Escribir observaciones generales..."
+            class="form-textarea"
+          ></textarea>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="limpiarFormulario()">
+        <i class="fas fa-eraser"></i> Limpiar
+      </button>
+      <button type="button" class="btn-cancelar" (click)="cerrarModal()">
+        <i class="fas fa-times"></i> Cancelar
+      </button>
+      <button 
+        type="button" 
+        class="btn-primary" 
+        (click)="generarPDF()"
+        [disabled]="generandoPDF"
+      >
+        <span *ngIf="!generandoPDF">
+          <i class="fas fa-file-pdf"></i> Generar PDF
+        </span>
+        <span *ngIf="generandoPDF">
+          <i class="fas fa-spinner fa-spin"></i> Generando...
+        </span>
+      </button>
+    </div>
+
+  </div>
+</div>

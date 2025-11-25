@@ -1634,3 +1634,85 @@
   border-radius: 4px;
   cursor: pointer;
 }
+
+.btn-formulario-psicologia {
+  background: linear-gradient(135deg, #8e44ad, #7d3c98);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(142, 68, 173, 0.3);
+}
+
+.btn-formulario-psicologia:hover {
+  background: linear-gradient(135deg, #7d3c98, #6c3483);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(142, 68, 173, 0.4);
+}
+
+// historialMedico.scss
+
+.filtros-container {
+  display: flex;
+  justify-content: flex-end;
+  padding: 15px 20px;
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.filtro-clinica {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  
+  label {
+    font-weight: 500;
+    color: #333;
+  }
+  
+  .select-clinica {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.3s;
+    
+    &:hover {
+      border-color: #4a90e2;
+    }
+    
+    &:focus {
+      outline: none;
+      border-color: #4a90e2;
+      box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+    }
+  }
+}
+
+.badge-clinica {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+.no-sesiones {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 16px;
+}

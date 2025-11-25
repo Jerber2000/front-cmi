@@ -1,4 +1,4 @@
-// historialMedico.ts
+//historialMedico/historialMedico.ts
 import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 import { 
   HistorialMedicoService, 
   HistorialMedico, 
@@ -18,12 +19,14 @@ import { AlertaService } from '../../services/alerta.service';
 import { ArchivoService } from '../../services/archivo.service';
 import { Paciente } from '../../services/paciente.service';
 import { ReferidosComponent } from '../referidos/referidos.component';
+import { FormularioPsicologiaComponent } from './formularioPsicologia/formulario-psicologia.component'; 
+
 
 
 @Component({
   selector: 'app-historial-medico',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent,ReferidosComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent,ReferidosComponent,FormularioPsicologiaComponent ],
   templateUrl: './historialMedico.html',
   styleUrls: ['./historialMedico.scss']
 })
@@ -33,13 +36,17 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
   sidebarExpanded = true;
   loading = false;
   pacienteParaReferir: Paciente | null = null;
-  
+  mostrarFormularioPsicologia = false;
   idPaciente: number = 0;
   infoPaciente: InfoPaciente | null = null;
   historialSesiones: HistorialMedico[] = [];
   sesionActual: HistorialMedico | null = null;
   userInfo: any = {};
   currentDate = new Date();
+
+  clinicas: any[] = [];
+  clinicaSeleccionada: number = 0;
+  historialFiltrado: HistorialMedico[] = [];
 
   archivosSubidosInfo: any[] = []; // Para mantener info de archivos subidos
   maxArchivos = 10; // Límite de archivos
@@ -193,6 +200,17 @@ esImagen(archivo: any): boolean {
     this.pacienteParaReferir = null;
   }
 
+  abrirFormularioPsicologia(): void {
+    if (!this.infoPaciente) {
+      this.alerta.alertaError('No se encontró información del paciente');
+      return;
+    }
+    this.mostrarFormularioPsicologia = true;
+  }
+
+  cerrarFormularioPsicologia(): void {
+    this.mostrarFormularioPsicologia = false;
+  }
   //  para formatear tamaño
     formatFileSize(size: number): string {
     return this.archivoService.formatearTamaño(size);
@@ -208,8 +226,25 @@ esImagen(archivo: any): boolean {
         this.cargarDatosPaciente();
       }
     });
+    this.cargarClinicas(); 
   }
 
+
+  cargarClinicas(): void {
+    // Puedes usar el mismo servicio que en pacientes
+    // O hacer un servicio específico para clínicas
+    this.http.get<any>(`${environment.apiUrl}/pacientes/clinicas`).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.clinicas = response.data;
+        }
+      },
+      error: (error) => {
+        console.error('Error cargando clínicas:', error);
+      }
+    });
+  }
+  
   ngAfterViewInit(): void {
     this.detectSidebarState();
   }
@@ -251,69 +286,70 @@ esImagen(archivo: any): boolean {
     }
   }
 
-// ✅ VERSIÓN CORREGIDA - NO elimina sessionStorage inmediatamente
-cargarDatosPaciente(): void {
-  this.loading = true;
-  
-  // Intentar obtener datos del sessionStorage
-  const datosPacienteStr = sessionStorage.getItem('datosPacienteHistorial');
-  
-  if (datosPacienteStr) {
-    try {
-      const datosFromPacientes = JSON.parse(datosPacienteStr);
-      
-      // Transformar los datos del formato de Paciente al formato de InfoPaciente
-      this.infoPaciente = {
-        idpaciente: datosFromPacientes.idpaciente,
-        nombres: datosFromPacientes.nombres,
-        apellidos: datosFromPacientes.apellidos,
-        cui: datosFromPacientes.cui,
-        fechanacimiento: datosFromPacientes.fechanacimiento,
-        expedientes: datosFromPacientes.expedientes || []
-      };
-      
-      // ✅ OBTENER FOTO DEL PACIENTE
-      if (datosFromPacientes.rutafotoperfil) {
-        this.fotoPacienteUrl = this.archivoService.obtenerUrlPublica(datosFromPacientes.rutafotoperfil);
+  cargarDatosPaciente(): void {
+    this.loading = true;
+    
+    const datosPacienteStr = sessionStorage.getItem('datosPacienteHistorial');
+    
+    if (datosPacienteStr) {
+      try {
+        const datosFromPacientes = JSON.parse(datosPacienteStr);
+        
+        console.log('🔍 Datos completos desde sessionStorage:', datosFromPacientes);
+        console.log('📋 Género del paciente:', datosFromPacientes.genero);
+        
+        // ✅ AGREGAR GENERO AL MAPEO
+        this.infoPaciente = {
+          idpaciente: datosFromPacientes.idpaciente,
+          nombres: datosFromPacientes.nombres,
+          apellidos: datosFromPacientes.apellidos,
+          fkclinica: datosFromPacientes.fkclinica,
+          cui: datosFromPacientes.cui,
+          genero: datosFromPacientes.genero,  // ✅ AGREGAR ESTA LÍNEA
+          fechanacimiento: datosFromPacientes.fechanacimiento,
+          expedientes: datosFromPacientes.expedientes || []
+        };
+        
+        console.log('✅ infoPaciente con género:', this.infoPaciente);
+        
+        if (datosFromPacientes.rutafotoperfil) {
+          this.fotoPacienteUrl = this.archivoService.obtenerUrlPublica(datosFromPacientes.rutafotoperfil);
+        }
+        
+        this.loading = false;
+        this.cargarHistorial();
+        return;
+        
+      } catch (error) {
+        console.error('Error parseando datos del paciente desde sessionStorage:', error);
       }
-      
-      // ❌ NO ELIMINAR sessionStorage AQUÍ
-      // sessionStorage.removeItem('datosPacienteHistorial');
-      
-      this.loading = false;
-      this.cargarHistorial();
-      return;
-      
-    } catch (error) {
-      console.error('Error parseando datos del paciente desde sessionStorage:', error);
     }
+    
+    // Fallback: cargar del backend
+    this.historialService.obtenerInfoPaciente(this.idPaciente).subscribe({
+      next: (info: InfoPaciente) => {
+        this.infoPaciente = info;
+        
+        if (info.rutafotoperfil) {
+          this.fotoPacienteUrl = this.archivoService.obtenerUrlPublica(info.rutafotoperfil);
+        }
+        
+        this.cargarHistorial();
+      },
+      error: (error: any) => {
+        console.error('Error cargando info del paciente:', error);
+        this.loading = false;
+        this.alerta.alertaError('Error al cargar información del paciente');
+      }
+    });
   }
-  
-  // Fallback: Si no hay datos en sessionStorage, intentar cargar del backend
-  this.historialService.obtenerInfoPaciente(this.idPaciente).subscribe({
-    next: (info: InfoPaciente) => {
-      this.infoPaciente = info;
-      
-      // ✅ OBTENER FOTO DEL PACIENTE DESDE EL BACKEND
-      if (info.rutafotoperfil) {
-        this.fotoPacienteUrl = this.archivoService.obtenerUrlPublica(info.rutafotoperfil);
-      }
-      
-      this.cargarHistorial();
-    },
-    error: (error: any) => {
-      console.error('Error cargando info del paciente:', error);
-      this.loading = false;
-      this.alerta.alertaError('Error al cargar información del paciente');
-    }
-  });
-}
 
 
   cargarHistorial(): void {
     this.historialService.obtenerHistorialPorPaciente(this.idPaciente).subscribe({
       next: (historial: HistorialMedico[]) => {
         this.historialSesiones = historial;
+        this.aplicarFiltroClinica();  // ✅ APLICAR FILTRO
         this.loading = false;
       },
       error: (error: any) => {
@@ -322,6 +358,25 @@ cargarDatosPaciente(): void {
         this.alerta.alertaError('Error al cargar el historial médico');
       }
     });
+  }
+
+    //Filtrar historial por clínica
+  aplicarFiltroClinica(): void {
+    const clinicaId = Number(this.clinicaSeleccionada);
+    
+    if (clinicaId === 0) {
+      this.historialFiltrado = [...this.historialSesiones];
+    } else {
+      this.historialFiltrado = this.historialSesiones.filter(
+        sesion => sesion.fkclinica === clinicaId
+      );
+    }
+    
+    console.log('🔍 Filtro aplicado:', clinicaId, 'Resultados:', this.historialFiltrado.length);
+  }
+
+  onFiltroClinicaChange(): void {
+    this.aplicarFiltroClinica();
   }
 
   mostrarHistorial(): void {
@@ -414,9 +469,13 @@ async crearSesion(): Promise<void> {
     const usuario = JSON.parse(usuarioData);
     const formData = this.sesionForm.value;
     
+    // ✅ CALCULAR fkclinica con prioridad: paciente > usuario
+    const clinicaId = usuario.fkclinica || this.infoPaciente.fkclinica || null;
+    
     const nuevaSesion: CrearSesionRequest = {
       fkpaciente: this.idPaciente,
       fkusuario: usuario.idusuario,
+      fkclinica: clinicaId, 
       fecha: new Date().toISOString(),
       motivoconsulta: formData.motivoconsulta,
       notaconsulta: formData.notaconsulta || '',
@@ -791,6 +850,21 @@ descargarArchivo(archivo: any): void {
 
   volver(): void {
     this.router.navigate(['/pacientes']);
+  }
+
+  obtenerGenero(): string {
+    // ✅ Si viene del backend directamente
+    if (this.infoPaciente?.genero) {
+      return this.infoPaciente.genero === 'M' ? 'Masculino' : 'Femenino';
+    }
+    
+    // ✅ Fallback: calcular desde CUI
+    if (this.infoPaciente?.cui) {
+      const ultimoDigito = parseInt(this.infoPaciente.cui.slice(-1));
+      return ultimoDigito % 2 === 0 ? 'Femenino' : 'Masculino';
+    }
+    
+    return 'N/A';
   }
 
   ngOnDestroy(): void {

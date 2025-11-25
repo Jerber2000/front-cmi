@@ -44,7 +44,7 @@
           (click)="cambiarTipoReporte('consultas')"
         >
           <i class="fas fa-stethoscope"></i>
-          Consultas
+          Historial Clínico
         </button>
         
         <button 
@@ -80,7 +80,7 @@
           (click)="cambiarTipoReporte('salidas')"
         >
           <i class="fas fa-box-open"></i>
-          Salidas
+          Salidas Inventario
         </button>
       </div>
 
@@ -375,7 +375,12 @@
           </div>
           <div class="form-group">
             <label>Médico</label>
-            <input type="number" formControlName="medico" class="form-input" placeholder="ID Médico">
+            <select formControlName="medico" class="form-select">
+              <option value="">Todos</option>
+              <option *ngFor="let medico of medicosDisponibles" [value]="medico.idusuario">
+                {{ medico.nombres }} {{ medico.apellidos }}
+              </option>
+            </select>
           </div>
           <div class="form-group">
             <label>Diagnóstico</label>

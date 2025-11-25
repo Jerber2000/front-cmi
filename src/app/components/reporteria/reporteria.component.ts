@@ -20,6 +20,7 @@ import { ArchivoService } from '../../services/archivo.service';
 import { AlertaService } from '../../services/alerta.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 
+
 @Component({
   selector: 'app-reporteria',
   standalone: true,
@@ -61,6 +62,7 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
     estado: ''
   };
   
+  medicosDisponibles: any[] = [];
   aniosDisponibles: number[] = [];
   mesesDisponibles = [
     { valor: 1, nombre: 'Enero' },
@@ -83,7 +85,7 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
     private fb: FormBuilder,
     private router: Router,
     public reporteriaService: ReporteriaService,
-    private pdfExcelService: PdfExcelReporteriaService, // 🆕 NUEVO
+    private pdfExcelService: PdfExcelReporteriaService,
     private archivoService: ArchivoService,
     private alerta: AlertaService
   ) {
@@ -134,7 +136,7 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.loadUserInfo();
     this.generarAniosDisponibles();
-    
+    this.cargarMedicos();
     if (this.tipoReporteActivo === 'dashboard') {
       this.cargarDashboard();
     }
@@ -160,6 +162,29 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
     }
   }
   
+  cargarMedicos(): void {
+    this.reporteriaService.obtenerReporteConsultas({ page: 1, limit: 1000 }).subscribe({
+      next: (response) => {
+        // Extraer médicos únicos de las consultas
+        const medicosMap = new Map();
+        response.data.forEach((consulta: any) => {
+          if (consulta.usuario) {
+            const medico = consulta.usuario;
+            medicosMap.set(medico.idusuario, {
+              idusuario: medico.idusuario,
+              nombres: medico.nombres,
+              apellidos: medico.apellidos
+            });
+          }
+        });
+        this.medicosDisponibles = Array.from(medicosMap.values());
+      },
+      error: (error) => {
+        console.error('Error al cargar médicos:', error);
+      }
+    });
+  }
+
   detectSidebarState(): void {
     const checkSidebar = () => {
       const sidebar = document.querySelector('.sidebar-container');

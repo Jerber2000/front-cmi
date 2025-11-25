@@ -29,7 +29,6 @@
         >
         
         <!-- ✅ NUEVO: Filtro por clínica -->
-        <!--
         <select 
           class="select-clinica"
           [(ngModel)]="clinicaSeleccionada"
@@ -39,9 +38,7 @@
           <option *ngFor="let clinica of clinicas" [value]="clinica.idclinica">
             {{ clinica.nombreclinica }}
           </option>
-        </select>
-        -->
-        
+        </select>        
         <!-- BOTON SE ESCONDE DE MOMENTO
         <button class="boton-agregar" (click)="mostrarFormulario()" *ngIf="vistaActual === 'lista'">
           <i class="fas fa-plus"></i>

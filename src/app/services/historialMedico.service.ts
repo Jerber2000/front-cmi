@@ -9,6 +9,7 @@ export interface HistorialMedico {
   idhistorial: number;
   fkpaciente: number;
   fkusuario: number;
+  fkclinica?: number;  // ✅ AGREGAR ESTE CAMPO
   fecha: string;
   motivoconsulta: string;
   notaconsulta?: string;
@@ -30,6 +31,10 @@ export interface HistorialMedico {
       numeroexpediente: string;
     }[];
   };
+  clinica?: {  // ✅ AGREGAR ESTA RELACIÓN
+    idclinica: number;
+    nombreclinica: string;
+  };
 }
 
 export interface InfoPaciente {
@@ -37,6 +42,8 @@ export interface InfoPaciente {
   nombres: string;
   apellidos: string;
   cui: string;
+  genero?: string;
+  fkclinica?: number;
   rutafotoperfil?: string;
   telefono?: string;
   email?: string;
@@ -50,6 +57,7 @@ export interface InfoPaciente {
 export interface CrearSesionRequest {
   fkpaciente: number;
   fkusuario: number;
+  fkclinica?: number;
   fecha: string;
   motivoconsulta: string;
   notaconsulta?: string;
