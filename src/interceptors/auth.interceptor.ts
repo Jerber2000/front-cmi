@@ -46,10 +46,28 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       }),
       
       catchError((error: HttpErrorResponse) => {        
-        // Manejar error 401: Token inválido o expirado
+        // ✅ MANEJAR ERROR 401: Token inválido, expirado o sesión duplicada
         if (error.status === 401) {
-          alerta.alertaError('Sesión expirada. Por favor, inicia sesión nuevamente.');
-          authService.logout();
+          // Limpiar todo el localStorage
+          localStorage.removeItem('token');
+          localStorage.removeItem('usuario');
+          localStorage.removeItem('loginTime'); // ← Agregar esta línea
+          
+          // Determinar el mensaje apropiado
+          const mensaje = error.error?.message || 'Sesión expirada';
+          
+          // Mostrar alerta apropiada
+          if (mensaje.includes('otro dispositivo') || mensaje.includes('sesión')) {
+            alerta.alertaInfo('Tu sesión fue cerrada porque iniciaste sesión en otro dispositivo');
+          } else {
+            alerta.alertaError('Sesión expirada. Por favor, inicia sesión nuevamente.');
+          }
+          
+          // Redirigir al login después de un pequeño delay
+          setTimeout(() => {
+            router.navigate(['/login']);
+          }, 2000);
+          
           return throwError(() => error);
         }
         
