@@ -38,6 +38,9 @@
         <p class="patient-age" *ngIf="infoPaciente.fechanacimiento">
           Edad: {{ historialService.calcularEdad(infoPaciente.fechanacimiento) }} años
         </p>
+        <p class="patient-gender" *ngIf="infoPaciente.cui">
+          Género: {{ obtenerGenero() }}
+        </p>
       </div>
       <button class="btn-back" (click)="volver()">
         <i class="fas fa-arrow-left"></i> Volver
@@ -47,9 +50,32 @@
 
   <!-- VISTA HISTORIAL -->
   <div class="main-card" *ngIf="currentView === 'historial'">
+    
+    <!-- ✅ NUEVO: FILTRO POR CLÍNICA -->
+    <div class="filtros-container">
+      <div class="filtro-clinica">
+        <label for="filtro-clinica">Filtrar por clínica:</label>
+        <select 
+          id="filtro-clinica"
+          [(ngModel)]="clinicaSeleccionada"
+          (change)="onFiltroClinicaChange()"
+          class="select-clinica"
+        >
+          <option [value]="0">Todas las clínicas</option>
+          <option *ngFor="let clinica of clinicas" [value]="clinica.idclinica">
+            {{ clinica.nombreclinica }}
+          </option>
+        </select>
+      </div>
+    </div>
+    
     <div class="historial-header">
       <h3>Historial de Sesiones</h3>
       <div class="header-buttons">
+
+        <button class="btn-formulario-psicologia" (click)="abrirFormularioPsicologia()">
+          <i class="fas fa-brain"></i> Examen Mental
+        </button>
         <!-- ✅ NUEVO BOTÓN CREAR REFERIDO -->
         <button class="btn-crear-referido" (click)="abrirModalReferido()">
           <i class="fas fa-share"></i> Crear Referido
@@ -73,7 +99,7 @@
     <div class="sesiones-grid" *ngIf="!loading">
       <div 
         class="sesion-card" 
-        *ngFor="let sesion of historialSesiones"
+        *ngFor="let sesion of historialFiltrado"
         (click)="mostrarDiagnostico(sesion)"
       >
         <div class="sesion-fecha">
@@ -85,6 +111,9 @@
           <div class="sesion-doctor" *ngIf="sesion.usuario">
             Dr. {{ sesion.usuario.nombres }} {{ sesion.usuario.apellidos }}
           </div>
+          <span class="badge-clinica" *ngIf="sesion.clinica">
+            🏥 {{ sesion.clinica.nombreclinica }}
+          </span>
         </div>
         <div class="sesion-status">
           <span class="status-diagnostico" [class.completado]="sesion.diagnosticotratamiento">
@@ -100,8 +129,8 @@
         </div>
       </div>
 
-      <div *ngIf="historialSesiones.length === 0" class="empty-state">
-        <p>No hay sesiones registradas para este paciente</p>
+      <div *ngIf="historialFiltrado.length === 0" class="empty-state">
+        <p>{{ clinicaSeleccionada > 0 ? 'No hay sesiones para esta clínica' : 'No hay sesiones registradas para este paciente' }}</p>
       </div>
     </div>
   </div>
@@ -486,9 +515,17 @@
   </div>
 </div>
 
+
   <!-- ✅ MODAL REFERIDOS -->
   <app-referidos 
     *ngIf="pacienteParaReferir && router.url !== '/referidos'"
     [pacienteExterno]="pacienteParaReferir"
     (modalCerrado)="onModalReferidoCerrado()"
   ></app-referidos>
+
+<app-formulario-psicologia
+  *ngIf="mostrarFormularioPsicologia"
+  [pacienteInfo]="infoPaciente"
+  [mostrarModal]="mostrarFormularioPsicologia"
+  (modalCerrado)="cerrarFormularioPsicologia()"
+></app-formulario-psicologia>

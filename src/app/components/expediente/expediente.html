@@ -38,8 +38,7 @@
           <option *ngFor="let clinica of clinicas" [value]="clinica.idclinica">
             {{ clinica.nombreclinica }}
           </option>
-        </select>
-        
+        </select>        
         <!-- BOTON SE ESCONDE DE MOMENTO
         <button class="boton-agregar" (click)="mostrarFormulario()" *ngIf="vistaActual === 'lista'">
           <i class="fas fa-plus"></i>
@@ -298,7 +297,7 @@
 
               <!-- Historia de enfermedad -->
               <div class="grupo-formulario ancho-completo">
-                <label>Historia de Enfermedad</label>
+                <label>Historia de Enfermedad *</label>
                 <textarea
                   formControlName="historiaenfermedad"
                   class="area-texto-formulario grande"

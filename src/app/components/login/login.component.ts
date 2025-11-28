@@ -70,6 +70,7 @@ export class LoginComponent {
     this.hideNotification();
   }
 
+
   onSubmitLogin() {
     if (!this.usuario || !this.clave) {
       this.showNotification('error', 'Debe ingresar usuario y contraseña');
@@ -90,7 +91,14 @@ export class LoginComponent {
         }
       },
       error: (err) => {
-        this.showNotification('error', err.error?.message || 'Error de conexión');
+        // ✅ MANEJO ESPECIAL PARA SESIÓN ACTIVA
+        if (err.status === 409 && err.error?.sessionActiva) {
+          this.showNotification('error', err.error.message);
+        } else if (err.error?.message) {
+          this.showNotification('error', err.error.message);
+        } else {
+          this.showNotification('error', 'Error de conexión');
+        }
       }
     });
   }

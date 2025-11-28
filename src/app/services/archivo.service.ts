@@ -64,38 +64,54 @@ export class ArchivoService {
     }
   }
 
-  /**
-   * MÉTODO PRINCIPAL GENÉRICO - Solo foto
-   * @param entidad - 'usuarios', 'pacientes', 'productos', etc.
-   * @param entityId - ID de la entidad
-   * @param foto - Archivo de foto
-   * @returns Promise con la ruta del archivo para guardar en BD
-   */
-  async subirFoto(entidad: string, entityId: number, foto: File): Promise<string> {
-    try {
-      if (!foto.type.startsWith('image/')) {
-        throw new Error('Solo se permiten imágenes (JPG, PNG, WebP)');
-      }
-      
-      if (foto.size > 5 * 1024 * 1024) {
-        throw new Error('La foto no puede superar los 5MB');
-      }
+//services/archivo.service.ts
 
-      const formData = new FormData();
-      formData.append('foto', foto);
-      formData.append('entityId', entityId.toString());
-
-      const response = await this.http.post<any>(`${this.apiUrl}/${entidad}/subirFoto`, formData).toPromise();
-      
-      if (response.success) {
-        return response.data.rutaArchivo;
-      } else {
-        throw new Error(response.message || 'Error al subir foto');
-      }
-    } catch (error: any) {
-      throw new Error(error.message || 'Error al subir foto');
+/**
+ * ✅ MÉTODO PRINCIPAL - Solo foto (CON ELIMINACIÓN AUTOMÁTICA)
+ * @param entidad - 'usuarios', 'pacientes', 'productos', etc.
+ * @param entityId - ID de la entidad
+ * @param foto - Archivo de foto
+ * @param rutaAnterior - (OPCIONAL) Ruta de foto anterior para eliminar
+ * @returns Promise con la ruta del archivo para guardar en BD
+ */
+async subirFoto(
+  entidad: string, 
+  entityId: number, 
+  foto: File,
+  rutaAnterior?: string  // ✅ NUEVO PARÁMETRO OPCIONAL
+): Promise<string> {
+  try {
+    if (!foto.type.startsWith('image/')) {
+      throw new Error('Solo se permiten imágenes (JPG, PNG, WebP)');
     }
+    
+    if (foto.size > 5 * 1024 * 1024) {
+      throw new Error('La foto no puede superar los 5MB');
+    }
+
+    const formData = new FormData();
+    formData.append('foto', foto);
+    formData.append('entityId', entityId.toString());
+    
+    // ✅ Enviar ruta anterior si existe (para que el backend la elimine)
+    if (rutaAnterior && rutaAnterior.trim() !== '') {
+      formData.append('rutaAnterior', rutaAnterior);
+    }
+
+    const response = await this.http.post<any>(
+      `${this.apiUrl}/${entidad}/subirFoto`, 
+      formData
+    ).toPromise();
+    
+    if (response.success) {
+      return response.data.rutaArchivo;
+    } else {
+      throw new Error(response.message || 'Error al subir foto');
+    }
+  } catch (error: any) {
+    throw new Error(error.message || 'Error al subir foto');
   }
+}
 
   /**
    * MÉTODO PRINCIPAL GENÉRICO - Solo documento
@@ -104,31 +120,48 @@ export class ArchivoService {
    * @param documento - Archivo PDF
    * @returns Promise con la ruta del archivo para guardar en BD
    */
-  async subirDocumento(entidad: string, entityId: number, documento: File): Promise<string> {
-    try {
-      if (documento.type !== 'application/pdf') {
-        throw new Error('Solo se permiten archivos PDF');
-      }
-      
-      if (documento.size > 10 * 1024 * 1024) {
-        throw new Error('El documento no puede superar los 10MB');
-      }
 
-      const formData = new FormData();
-      formData.append('documento', documento);
-      formData.append('entityId', entityId.toString());
-
-      const response = await this.http.post<any>(`${this.apiUrl}/${entidad}/subirDocumento`, formData).toPromise();
-      
-      if (response.success) {
-        return response.data.rutaArchivo;
-      } else {
-        throw new Error(response.message || 'Error al subir documento');
-      }
-    } catch (error: any) {
-      throw new Error(error.message || 'Error al subir documento');
+/**
+ * ✅ DOCUMENTO - Con eliminación automática
+ */
+async subirDocumento(
+  entidad: string, 
+  entityId: number, 
+  documento: File, 
+  rutaAnterior?: string
+): Promise<string> {
+  try {
+    if (documento.type !== 'application/pdf') {
+      throw new Error('Solo se permiten archivos PDF');
     }
+    
+    if (documento.size > 10 * 1024 * 1024) {
+      throw new Error('El documento no puede superar los 10MB');
+    }
+
+    const formData = new FormData();
+    formData.append('documento', documento);
+    formData.append('entityId', entityId.toString());
+    
+    // ✅ AGREGAR ESTO (igual que en subirFoto):
+    if (rutaAnterior && rutaAnterior.trim() !== '') {
+      formData.append('rutaAnterior', rutaAnterior);
+    }
+
+    const response = await this.http.post<any>(
+      `${this.apiUrl}/${entidad}/subirDocumento`, 
+      formData
+    ).toPromise();
+    
+    if (response.success) {
+      return response.data.rutaArchivo;
+    } else {
+      throw new Error(response.message || 'Error al subir documento');
+    }
+  } catch (error: any) {
+    throw new Error(error.message || 'Error al subir documento');
   }
+}
 
   // ============================================================================
   // MÉTODOS UTILITARIOS (genéricos para cualquier entidad)

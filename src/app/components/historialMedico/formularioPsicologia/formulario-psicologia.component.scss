@@ -1,0 +1,447 @@
+/* historialMedico/formulario-psicologia.component.scss */
+
+/* ====================================
+   MODAL BACKDROP Y CONTENEDOR
+   ==================================== */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.3s ease-out;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 1200px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+.modal-psicologia {
+  max-width: 1400px;
+}
+
+/* ====================================
+   HEADER DEL MODAL
+   ==================================== */
+.modal-header {
+  background: linear-gradient(135deg, #2c6662, #1f4540);
+  color: white;
+  padding: 20px 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 15px 15px 0 0;
+  flex-shrink: 0;
+
+  h3 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+  }
+}
+
+.modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+  }
+}
+
+/* ====================================
+   BODY DEL MODAL
+   ==================================== */
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 25px;
+  max-height: calc(90vh - 140px);
+}
+
+/* ====================================
+   INFORMACIÓN DEL PACIENTE
+   ==================================== */
+.paciente-info-header {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 25px;
+  border-left: 4px solid #2c6662;
+}
+
+.info-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  margin-bottom: 15px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  span {
+    font-size: 15px;
+    font-weight: 500;
+    color: #333;
+  }
+}
+
+.input-sesion {
+  padding: 8px 12px;
+  border: 2px solid #e1e5e9;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 100px;
+  transition: all 0.3s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #2c6662;
+    box-shadow: 0 0 0 3px rgba(44, 102, 98, 0.1);
+  }
+}
+
+/* ====================================
+   SECCIONES DEL FORMULARIO
+   ==================================== */
+.seccion-formulario {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.seccion-titulo {
+  color: #2c6662;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.subseccion {
+  margin-bottom: 20px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  h5 {
+    color: #495057;
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+  }
+}
+
+/* ====================================
+   FORMULARIO
+   ==================================== */
+.form-group {
+  margin-bottom: 20px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+  }
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  resize: vertical;
+  min-height: 60px;
+
+  &:focus {
+    outline: none;
+    border-color: #2c6662;
+    box-shadow: 0 0 0 3px rgba(44, 102, 98, 0.1);
+  }
+
+  &::placeholder {
+    color: #adb5bd;
+    font-style: italic;
+  }
+}
+
+/* ====================================
+   CHECKBOXES
+   ==================================== */
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.checkbox-columna {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+
+  &:hover {
+    background: #e9ecef;
+  }
+
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #2c6662;
+  }
+
+  span {
+    font-size: 14px;
+    color: #495057;
+    font-weight: 500;
+  }
+}
+
+/* ====================================
+   FOOTER DEL MODAL
+   ==================================== */
+.modal-footer {
+  background: #f8f9fa;
+  padding: 20px 25px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  border-top: 1px solid #dee2e6;
+  border-radius: 0 0 15px 15px;
+  flex-shrink: 0;
+}
+
+/* ====================================
+   BOTONES
+   ==================================== */
+.btn-cancelar,
+.btn-secondary,
+.btn-success,
+.btn-primary {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  i {
+    font-size: 14px;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.btn-cancelar {
+  background: #6c757d;
+  color: white;
+
+  &:hover {
+    background: #545b62;
+  }
+}
+
+.btn-secondary {
+  background: #ffc107;
+  color: #212529;
+
+  &:hover {
+    background: #e0a800;
+  }
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+
+  &:hover {
+    background: linear-gradient(135deg, #20c997, #17a2b8);
+  }
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+
+  &:hover {
+    background: linear-gradient(135deg, #0056b3, #004085);
+  }
+}
+
+/* ====================================
+   ANIMACIONES
+   ==================================== */
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+  }
+  to { 
+    opacity: 1; 
+  }
+}
+
+@keyframes modalSlideIn {
+  from { 
+    opacity: 0; 
+    transform: scale(0.9) translateY(-30px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1) translateY(0); 
+  }
+}
+
+/* ====================================
+   RESPONSIVE
+   ==================================== */
+@media (max-width: 992px) {
+  .checkbox-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .info-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    max-width: 100%;
+    margin: 10px;
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  .modal-footer {
+    flex-wrap: wrap;
+    gap: 10px;
+
+    button {
+      flex: 1 1 calc(50% - 5px);
+      justify-content: center;
+    }
+  }
+
+  .paciente-info-header {
+    padding: 15px;
+  }
+
+  .seccion-formulario {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-header h3 {
+    font-size: 18px;
+  }
+
+  .seccion-titulo {
+    font-size: 16px;
+  }
+
+  .modal-footer button {
+    flex: 1 1 100%;
+  }
+}
+
+/* ====================================
+   SCROLLBAR PERSONALIZADO
+   ==================================== */
+.modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: #2c6662;
+  border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #1f4540;
+}

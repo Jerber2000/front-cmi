@@ -178,20 +178,6 @@ export class PerfilService {
     );
   }
 
-  /**
-   * Sube archivos de perfil (foto)
-   */
-  async subirArchivosPerfil(usuarioId: number, archivos: { foto?: File }): Promise<{ rutaFoto?: string }> {
-    try {
-      const resultado = await this.archivoService.subirArchivos('usuarios', usuarioId, archivos);
-      return {
-        rutaFoto: resultado.rutaFoto
-      };
-    } catch (error) {
-      console.error('Error al subir archivos de perfil:', error);
-      throw new Error('Error al subir la foto de perfil');
-    }
-  }
 
   /**
    * Actualiza el perfil del usuario usando el endpoint de usuarios existente
@@ -228,14 +214,24 @@ export class PerfilService {
 
     let rutaFoto = usuarioActual.rutafotoperfil || '';
 
-    // Subir nueva foto si se proporcionó
+    // ✅ Subir nueva foto si se proporcionó (elimina automáticamente la anterior)
     if (nuevaFoto) {
       try {
-        const resultadoArchivos = await this.subirArchivosPerfil(usuarioId, { foto: nuevaFoto });
-        rutaFoto = resultadoArchivos.rutaFoto || rutaFoto;
+        // Obtener ruta anterior para que el backend la elimine
+        const rutaAnterior = usuarioActual.rutafotoperfil || '';
+        
+        // Usar subirFoto en lugar de subirArchivos
+        rutaFoto = await this.archivoService.subirFoto(
+          'usuarios',
+          usuarioId,
+          nuevaFoto,
+          rutaAnterior  // ✅ Backend eliminará esta automáticamente
+        );
+        
+        console.log('✅ Foto de perfil actualizada:', rutaFoto);
       } catch (error) {
         console.error('Error al subir foto:', error);
-        // Continuar sin la foto si hay error
+        throw new Error('Error al subir la foto de perfil');
       }
     }
 

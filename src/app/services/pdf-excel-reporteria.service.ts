@@ -1066,7 +1066,7 @@ export class PdfExcelReporteriaService {
       motivo: salida.motivo || 'N/A',
       destino: salida.destino || 'N/A',
       usuario: salida.usuario ? `${salida.usuario.nombres} ${salida.usuario.apellidos}` : 'N/A',
-      estado: salida.activo === 1 ? 'Activa' : 'Anulada'
+      estado: Number(salida.estado) === 1 ? 'Activa' : 'Anulada'
     }));
 
     autoTable(doc, {
@@ -1296,7 +1296,7 @@ export class PdfExcelReporteriaService {
       'Motivo': item.motivo || 'N/A',
       'Destino': item.destino || 'N/A',
       'Usuario': item.usuario ? `${item.usuario.nombres} ${item.usuario.apellidos}` : 'N/A',
-      'Estado': item.activo === 1 ? 'Activa' : 'Anulada',
+      'Estado': Number(item.estado) === 1 ? 'Activa' : 'Anulada',
       'Observaciones': item.observaciones || 'N/A'
     }));
 
