@@ -22,6 +22,8 @@ import { Paciente, ServicioPaciente } from '../../services/paciente.service';
 import { AgendaService, CitaRequest } from '../../services/agenda.service';
 import { PdfExcelReporteriaService } from '../../services/pdf-excel-reporteria.service';
 import { HasRoleDirective } from '../../directives/has-role.directive';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { Router } from '@angular/router';
 
 // Interfaces
 export interface Cita {
@@ -63,7 +65,8 @@ export interface ApiResponse<T> {
     ReactiveFormsModule,
     FullCalendarModule,
     SidebarComponent,
-    HasRoleDirective
+    HasRoleDirective,
+    NgSelectModule
   ],
   templateUrl: './agenda.component.html',
   styleUrls: ['./agenda.component.css']
@@ -79,8 +82,17 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     headerToolbar: false,
     locale: 'es',
     firstDay: 1,
-    height: '100%',
-    aspectRatio: 1.35, 
+    
+    // CAMBIAR ESTAS LÍNEAS:
+    height: 'auto',
+    contentHeight: 'auto',
+    // ELIMINAR aspectRatio o cambiarlo a un valor más grande
+    // aspectRatio: 1.5,
+    
+    // AGREGAR ESTAS OPCIONES:
+    expandRows: true,
+    handleWindowResize: true,
+    windowResizeDelay: 100,
     
     // Configuración de eventos
     events: [],
@@ -111,7 +123,11 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     // Configuración de slots de tiempo
     slotMinTime: '08:00:00',
     slotMaxTime: '18:00:00',
-    slotDuration: '01:00:00'
+    slotDuration: '01:00:00',
+    
+    // AGREGAR: Forzar que muestre todas las semanas del mes
+    fixedWeekCount: false,
+    showNonCurrentDates: true
   };
 
   // Variables de estado
@@ -140,17 +156,45 @@ export class AgendaComponent implements OnInit, AfterViewInit {
 
   slotsDisponibles: any[] = [
     { hora: '08:00:00' },
+    { hora: '08:30:00' },
     { hora: '09:00:00' },
+    { hora: '09:30:00' },
     { hora: '10:00:00' },
+    { hora: '10:30:00' },
     { hora: '11:00:00' },
+    { hora: '11:30:00' },
     { hora: '14:00:00' },
+    { hora: '14:30:00' },
     { hora: '15:00:00' },
+    { hora: '15:30:00' },
     { hora: '16:00:00' },
+    { hora: '16:30:00' },
     { hora: '17:00:00' }
   ];
 
   citaForm!: FormGroup;
   private currentUserId: string = '1';
+
+  mostrarRecurrencia: boolean = false;
+  tipoRecurrencia: 'diaria' | 'semanal' | 'mensual' = 'semanal';
+  intervaloRecurrencia: number = 1;
+  diasSemana: { [key: number]: boolean } = {
+    1: false, // Lunes
+    2: false, // Martes
+    3: false, // Miércoles
+    4: false, // Jueves
+    5: false, // Viernes
+    6: false, // Sábado
+    0: false  // Domingo
+  };
+  fechaFinRecurrencia: string = '';
+  numeroOcurrencias: number | null = null;
+  usarFechaFin: boolean = true; // true = fecha fin, false = número de ocurrencias
+
+  detallesSerieRecurrente: any = null;
+  mostrandoCitaRecurrente: boolean = false;
+  loadingPacientes: boolean = false;
+  loadingUsuarios: boolean = false;
 
   constructor(
     private archivoService: ArchivoService,
@@ -159,8 +203,8 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     private alerta: AlertaService,
     private fb: FormBuilder,
     private agendaService: AgendaService,
-    private pdfExcelService: PdfExcelReporteriaService 
-
+    private pdfExcelService: PdfExcelReporteriaService,
+    private router: Router
   ) {
     this.initForm();
     this.fechaActual = new Date().toLocaleDateString('es-ES');
@@ -178,10 +222,24 @@ export class AgendaComponent implements OnInit, AfterViewInit {
   ngAfterViewInit(): void {
     setTimeout(() => {
       this.detectSidebarState();
+      
+      // AGREGAR: Forzar render inicial del calendario
+      if (this.calendarComponent) {
+        const api = this.calendarComponent.getApi();
+        api.render();
+        api.updateSize();
+      }
+      
       setTimeout(() => {
         this.resizeCalendar();
       }, 500);
     }, 100);
+  }
+
+  verHistorialClinico(paciente: any): void {
+    if (paciente.idpaciente) {
+      this.router.navigate(['/historial', paciente.idpaciente]);
+    }
   }
 
   loadUserInfo(): void {
@@ -226,6 +284,171 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     return null;
   }
 
+  // cargarUsuariosPorRol(): void {
+  //   const usuarioData = localStorage.getItem('usuario');
+
+  //   if (!usuarioData) {
+  //     console.error('No hay datos de usuario en localStorage');
+  //     return;
+  //   }
+
+  //   const usuario = JSON.parse(usuarioData);
+  //   const usuarioRol = usuario.fkrol;
+
+  //   if(usuarioRol == 2 || usuarioRol == 6 || usuarioRol == 7 || usuarioRol == 12 || usuarioRol == 13 || usuarioRol == 15){
+  //     const currentUserId = this.getCurrentUserId();
+  //     this.selectedMedico = currentUserId;
+
+  //     // Cargar todos los usuarios por rol primero
+  //     this.UsuarioService.obtenerUsuariosPorRol('2,6,7,12,13,15').subscribe({
+  //       next: (response) => {
+  //         if (response.success && response.data) {
+  //           this.usuario = response.data;
+            
+  //           // Asegurar que el usuario actual esté seleccionado
+  //           // Si no está en la lista, lo agregamos al inicio
+  //           const usuarioActualEnLista = this.usuario.find(u => u.idusuario == parseInt(currentUserId));
+            
+  //           if (!usuarioActualEnLista) {
+  //             // Si el usuario actual no está en la lista, lo buscamos y agregamos
+  //             this.UsuarioService.obtenerUsuarioPorId(parseInt(currentUserId)).subscribe({
+  //               next: (responseUsuario) => {
+  //                 if (responseUsuario.success && responseUsuario.data) {
+  //                   this.usuario.unshift(responseUsuario.data); // Agregar al inicio
+  //                   this.filtrarPorMedico();
+  //                 }
+  //               },
+  //               error: (error) => {
+  //                 if(error.status !== 403){
+  //                   this.alerta.alertaError('Error al cargar el usuario actual');
+  //                 }
+  //               }
+  //             });
+  //           } else {
+  //             this.filtrarPorMedico();
+  //           }
+  //         } else {
+  //           this.usuario = [];
+  //           this.alerta.alertaInfo(response.message || 'No se encontraron usuarios');
+  //         }
+  //       },
+  //       error: (error) => {
+  //         if (error.status !== 403) {
+  //           this.alerta.alertaError('Error al cargar los usuarios por roles');
+  //         }
+  //       }
+  //     });
+  //   } else {
+  //     // Usuario con otro rol - mostrar todos los profesionales
+  //     this.UsuarioService.obtenerUsuariosPorRol('2,6,7,12,13,15').subscribe({
+  //       next: (response) => {
+  //         if (response.success && response.data) {
+  //           this.usuario = response.data;
+  //         } else {
+  //           this.usuario = [];
+  //           this.alerta.alertaInfo(response.message || 'No se encontraron usuarios');
+  //         }
+  //       },
+  //       error: (error) => {
+  //         if (error.status !== 403) {
+  //           this.alerta.alertaError('Error al cargar los usuarios por roles');
+  //         }
+  //       }
+  //     });
+  //   }
+  // }
+
+  // cargarUsuariosPorRol(): void {
+  //   const usuarioData = localStorage.getItem('usuario');
+
+  //   if (!usuarioData) {
+  //     console.error('No hay datos de usuario en localStorage');
+  //     return;
+  //   }
+
+  //   const usuario = JSON.parse(usuarioData);
+  //   const usuarioRol = usuario.fkrol;
+
+  //   this.loadingUsuarios = true; // ← AGREGAR
+
+  //   if(usuarioRol == 2 || usuarioRol == 6 || usuarioRol == 7 || usuarioRol == 12 || usuarioRol == 13 || usuarioRol == 15){
+  //     const currentUserId = this.getCurrentUserId();
+  //     this.selectedMedico = currentUserId;
+
+  //     this.UsuarioService.obtenerUsuariosPorRol('5,6,10,12,13,15').subscribe({
+  //       next: (response) => {
+  //         if (response.success && response.data) {
+  //           // MODIFICAR ESTA LÍNEA:
+  //           this.usuario = response.data.map(usr => ({
+  //             ...usr,
+  //             nombreCompleto: `Dr. ${usr.nombres} ${usr.apellidos}`.trim()
+  //           }));
+            
+  //           const usuarioActualEnLista = this.usuario.find(u => u.idusuario == parseInt(currentUserId));
+            
+  //           if (!usuarioActualEnLista) {
+  //             this.UsuarioService.obtenerUsuarioPorId(parseInt(currentUserId)).subscribe({
+  //               next: (responseUsuario) => {
+  //                 if (responseUsuario.success && responseUsuario.data) {
+  //                   // MODIFICAR ESTA PARTE:
+  //                   const usuarioConNombre = {
+  //                     ...responseUsuario.data,
+  //                     nombreCompleto: `Dr. ${responseUsuario.data.nombres} ${responseUsuario.data.apellidos}`.trim()
+  //                   };
+  //                   this.usuario.unshift(usuarioConNombre);
+  //                   this.filtrarPorMedico();
+  //                   this.loadingUsuarios = false; // ← AGREGAR
+  //                 }
+  //               },
+  //               error: (error) => {
+  //                 if(error.status !== 403){
+  //                   this.alerta.alertaError('Error al cargar el usuario actual');
+  //                 }
+  //                 this.loadingUsuarios = false; // ← AGREGAR
+  //               }
+  //             });
+  //           } else {
+  //             this.filtrarPorMedico();
+  //             this.loadingUsuarios = false; // ← AGREGAR
+  //           }
+  //         } else {
+  //           this.usuario = [];
+  //           this.alerta.alertaInfo(response.message || 'No se encontraron usuarios');
+  //           this.loadingUsuarios = false; // ← AGREGAR
+  //         }
+  //       },
+  //       error: (error) => {
+  //         if (error.status !== 403) {
+  //           this.alerta.alertaError('Error al cargar los usuarios por roles');
+  //         }
+  //         this.loadingUsuarios = false; // ← AGREGAR
+  //       }
+  //     });
+  //   } else {
+  //     this.UsuarioService.obtenerUsuariosPorRol('5,6,10,12,13,15').subscribe({
+  //       next: (response) => {
+  //         if (response.success && response.data) {
+  //           // MODIFICAR ESTA LÍNEA:
+  //           this.usuario = response.data.map(usr => ({
+  //             ...usr,
+  //             nombreCompleto: `Dr. ${usr.nombres} ${usr.apellidos}`.trim()
+  //           }));
+  //         } else {
+  //           this.usuario = [];
+  //           this.alerta.alertaInfo(response.message || 'No se encontraron usuarios');
+  //         }
+  //         this.loadingUsuarios = false; // ← AGREGAR
+  //       },
+  //       error: (error) => {
+  //         if (error.status !== 403) {
+  //           this.alerta.alertaError('Error al cargar los usuarios por roles');
+  //         }
+  //         this.loadingUsuarios = false; // ← AGREGAR
+  //       }
+  //     });
+  //   }
+  // }
+
   cargarUsuariosPorRol(): void {
     const usuarioData = localStorage.getItem('usuario');
 
@@ -237,70 +460,115 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     const usuario = JSON.parse(usuarioData);
     const usuarioRol = usuario.fkrol;
 
-    if(usuarioRol == 1 || usuarioRol == 5 || usuarioRol == 4){
-      this.UsuarioService.obtenerUsuariosPorRol('2,6,7,12,13,15').subscribe({
+    this.loadingUsuarios = true;
+
+    // Roles de médicos/fisioterapeutas/profesionales
+    if(usuarioRol == 2 || usuarioRol == 6 || usuarioRol == 7 || usuarioRol == 12 || usuarioRol == 13 || usuarioRol == 15){
+      const currentUserId = this.getCurrentUserId();
+      this.selectedMedico = currentUserId;
+
+      // IMPORTANTE: Pre-seleccionar el usuario en el formulario también
+      this.citaForm.patchValue({
+        fkusuario: parseInt(currentUserId)
+      });
+
+      // IMPORTANTE: Deshabilitar el select para que no pueda cambiar
+      this.citaForm.get('fkusuario')?.disable();
+      this.isSelectDisabled = true;
+
+      this.UsuarioService.obtenerUsuariosPorRol('5,6,10,12,13,15').subscribe({
         next: (response) => {
           if (response.success && response.data) {
-            this.usuario = response.data;
+            this.usuario = response.data.map(usr => ({
+              ...usr,
+              nombreCompleto: `Dr. ${usr.nombres} ${usr.apellidos}`.trim()
+            }));
+            
+            const usuarioActualEnLista = this.usuario.find(u => u.idusuario == parseInt(currentUserId));
+            
+            if (!usuarioActualEnLista) {
+              this.UsuarioService.obtenerUsuarioPorId(parseInt(currentUserId)).subscribe({
+                next: (responseUsuario) => {
+                  if (responseUsuario.success && responseUsuario.data) {
+                    const usuarioConNombre = {
+                      ...responseUsuario.data,
+                      nombreCompleto: `Dr. ${responseUsuario.data.nombres} ${responseUsuario.data.apellidos}`.trim()
+                    };
+                    this.usuario.unshift(usuarioConNombre);
+                    this.filtrarPorMedico();
+                    this.loadingUsuarios = false;
+                    
+                    // IMPORTANTE: Asegurar que siga seleccionado después de cargar
+                    this.citaForm.patchValue({
+                      fkusuario: parseInt(currentUserId)
+                    });
+                  }
+                },
+                error: (error) => {
+                  if(error.status !== 403){
+                    this.alerta.alertaError('Error al cargar el usuario actual');
+                  }
+                  this.loadingUsuarios = false;
+                }
+              });
+            } else {
+              this.filtrarPorMedico();
+              this.loadingUsuarios = false;
+            }
           } else {
             this.usuario = [];
             this.alerta.alertaInfo(response.message || 'No se encontraron usuarios');
+            this.loadingUsuarios = false;
           }
         },
         error: (error) => {
           if (error.status === 403) {
-            return;
+            this.alerta.alertaError('Error al cargar los usuarios por roles');
           }
-          this.alerta.alertaError('Error al cargar los usuarios por roles');
+          this.loadingUsuarios = false;
         }
       });
     } else {
-      const currentUserId = this.getCurrentUserId();
-      // this.isSelectDisabled = true;
-      this.selectedMedico = currentUserId;
-
-      this.UsuarioService.obtenerUsuarioPorId(parseInt(currentUserId)).subscribe({
+      // Usuario administrador - puede seleccionar cualquier profesional
+      this.isSelectDisabled = false;
+      this.citaForm.get('fkusuario')?.enable();
+      
+      this.UsuarioService.obtenerUsuariosPorRol('5,6,10,12,13,15').subscribe({
         next: (response) => {
           if (response.success && response.data) {
-            this.usuario = [response.data];
-            this.filtrarPorMedico();
-          } else {
-            this.usuario = [];
-            this.alerta.alertaInfo(response.message || 'No se encontró el usuario');
-          }
-        },
-        error: (error) => {
-          if(error.status === 403){
-            return;
-          }
-          this.alerta.alertaError('Error al cargar los usuarios por id');
-        }
-      });
-      this.UsuarioService.obtenerUsuariosPorRol('2,6,7,12,13,15').subscribe({
-        next: (response) => {
-          if (response.success && response.data) {
-            this.usuario = response.data;
+            this.usuario = response.data.map(usr => ({
+              ...usr,
+              nombreCompleto: `Dr. ${usr.nombres} ${usr.apellidos}`.trim()
+            }));
           } else {
             this.usuario = [];
             this.alerta.alertaInfo(response.message || 'No se encontraron usuarios');
           }
+          this.loadingUsuarios = false;
         },
         error: (error) => {
           if (error.status === 403) {
-            return;
+            this.alerta.alertaError('Error al cargar los usuarios por roles');
           }
-          this.alerta.alertaError('Error al cargar los usuarios por roles');
+          this.loadingUsuarios = false;
         }
       });
     }
   }
 
   ListarPacientes(): void {
+    this.loadingPacientes = true;
     this.PacienteService.obtenerListadoPacientes().subscribe({
       next: (listadoUsuario) => { 
-        this.paciente = listadoUsuario;
+        // Agregar campo nombreCompleto para búsqueda
+        this.paciente = listadoUsuario.map((pac: Paciente) => ({
+          ...pac,
+          nombreCompleto: `${pac.nombres} ${pac.apellidos}`.trim()
+        }));
+        this.loadingPacientes = false;
       },
       error: (error) => {
+        this.loadingPacientes = false;
         if (error.status === 403) {
           return;
         }
@@ -332,6 +600,24 @@ export class AgendaComponent implements OnInit, AfterViewInit {
         direccion: pacienteSeleccionado.municipio + ', ' + pacienteSeleccionado.aldea + ', ' + pacienteSeleccionado.direccion || ''
       });
     }
+  }
+
+  // AGREGAR este nuevo método
+  onPacienteSeleccionadoNgSelect(pacienteSeleccionado: any): void {
+    if (!pacienteSeleccionado) {
+      this.citaForm.patchValue({
+        nombreEncargado: '',
+        contactoEncargado: '',
+        direccion: ''
+      });
+      return;
+    }
+
+    this.citaForm.patchValue({
+      nombreEncargado: pacienteSeleccionado.nombreencargado || '',
+      contactoEncargado: pacienteSeleccionado.telefonoencargado || '',
+      direccion: `${pacienteSeleccionado.municipio || ''}, ${pacienteSeleccionado.aldea || ''}, ${pacienteSeleccionado.direccion || ''}`.replace(/^,\s*|,\s*$/g, '').trim()
+    });
   }
 
   detectSidebarState(): void {
@@ -393,6 +679,9 @@ export class AgendaComponent implements OnInit, AfterViewInit {
       if (this.calendarComponent) {
         const api = this.calendarComponent.getApi();
         api.updateSize();
+        
+        // AGREGAR: Forzar re-render
+        api.render();
         return;
       }
       window.dispatchEvent(new Event('resize'));
@@ -443,6 +732,56 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     });
   }
 
+  configurarCitaRecurrente(): void {
+    // Primero cambiar el estado
+    this.mostrarRecurrencia = !this.mostrarRecurrencia;
+    
+    // Si se desmarca, resetear los valores
+    if (!this.mostrarRecurrencia) {
+      this.tipoRecurrencia = 'semanal';
+      this.intervaloRecurrencia = 1;
+      this.diasSemana = {
+        1: false, 2: false, 3: false, 4: false,
+        5: false, 6: false, 0: false
+      };
+      this.fechaFinRecurrencia = '';
+      this.numeroOcurrencias = null;
+      this.usarFechaFin = true;
+    } else {
+      // Al activar recurrencia, establecer fecha fin por defecto (3 meses)
+      const fechaInicio = new Date(this.citaForm.get('fechaatencion')?.value || new Date());
+      const fechaFin = new Date(fechaInicio);
+      fechaFin.setMonth(fechaFin.getMonth() + 3);
+      this.fechaFinRecurrencia = format(fechaFin, 'yyyy-MM-dd');
+    }
+  }
+
+  obtenerDiasSeleccionados(): string {
+    const nombresCompletos: { [key: number]: string } = {
+      1: 'Lunes',
+      2: 'Martes',
+      3: 'Miércoles',
+      4: 'Jueves',
+      5: 'Viernes',
+      6: 'Sábado',
+      0: 'Domingo'
+    };
+    
+    const diasSeleccionados = Object.entries(this.diasSemana)
+      .filter(([_, selected]) => selected)
+      .map(([dia, _]) => nombresCompletos[parseInt(dia)])
+      .filter(nombre => nombre); // Filtrar undefined
+    
+    return diasSeleccionados.join(', ') || 'Ninguno seleccionado';
+  }
+
+  obtenerDiasSeleccionadosNumeros(): string {
+    const dias = Object.entries(this.diasSemana)
+      .filter(([_, selected]) => selected)
+      .map(([dia, _]) => dia);
+    return dias.join(',');
+  }
+
   async cargarCitas(): Promise<void> {
     this.loading = true;
     try {
@@ -473,8 +812,15 @@ export class AgendaComponent implements OnInit, AfterViewInit {
           // Forzar actualización del calendario
           this.calendarOptions = { ...this.calendarOptions };
           
+          // AGREGAR: Forzar re-render después de un delay
           setTimeout(() => {
             this.resizeCalendar();
+            
+            // AGREGAR: Forzar render adicional
+            if (this.calendarComponent) {
+              const api = this.calendarComponent.getApi();
+              api.render();
+            }
           }, 100);
           
           this.loading = false;
@@ -493,21 +839,62 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     }
   }
 
+  // handleDateSelect(selectInfo: DateSelectArg): void {
+  //   // Extraer la fecha seleccionada
+  //   const fechaSeleccionada = selectInfo.startStr.split('T')[0];
+
+  //   // Configurar el modo y la fecha
+  //   this.selectedDate = fechaSeleccionada;
+  //   this.modalMode = 'create';
+  //   this.selectedCita = null;
+
+  //   // Resetear completamente el formulario con valores por defecto
+  //   this.citaForm.reset({
+  //     fkpaciente: '',              // ← Valor vacío
+  //     fkusuario: '',               // ← Valor vacío
+  //     fechaatencion: fechaSeleccionada,
+  //     horaatencion: '',            // ← Valor vacío
+  //     comentario: '',
+  //     transporte: 0,
+  //     fechatransporte: fechaSeleccionada,
+  //     horariotransporte: '',
+  //     direccion: '',
+  //     nombreEncargado: '',
+  //     contactoEncargado: ''
+  //   });
+
+  //   // Abrir el modal
+  //   this.showModal = true;
+
+  //   // Deseleccionar en el calendario
+  //   const calendarApi = selectInfo.view.calendar;
+  //   calendarApi.unselect();
+  // }
+
   handleDateSelect(selectInfo: DateSelectArg): void {
-    // Extraer la fecha seleccionada
     const fechaSeleccionada = selectInfo.startStr.split('T')[0];
 
-    // Configurar el modo y la fecha
     this.selectedDate = fechaSeleccionada;
     this.modalMode = 'create';
     this.selectedCita = null;
 
-    // Resetear completamente el formulario con valores por defecto
+    // Obtener el usuario actual
+    const usuarioData = localStorage.getItem('usuario');
+    const usuario = usuarioData ? JSON.parse(usuarioData) : null;
+    const usuarioRol = usuario?.fkrol;
+    
+    // Determinar si debe pre-seleccionar usuario
+    let usuarioPreseleccionado = '';
+    if (usuarioRol == 2 || usuarioRol == 6 || usuarioRol == 7 || usuarioRol == 12 || usuarioRol == 13 || usuarioRol == 15) {
+      usuarioPreseleccionado = this.getCurrentUserId();
+    }
+
+    // Resetear formulario con o sin usuario pre-seleccionado
     this.citaForm.reset({
-      fkpaciente: '',              // ← Valor vacío
-      fkusuario: '',               // ← Valor vacío
+      fkpaciente: '',
+      fkusuario: usuarioPreseleccionado, // Pre-seleccionar si es médico
       fechaatencion: fechaSeleccionada,
-      horaatencion: '',            // ← Valor vacío
+      horaatencion: '',
       comentario: '',
       transporte: 0,
       fechatransporte: fechaSeleccionada,
@@ -517,10 +904,13 @@ export class AgendaComponent implements OnInit, AfterViewInit {
       contactoEncargado: ''
     });
 
-    // Abrir el modal
+    // Si es médico, deshabilitar el select
+    if (usuarioPreseleccionado) {
+      this.citaForm.get('fkusuario')?.disable();
+    }
+
     this.showModal = true;
 
-    // Deseleccionar en el calendario
     const calendarApi = selectInfo.view.calendar;
     calendarApi.unselect();
   }
@@ -528,6 +918,15 @@ export class AgendaComponent implements OnInit, AfterViewInit {
   handleEventClick(clickInfo: EventClickArg): void {
     this.modalMode = 'view';
     this.selectedCita = clickInfo.event.extendedProps['citaCompleta'];
+    
+    // Verificar si es cita recurrente y cargar detalles
+    if (this.selectedCita?.es_recurrente && this.selectedCita?.fkagenda_recurrente) {
+      this.cargarDetallesSerieRecurrente(this.selectedCita.fkagenda_recurrente);
+    } else {
+      this.detallesSerieRecurrente = null;
+      this.mostrandoCitaRecurrente = false;
+    }
+    
     this.showModal = true;
   }
 
@@ -554,6 +953,46 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     return colores[medicoId % colores.length];
   }
 
+  cargarDetallesSerieRecurrente(idagendaRecurrente: number): void {
+    this.agendaService.obtenerDetallesSerieRecurrente(idagendaRecurrente).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.detallesSerieRecurrente = response.data;
+          this.mostrandoCitaRecurrente = true;
+        }
+      },
+      error: (error) => {
+        console.error('Error al cargar detalles de serie:', error);
+        this.mostrandoCitaRecurrente = false;
+      }
+    });
+  }
+
+  // abrirModalNuevaCita(): void {
+  //   const fechaHoy = format(new Date(), 'yyyy-MM-dd');
+    
+  //   this.selectedDate = fechaHoy;
+  //   this.modalMode = 'create';
+  //   this.selectedCita = null;
+    
+  //   // Resetear completamente el formulario con valores por defecto
+  //   this.citaForm.reset({
+  //     fkpaciente: '',              // ← Valor vacío
+  //     fkusuario: '',               // ← Valor vacío
+  //     fechaatencion: fechaHoy,
+  //     horaatencion: '',            // ← Valor vacío
+  //     comentario: '',
+  //     transporte: 0,
+  //     fechatransporte: fechaHoy,
+  //     horariotransporte: '',
+  //     direccion: '',
+  //     nombreEncargado: '',
+  //     contactoEncargado: ''
+  //   });
+    
+  //   this.showModal = true;
+  // }
+
   abrirModalNuevaCita(): void {
     const fechaHoy = format(new Date(), 'yyyy-MM-dd');
     
@@ -561,12 +1000,23 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     this.modalMode = 'create';
     this.selectedCita = null;
     
-    // Resetear completamente el formulario con valores por defecto
+    // Obtener el usuario actual
+    const usuarioData = localStorage.getItem('usuario');
+    const usuario = usuarioData ? JSON.parse(usuarioData) : null;
+    const usuarioRol = usuario?.fkrol;
+    
+    // Determinar si debe pre-seleccionar usuario
+    let usuarioPreseleccionado = '';
+    if (usuarioRol == 2 || usuarioRol == 6 || usuarioRol == 7 || usuarioRol == 12 || usuarioRol == 13 || usuarioRol == 15) {
+      usuarioPreseleccionado = this.getCurrentUserId();
+    }
+    
+    // Resetear formulario con o sin usuario pre-seleccionado
     this.citaForm.reset({
-      fkpaciente: '',              // ← Valor vacío
-      fkusuario: '',               // ← Valor vacío
+      fkpaciente: '',
+      fkusuario: usuarioPreseleccionado, // Pre-seleccionar si es médico
       fechaatencion: fechaHoy,
-      horaatencion: '',            // ← Valor vacío
+      horaatencion: '',
       comentario: '',
       transporte: 0,
       fechatransporte: fechaHoy,
@@ -576,12 +1026,29 @@ export class AgendaComponent implements OnInit, AfterViewInit {
       contactoEncargado: ''
     });
     
+    // Si es médico, deshabilitar el select
+    if (usuarioPreseleccionado) {
+      this.citaForm.get('fkusuario')?.disable();
+    }
+    
     this.showModal = true;
   }
 
   cerrarModal(): void {
     this.showModal = false;
     this.selectedCita = null;
+    this.mostrarRecurrencia = false;
+    this.mostrandoCitaRecurrente = false;
+    this.detallesSerieRecurrente = null;
+    this.tipoRecurrencia = 'semanal';
+    this.intervaloRecurrencia = 1;
+    this.diasSemana = {
+      1: false, 2: false, 3: false, 4: false,
+      5: false, 6: false, 0: false
+    };
+    this.fechaFinRecurrencia = '';
+    this.numeroOcurrencias = null;
+    this.usarFechaFin = true;
     
     // Resetear completamente el formulario
     this.citaForm.reset({
@@ -599,10 +1066,144 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     });
   }
 
+  // editarCita(): void {
+  //   if (this.selectedCita) {
+      
+  //     this.modalMode = 'edit';
+      
+  //     // Cargar los datos de la cita en el formulario
+  //     this.citaForm.patchValue({
+  //       fkpaciente: this.selectedCita.fkpaciente,
+  //       fkusuario: this.selectedCita.fkusuario,
+  //       fechaatencion: this.selectedCita.fechaatencion,
+  //       horaatencion: this.selectedCita.horaatencion,
+  //       comentario: this.selectedCita.comentario || '',
+  //       transporte: this.selectedCita.transporte || 0,
+  //       fechatransporte: this.selectedCita.fechatransporte || '',
+  //       horariotransporte: this.selectedCita.horariotransporte || '',
+  //       direccion: this.selectedCita.direccion || ''
+  //     });
+
+  //     // Si hay paciente seleccionado, cargar sus datos
+  //     if (this.selectedCita.fkpaciente) {
+  //       const pacienteSeleccionado = this.paciente.find(
+  //         p => p.idpaciente === this.selectedCita!.fkpaciente
+  //       );
+
+  //       if (pacienteSeleccionado) {
+  //         this.citaForm.patchValue({
+  //           nombreEncargado: pacienteSeleccionado.nombreencargado || '',
+  //           contactoEncargado: pacienteSeleccionado.telefonoencargado || '',
+  //           direccion: pacienteSeleccionado.municipio + ', ' + pacienteSeleccionado.aldea + ', ' + pacienteSeleccionado.direccion || '',
+  //         });
+  //       }
+  //     }
+  //   }
+  // }
+
+  // guardarCita(): void {
+  //   if (this.citaForm.invalid) {
+  //     this.alerta.alertaError('Por favor complete todos los campos requeridos');
+  //     return;
+  //   }
+
+  //   this.loading = true;
+  //   const currentUserId = this.getCurrentUserId();
+
+  //   const horaSeleccionada = this.citaForm.get('horaatencion')?.value;
+  //   const horaFormateada = horaSeleccionada.includes(':00:00') 
+  //     ? horaSeleccionada 
+  //     : horaSeleccionada.length === 5 
+  //       ? `${horaSeleccionada}:00` 
+  //       : horaSeleccionada;
+
+  //   const transporteValue = this.citaForm.get('transporte')?.value;
+  //   const transporteNumero = transporteValue ? 1 : 0;
+
+  //   if (transporteNumero === 1) {
+  //     const fechaTransporte = this.citaForm.get('fechatransporte')?.value;
+  //     const horarioTransporte = this.citaForm.get('horariotransporte')?.value;
+  //     const direccion = this.citaForm.get('direccion')?.value;
+
+  //     if (!fechaTransporte || !horarioTransporte || !direccion || direccion.trim() === '') {
+  //       this.alerta.alertaError('Cuando se solicita transporte, debe completar la fecha, hora y dirección del transporte');
+  //       this.loading = false;
+  //       return;
+  //     }
+  //   }
+    
+  //   const datosCita: CitaRequest = {
+  //     fkusuario:         parseInt(this.citaForm.get('fkusuario')?.value),
+  //     fkpaciente:        parseInt(this.citaForm.get('fkpaciente')?.value),
+  //     fechaatencion:     this.citaForm.get('fechaatencion')?.value,
+  //     horaatencion:      horaFormateada,
+  //     comentario:        this.citaForm.get('comentario')?.value || '',
+  //     transporte:        transporteNumero,
+  //     fechatransporte:   transporteNumero ? this.citaForm.get('fechatransporte')?.value : null,
+  //     horariotransporte: transporteNumero ? this.citaForm.get('horariotransporte')?.value : null,
+  //     direccion:         transporteNumero ? this.citaForm.get('direccion')?.value : '',
+  //     usuariocreacion:   currentUserId,
+  //     usuariomodificacion:currentUserId,
+  //     estado:            1
+  //   };
+
+  //   if (this.modalMode === 'create') {
+  //     this.agendaService.crearCita(datosCita).subscribe({
+  //       next: (response) => {
+  //         this.loading = false;
+  //         if (response.success) {
+  //           this.alerta.alertaExito(response.message || 'Cita creada exitosamente');
+  //           this.cargarCitas();
+  //           this.cerrarModal();
+  //         } else {
+  //           this.alerta.alertaInfo(response.message || 'No se pudo crear la cita');
+  //         }
+  //       },
+  //       error: (error) => {
+  //         this.loading = false;
+  //         if (error.status === 403) {
+  //           return;
+  //         }
+  //         this.alerta.alertaError('Error al crear cita. Intenta nuevamente.');
+  //       }
+  //     });
+  //   } else if (this.modalMode === 'edit' && this.selectedCita) {
+  //     if (!this.selectedCita.idagenda) {
+  //       this.alerta.alertaError('Error: No se encontró el ID de la cita');
+  //       this.loading = false;
+  //       return;
+  //     }
+
+  //     this.agendaService.actualizarCita(this.selectedCita.idagenda, datosCita).subscribe({
+  //       next: (response) => {
+  //         this.loading = false;
+  //         if (response.success) {
+  //           this.alerta.alertaExito(response.message || 'Cita actualizada exitosamente');
+  //           this.cargarCitas();
+  //           this.cerrarModal();
+  //         } else {
+  //           this.alerta.alertaInfo(response.message || 'No se pudo actualizar la cita');
+  //         }
+  //       },
+  //       error: (error) => {
+  //         this.loading = false;
+  //         if (error.status === 403) {
+  //           return;
+  //         }
+  //         this.alerta.alertaError('Error al actualizar cita. Intenta nuevamente.');
+  //       }
+  //     });
+  //   }
+  // }
+
   editarCita(): void {
     if (this.selectedCita) {
-      
       this.modalMode = 'edit';
+      
+      // Si es cita recurrente, mostrar advertencia
+      if (this.selectedCita.es_recurrente) {
+        this.mostrandoCitaRecurrente = true;
+      }
       
       // Cargar los datos de la cita en el formulario
       this.citaForm.patchValue({
@@ -640,9 +1241,32 @@ export class AgendaComponent implements OnInit, AfterViewInit {
       return;
     }
 
+    // Si es recurrente y es semanal, validar que hay días seleccionados
+    if (this.mostrarRecurrencia && this.tipoRecurrencia === 'semanal') {
+      const diasSeleccionados = this.obtenerDiasSeleccionados();
+      if (!diasSeleccionados) {
+        this.alerta.alertaError('Debe seleccionar al menos un día de la semana');
+        return;
+      }
+    }
+
+    // Validar que haya fecha fin o número de ocurrencias
+    if (this.mostrarRecurrencia) {
+      if (this.usarFechaFin && !this.fechaFinRecurrencia) {
+        this.alerta.alertaError('Debe especificar una fecha de fin');
+        return;
+      }
+      if (!this.usarFechaFin && (!this.numeroOcurrencias || this.numeroOcurrencias < 1)) {
+        this.alerta.alertaError('Debe especificar el número de ocurrencias');
+        return;
+      }
+    }
+
     this.loading = true;
     const currentUserId = this.getCurrentUserId();
 
+    const fkusuario = this.citaForm.get('fkusuario')?.value || 
+                    this.citaForm.getRawValue().fkusuario;
     const horaSeleccionada = this.citaForm.get('horaatencion')?.value;
     const horaFormateada = horaSeleccionada.includes(':00:00') 
       ? horaSeleccionada 
@@ -664,45 +1288,104 @@ export class AgendaComponent implements OnInit, AfterViewInit {
         return;
       }
     }
-    
-    const datosCita: CitaRequest = {
-      fkusuario:         parseInt(this.citaForm.get('fkusuario')?.value),
-      fkpaciente:        parseInt(this.citaForm.get('fkpaciente')?.value),
-      fechaatencion:     this.citaForm.get('fechaatencion')?.value,
-      horaatencion:      horaFormateada,
-      comentario:        this.citaForm.get('comentario')?.value || '',
-      transporte:        transporteNumero,
-      fechatransporte:   transporteNumero ? this.citaForm.get('fechatransporte')?.value : null,
-      horariotransporte: transporteNumero ? this.citaForm.get('horariotransporte')?.value : null,
-      direccion:         transporteNumero ? this.citaForm.get('direccion')?.value : '',
-      usuariocreacion:   currentUserId,
-      usuariomodificacion:currentUserId,
-      estado:            1
-    };
 
-    if (this.modalMode === 'create') {
-      this.agendaService.crearCita(datosCita).subscribe({
+    // Si es cita recurrente
+    if (this.mostrarRecurrencia && this.modalMode === 'create') {
+      const datosRecurrentes: any = {
+        //fkusuario: parseInt(this.citaForm.get('fkusuario')?.value),
+        fkusuario: parseInt(fkusuario),
+        fkpaciente: parseInt(this.citaForm.get('fkpaciente')?.value),
+        horaatencion: horaFormateada,
+        comentario: this.citaForm.get('comentario')?.value || '',
+        transporte: transporteNumero,
+        fechatransporte: transporteNumero ? this.citaForm.get('fechatransporte')?.value : null,
+        horariotransporte: transporteNumero ? this.citaForm.get('horariotransporte')?.value : null,
+        direccion: transporteNumero ? this.citaForm.get('direccion')?.value : '',
+        tipo_recurrencia: this.tipoRecurrencia,
+        intervalo: this.intervaloRecurrencia,
+        fecha_inicio: this.citaForm.get('fechaatencion')?.value,
+        usuariocreacion: currentUserId
+      };
+
+      // Agregar días de semana si es recurrencia semanal
+      if (this.tipoRecurrencia === 'semanal') {
+        datosRecurrentes.dias_semana = this.obtenerDiasSeleccionadosNumeros();
+      }
+
+      // Agregar fecha fin o número de ocurrencias
+      if (this.usarFechaFin) {
+        datosRecurrentes.fecha_fin = this.fechaFinRecurrencia;
+      } else {
+        datosRecurrentes.numero_ocurrencias = this.numeroOcurrencias;
+      }
+
+      this.agendaService.crearCitaRecurrente(datosRecurrentes).subscribe({
         next: (response) => {
-          if (response.exito || response.success) {
-            this.alerta.alertaExito('Cita creada exitosamente');
+          this.loading = false;
+          if (response.success) {
+            this.alerta.alertaExito(response.message || 'Citas recurrentes creadas exitosamente');
             this.cargarCitas();
             this.cerrarModal();
           } else {
-            this.alerta.alertaError(response.mensaje || response.message || 'Error al crear la cita');
+            if (response.conflictos && response.conflictos.length > 0) {
+              const conflictosMsg = response.conflictos
+                .map(c => `${c.fecha}: ${c.mensaje}`)
+                .join('\n');
+              this.alerta.alertaError(`Conflictos encontrados:\n${conflictosMsg}`);
+            } else {
+              this.alerta.alertaInfo(response.message || 'No se pudieron crear las citas');
+            }
           }
-          this.loading = false;
         },
         error: (error) => {
           this.loading = false;
           if (error.status === 403) {
             return;
           }
-          
+          this.alerta.alertaError('Error al crear citas recurrentes. Intenta nuevamente.');
+        }
+      });
+      return;
+    }
+
+    // Código existente para citas normales
+    const datosCita: CitaRequest = {
+      //fkusuario: parseInt(this.citaForm.get('fkusuario')?.value),
+      fkusuario: parseInt(fkusuario),
+      fkpaciente: parseInt(this.citaForm.get('fkpaciente')?.value),
+      fechaatencion: this.citaForm.get('fechaatencion')?.value,
+      horaatencion: horaFormateada,
+      comentario: this.citaForm.get('comentario')?.value || '',
+      transporte: transporteNumero,
+      fechatransporte: transporteNumero ? this.citaForm.get('fechatransporte')?.value : null,
+      horariotransporte: transporteNumero ? this.citaForm.get('horariotransporte')?.value : null,
+      direccion: transporteNumero ? this.citaForm.get('direccion')?.value : '',
+      usuariocreacion: currentUserId,
+      usuariomodificacion: currentUserId,
+      estado: 1
+    };
+
+    if (this.modalMode === 'create') {
+      this.agendaService.crearCita(datosCita).subscribe({
+        next: (response) => {
+          this.loading = false;
+          if (response.success) {
+            this.alerta.alertaExito(response.message || 'Cita creada exitosamente');
+            this.cargarCitas();
+            this.cerrarModal();
+          } else {
+            this.alerta.alertaInfo(response.message || 'No se pudo crear la cita');
+          }
+        },
+        error: (error) => {
+          this.loading = false;
+          if (error.status === 403) {
+            return;
+          }
           this.alerta.alertaError('Error al crear cita. Intenta nuevamente.');
         }
       });
     } else if (this.modalMode === 'edit' && this.selectedCita) {
-      // Validar que selectedCita tenga idagenda
       if (!this.selectedCita.idagenda) {
         this.alerta.alertaError('Error: No se encontró el ID de la cita');
         this.loading = false;
@@ -711,12 +1394,162 @@ export class AgendaComponent implements OnInit, AfterViewInit {
 
       this.agendaService.actualizarCita(this.selectedCita.idagenda, datosCita).subscribe({
         next: (response) => {
-          if (response.exito || response.success) {
-            this.alerta.alertaExito('Cita actualizada exitosamente');
+          this.loading = false;
+          if (response.success) {
+            this.alerta.alertaExito(response.message || 'Cita actualizada exitosamente');
             this.cargarCitas();
             this.cerrarModal();
           } else {
-            this.alerta.alertaError(response.mensaje || response.message || 'Error al actualizar la cita');
+            this.alerta.alertaInfo(response.message || 'No se pudo actualizar la cita');
+          }
+        },
+        error: (error) => {
+          this.loading = false;
+          if (error.status === 403) {
+            return;
+          }
+          this.alerta.alertaError('Error al actualizar cita. Intenta nuevamente.');
+        }
+      });
+    }
+  }
+
+  // async eliminarCita(): Promise<void> {
+  //   if (!this.selectedCita || !this.selectedCita.idagenda) {
+  //     this.alerta.alertaError('No se puede eliminar la cita');
+  //     return;
+  //   }
+    
+  //   const confirmacion = await this.alerta.alertaConfirmacion(
+  //     '¿Estás seguro de que deseas eliminar esta cita?',
+  //     '',
+  //     'Sí, eliminar',
+  //     'No, cancelar'
+  //   );
+    
+  //   if (!confirmacion) {
+  //     return;
+  //   }
+    
+  //   this.loading = true;
+  //   const currentUserId = this.getCurrentUserId();
+    
+  //   this.agendaService.eliminarCita(this.selectedCita.idagenda, currentUserId).subscribe({
+  //     next: (response) => {
+  //       if (response.success) {
+  //         this.alerta.alertaExito('Cita eliminada exitosamente');
+  //         this.cargarCitas(); 
+  //         this.cerrarModal();
+  //       } else {
+  //         this.alerta.alertaError(response.message || 'Error al eliminar la cita');
+  //       }
+  //       this.loading = false;
+  //     },
+  //     error: (error) => {
+  //       this.loading = false;
+  //       if (error.status === 403) {
+  //         return;
+  //       }
+  //       this.alerta.alertaError('Error al eliminar la cita');
+  //     }
+  //   });
+  // }
+
+  async eliminarCita(): Promise<void> {
+    if (!this.selectedCita || !this.selectedCita.idagenda) {
+      this.alerta.alertaError('No se puede eliminar la cita');
+      return;
+    }
+    
+    // Si es cita recurrente, preguntar si quiere eliminar solo esta o toda la serie
+    if (this.selectedCita.es_recurrente && this.selectedCita.fkagenda_recurrente) {
+      const opcion = await this.alerta.alertaConfirmacionConOpciones(
+        '¿Qué deseas cancelar?',
+        'Esta cita forma parte de una serie recurrente',
+        'Solo esta cita',
+        'Toda la serie'
+      );
+      
+      if (opcion === null) {
+        return; // Usuario canceló
+      }
+      
+      this.loading = true;
+      const currentUserId = this.getCurrentUserId();
+      
+      if (opcion === 'serie') {
+        // Eliminar toda la serie
+        this.agendaService.cancelarSerieCompleta(
+          this.selectedCita.fkagenda_recurrente, 
+          currentUserId
+        ).subscribe({
+          next: (response) => {
+            if (response.success) {
+              this.alerta.alertaExito(response.message || 'Serie eliminada exitosamente');
+              this.cargarCitas();
+              this.cerrarModal();
+            } else {
+              this.alerta.alertaError(response.message || 'Error al eliminar la serie');
+            }
+            this.loading = false;
+          },
+          error: (error) => {
+            this.loading = false;
+            if (error.status === 403) {
+              return;
+            }
+            this.alerta.alertaError('Error al eliminar la serie');
+          }
+        });
+      } else {
+        // Eliminar solo esta cita
+        this.agendaService.cancelarCitaRecurrente(
+          this.selectedCita.idagenda, 
+          currentUserId
+        ).subscribe({
+          next: (response) => {
+            if (response.success) {
+              this.alerta.alertaExito(response.message || 'Cita eliminada exitosamente');
+              this.cargarCitas();
+              this.cerrarModal();
+            } else {
+              this.alerta.alertaError(response.message || 'Error al eliminar la cita');
+            }
+            this.loading = false;
+          },
+          error: (error) => {
+            this.loading = false;
+            if (error.status === 403) {
+              return;
+            }
+            this.alerta.alertaError('Error al eliminar la cita');
+          }
+        });
+      }
+    } else {
+      // Cita normal (no recurrente)
+      const confirmacion = await this.alerta.alertaConfirmacion(
+        '¿Estás seguro de que deseas cancelar esta cita?',
+        '',
+        'Sí, Cancelar',
+        'No, Cerrar'
+      );
+      
+      if (!confirmacion) {
+        return;
+      }
+      
+      this.loading = true;
+      const currentUserId = this.getCurrentUserId();
+      
+      this.agendaService.eliminarCita(this.selectedCita.idagenda, currentUserId).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.alerta.alertaExito('Cita eliminada exitosamente');
+            this.cargarCitas();
+            this.cerrarModal();
+          } else {
+            this.alerta.alertaError(response.message || 'Error al eliminar la cita');
           }
           this.loading = false;
         },
@@ -725,51 +1558,38 @@ export class AgendaComponent implements OnInit, AfterViewInit {
           if (error.status === 403) {
             return;
           }
-          this.alerta.alertaError('Error interno del servidor');
+          this.alerta.alertaError('Error al eliminar la cita');
         }
       });
     }
   }
 
-  async eliminarCita(): Promise<void> {
-    if (!this.selectedCita || !this.selectedCita.idagenda) {
-      this.alerta.alertaError('No se puede eliminar la cita');
-      return;
-    }
+  formatearTipoRecurrencia(tipo: string): string {
+    const tipos: { [key: string]: string } = {
+      'diaria': 'Diaria',
+      'semanal': 'Semanal',
+      'mensual': 'Mensual'
+    };
+    return tipos[tipo] || tipo;
+  }
+
+  formatearDiasSemana(diasStr: string): string {
+    if (!diasStr) return 'N/A';
     
-    const confirmacion = await this.alerta.alertaConfirmacion(
-      '¿Estás seguro de que deseas eliminar esta cita?',
-      '',
-      'Sí, eliminar',
-      'No, cancelar'
-    );
+    const nombresCompletos: { [key: string]: string } = {
+      '1': 'Lunes',
+      '2': 'Martes',
+      '3': 'Miércoles',
+      '4': 'Jueves',
+      '5': 'Viernes',
+      '6': 'Sábado',
+      '0': 'Domingo'
+    };
     
-    if (!confirmacion) {
-      return;
-    }
-    
-    this.loading = true;
-    const currentUserId = this.getCurrentUserId();
-    
-    this.agendaService.eliminarCita(this.selectedCita.idagenda, currentUserId).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.alerta.alertaExito('Cita eliminada exitosamente');
-          this.cargarCitas(); 
-          this.cerrarModal();
-        } else {
-          this.alerta.alertaError(response.message || 'Error al eliminar la cita');
-        }
-        this.loading = false;
-      },
-      error: (error) => {
-        this.loading = false;
-        if (error.status === 403) {
-          return;
-        }
-        this.alerta.alertaError('Error al eliminar la cita');
-      }
-    });
+    return diasStr.split(',')
+      .map(dia => nombresCompletos[dia.trim()])
+      .filter(nombre => nombre)
+      .join(', ');
   }
 
   cambiarVista(vista: string): void {
@@ -910,5 +1730,36 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     }
     
     return hora.toString().substring(0, 5);
+  }
+
+  // Agregar este método para obtener el nombre del día
+  obtenerNombreDia(dia: number): string {
+    const nombres: { [key: number]: string } = {
+      0: 'Domingo',
+      1: 'Lunes',
+      2: 'Martes',
+      3: 'Miércoles',
+      4: 'Jueves',
+      5: 'Viernes',
+      6: 'Sábado'
+    };
+    return nombres[dia] || '';
+  }
+
+  detectarScrollModal(): void {
+    // Esperar a que el modal se renderice
+    setTimeout(() => {
+      const modalBody = document.querySelector('.modal-body');
+      if (modalBody) {
+        modalBody.addEventListener('scroll', (event) => {
+          const target = event.target as HTMLElement;
+          if (target.scrollTop > 10) {
+            target.classList.add('scrolled');
+          } else {
+            target.classList.remove('scrolled');
+          }
+        });
+      }
+    }, 100);
   }
 }

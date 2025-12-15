@@ -151,4 +151,32 @@ export class AlertaService {
       return result.isConfirmed;
     });
   }
+
+  async alertaConfirmacionConOpciones(
+    titulo: string,
+    mensaje: string,
+    textoOpcion1: string,
+    textoOpcion2: string
+  ): Promise<'opcion1' | 'serie' | null> {
+    const result = await Swal.fire({
+      title: titulo,
+      text: mensaje,
+      icon: 'question',
+      showDenyButton: true,
+      showCancelButton: true,
+      confirmButtonText: textoOpcion1,
+      denyButtonText: textoOpcion2,
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#3085d6',
+      denyButtonColor: '#d33',
+      cancelButtonColor: '#6c757d'
+    });
+    
+    if (result.isConfirmed) {
+      return 'opcion1';
+    } else if (result.isDenied) {
+      return 'serie';
+    }
+    return null;
+  }
 }

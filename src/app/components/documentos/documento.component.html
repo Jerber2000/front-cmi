@@ -34,7 +34,7 @@
           [(ngModel)]="selectedClinicaFilter"
           (ngModelChange)="filtrarPorClinica()"
         >
-          <option [value]="null">Todas las clínicas</option>
+          <option [value]="''">Todas las clínicas</option>
           <option *ngFor="let clinica of clinicas" [value]="clinica.idclinica">
             {{ clinica.nombreclinica }}
           </option>

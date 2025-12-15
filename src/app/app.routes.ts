@@ -32,7 +32,7 @@ export const routes: Routes = [
     path: 'usuario', 
     loadComponent: () => import('./components/usuario/usuario.component').then(c => c.UsuarioComponent), 
     canActivate: [authGuard, roleGuard],
-    data: { roles: [1,5,8] } //administración, sistemas, auxiliar-admon
+    data: { roles: [1,4,7] } //administración, sistemas, auxiliar-admon
   },
   {
     path: 'pacientes',

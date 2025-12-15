@@ -31,7 +31,7 @@ export class DocumentoComponent implements OnInit, AfterViewInit {
 
   // ← AGREGAR ESTAS VARIABLES
   clinicas: Clinica[] = [];
-  selectedClinicaFilter: number | null = null;
+  selectedClinicaFilter: string = '';
 
   selectedDocument: File | null = null;
   documentInfo: { name: string, size: number } | null = null;

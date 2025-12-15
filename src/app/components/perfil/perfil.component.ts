@@ -118,8 +118,6 @@ private initializeComponent(): void {
 private cargarDesdeBackend(): void {
   this.perfilService.obtenerPerfilDesdeBackend().subscribe({
     next: (usuario) => {
-      // El servicio ya actualiza el BehaviorSubject internamente
-      console.log('Perfil cargado desde backend:', usuario.nombres, usuario.apellidos);
     },
     error: (error) => {
       this.loading = false;

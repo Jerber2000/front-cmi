@@ -55,12 +55,28 @@ export class PerfilService {
   /**
    * Obtiene el ID del usuario logueado desde localStorage
    */
+  // private getCurrentUserId(): number {
+  //   try {
+  //     const usuarioData = localStorage.getItem('usuario');
+  //     if (usuarioData) {
+  //       const usuario = JSON.parse(usuarioData);
+  //       return usuario.idusuario;
+  //     }
+  //   } catch (error) {
+  //     console.error('Error al obtener el ID del usuario desde localStorage:', error);
+  //   }
+  //   return 1; // Valor por defecto
+  // }
+
   private getCurrentUserId(): number {
     try {
       const usuarioData = localStorage.getItem('usuario');
       if (usuarioData) {
         const usuario = JSON.parse(usuarioData);
-        return usuario.idusuario;
+        // Convertir explícitamente a number
+        return typeof usuario.idusuario === 'bigint' 
+          ? Number(usuario.idusuario) 
+          : parseInt(usuario.idusuario);
       }
     } catch (error) {
       console.error('Error al obtener el ID del usuario desde localStorage:', error);
@@ -157,14 +173,16 @@ export class PerfilService {
    * Obtiene el perfil desde el backend usando el endpoint de usuarios existente
    */
   obtenerPerfilDesdeBackend(): Observable<Usuario> {
-    const userId = this.getCurrentUserId();
+    const userIdRaw = this.getCurrentUserId();
     
-    // Usar el endpoint existente de usuarios
+    const userId = typeof userIdRaw === 'bigint' ? Number(userIdRaw) : userIdRaw;
+    
     return this.usuarioService.obtenerUsuarioPorId(userId).pipe(
       map((response: any) => {
+        
         if (response && response.success) {
           const usuario = response.data;
-          // Solo actualizar el BehaviorSubject, NO localStorage
+          
           this.perfilSubject.next(usuario);
           return usuario;
         } else {
@@ -172,12 +190,10 @@ export class PerfilService {
         }
       }),
       catchError(error => {
-        console.error('Error al obtener perfil desde backend:', error);
         return throwError(() => new Error(this.procesarErrorHttp(error)));
       })
     );
   }
-
 
   /**
    * Actualiza el perfil del usuario usando el endpoint de usuarios existente

@@ -27,6 +27,7 @@ export interface Usuario {
     usuariomodificacion?:     string;
     estado:                   number;
     fkclinica:                number;
+    nombreCompleto?:          string;
 }
 
 export interface ApiResponse<T> {
@@ -95,7 +96,6 @@ export class UsuarioService{
     obtenerUsuarioPorId(id: number): Observable<ApiResponse<Usuario>> {
         return this.http.get<ApiResponse<Usuario>>(`${this.apiUrl}/buscarPorId/${id}`).pipe(
             tap(response => {
-                console.log('Usuario por ID:', response);
             }),
             catchError(error => {
                 if (error.status === 0) {

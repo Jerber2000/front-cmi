@@ -87,7 +87,6 @@ export class DocumentoService {
       headers: this.getHeaders()
     }).pipe(
       tap(response => {
-        console.log('Respuesta del servidor:', response);
       }),
       map(response => {
         if (response && response.success && response.data && Array.isArray(response.data)) {

@@ -46,6 +46,7 @@ export interface Paciente {
     numeroexpediente: string;
     historiaenfermedad?: string;
   }>;
+  nombreCompleto?: string;
 }
 
 export interface RespuestaPaciente {

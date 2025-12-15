@@ -24,6 +24,7 @@
     "@fullcalendar/daygrid": "^6.1.19",
     "@fullcalendar/interaction": "^6.1.19",
     "@fullcalendar/timegrid": "^6.1.19",
+    "@ng-select/ng-select": "^13.9.1",
     "bootstrap": "^5.3.7",
     "date-fns": "^4.1.0",
     "express": "^4.21.2",

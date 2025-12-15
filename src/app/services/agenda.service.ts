@@ -19,6 +19,8 @@ export interface CitaRequest {
   usuariocreacion?: string;
   usuariomodificacion?: string;
   estado?: number;
+  fkagenda_recurrente?: number | null;
+  es_recurrente?: boolean;
   usuario?: {
     idusuario?: number;
     nombres: string;
@@ -63,6 +65,34 @@ export interface ApiResponse<T> {
   datos?: T;
   message?: string;
   mensaje?: string;
+}
+
+// Agregar estas interfaces después de las existentes
+export interface CitaRecurrenteRequest {
+  fkusuario: number;
+  fkpaciente: number;
+  horaatencion: string;
+  comentario?: string;
+  transporte?: number;
+  direccion?: string;
+  tipo_recurrencia: 'diaria' | 'semanal' | 'mensual';
+  intervalo: number;
+  dias_semana?: string; // "1,3,5" para lun,mie,vie
+  fecha_inicio: string;
+  fecha_fin?: string;
+  numero_ocurrencias?: number;
+  usuariocreacion: string;
+}
+
+export interface CitaRecurrenteResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    idagenda_recurrente: number;
+    total_citas: number;
+    fechas: string[];
+  };
+  conflictos?: any[];
 }
 
 @Injectable({
@@ -170,6 +200,57 @@ export class AgendaService {
     );
   }
 
+  crearCitaRecurrente(datos: CitaRecurrenteRequest): Observable<CitaRecurrenteResponse> {
+    return this.http.post<CitaRecurrenteResponse>(
+      `${this.apiUrl}/crearCitaRecurrente`, 
+      datos
+    ).pipe(
+      tap(response => {
+        console.log('Respuesta crear cita recurrente:', response);
+      }),
+      catchError((error: HttpErrorResponse) => {
+        if ((error.status === 400 || error.status === 422) && error.error) {
+          return of(error.error);
+        }
+        throw error;
+      })
+    );
+  }
+
+  cancelarCitaRecurrente(idagenda: number, usuariomodificacion: string): Observable<any> {
+    return this.http.put<any>(
+      `${this.apiUrl}/cancelarCitaRecurrente/${idagenda}`, 
+      { usuariomodificacion }
+    ).pipe(
+      tap(response => {
+        console.log('Respuesta cancelar cita recurrente:', response);
+      }),
+      catchError((error: HttpErrorResponse) => {
+        if ((error.status === 400 || error.status === 422) && error.error) {
+          return of(error.error);
+        }
+        throw error;
+      })
+    );
+  }
+
+  cancelarSerieCompleta(idagendaRecurrente: number, usuariomodificacion: string): Observable<any> {
+    return this.http.put<any>(
+      `${this.apiUrl}/cancelarSerieCompleta/${idagendaRecurrente}`, 
+      { usuariomodificacion }
+    ).pipe(
+      tap(response => {
+        console.log('Respuesta cancelar serie completa:', response);
+      }),
+      catchError((error: HttpErrorResponse) => {
+        if ((error.status === 400 || error.status === 422) && error.error) {
+          return of(error.error);
+        }
+        throw error;
+      })
+    );
+  }
+
   private formatearFecha(fecha: string): string {
     if (!fecha) return '';
     const date = new Date(fecha);
@@ -184,5 +265,22 @@ export class AgendaService {
   private formatearHora(hora: string): string {
     if (!hora) return '';
     return hora.substring(0, 5); // HH:mm
+  }
+
+  // Agregar este método después de cancelarSerieCompleta()
+  obtenerDetallesSerieRecurrente(idagendaRecurrente: number): Observable<any> {
+    return this.http.get<any>(
+      `${this.apiUrl}/detallesSerieRecurrente/${idagendaRecurrente}`
+    ).pipe(
+      tap(response => {
+        console.log('Detalles serie recurrente:', response);
+      }),
+      catchError((error: HttpErrorResponse) => {
+        if ((error.status === 400 || error.status === 422) && error.error) {
+          return of(error.error);
+        }
+        throw error;
+      })
+    );
   }
 }
