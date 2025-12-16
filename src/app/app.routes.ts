@@ -99,13 +99,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./components/inventario/inventario.component').then(m => m.InventarioComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: [1,5,10] } //administracion, sistemas, farmacia
+    data: { roles: [1,4,7,9] } //administracion, sistemas, farmacia
   },
   {
     path: 'salida-inventario',
     loadComponent: () =>
       import('./components/inventarioSalida/inventarioSalida.component').then(m => m.InventarioSalidaComponent),
-    canActivate: [authGuard, roleGuard]
+    canActivate: [authGuard, roleGuard],
+    data: { roles: [1,4,7,9] }
   },
   {
     path: 'educacion-inclusiva',

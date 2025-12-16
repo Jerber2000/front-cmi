@@ -73,8 +73,8 @@
       <h3>Historial de Sesiones</h3>
       <div class="header-buttons">
 
-        <button class="btn-formulario-psicologia" (click)="abrirFormularioPsicologia()">
-          <i class="fas fa-brain"></i> Examen Mental
+        <button *appHasRole="[1,4,10,11]" class="btn-formulario-psicologia" (click)="abrirFormularioPsicologia()">
+          <i class="fas fa-brain"></i> Examen Mental 
         </button>
         <!-- ✅ NUEVO BOTÓN CREAR REFERIDO -->
         <button class="btn-crear-referido" (click)="abrirModalReferido()">

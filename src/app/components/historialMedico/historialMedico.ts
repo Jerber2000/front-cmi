@@ -20,13 +20,12 @@ import { ArchivoService } from '../../services/archivo.service';
 import { Paciente } from '../../services/paciente.service';
 import { ReferidosComponent } from '../referidos/referidos.component';
 import { FormularioPsicologiaComponent } from './formularioPsicologia/formulario-psicologia.component'; 
-
-
+import { HasRoleDirective } from '../../directives/has-role.directive';
 
 @Component({
   selector: 'app-historial-medico',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent,ReferidosComponent,FormularioPsicologiaComponent ],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent,ReferidosComponent,FormularioPsicologiaComponent, HasRoleDirective ],
   templateUrl: './historialMedico.html',
   styleUrls: ['./historialMedico.scss']
 })
