@@ -47,7 +47,7 @@
           Historial Clínico
         </button>
         
-        <button 
+        <button *appHasRole="[1,4,7,9]"
           class="btn-filtro" 
           [class.active]="tipoReporteActivo === 'inventario'"
           (click)="cambiarTipoReporte('inventario')"
@@ -74,7 +74,7 @@
           Referencias
         </button>
 
-        <button 
+        <button *appHasRole="[1,4,7,9]"
           class="btn-filtro" 
           [class.active]="tipoReporteActivo === 'salidas'"
           (click)="cambiarTipoReporte('salidas')"
@@ -147,7 +147,7 @@
         </div>
 
         <!-- Inventario -->
-        <div class="stat-card inventario">
+        <div *appHasRole="[1,4,7,9]" class="stat-card inventario">
           <div class="stat-icon">
             <i class="fas fa-pills"></i>
           </div>
@@ -185,7 +185,7 @@
         </div>
 
         <!-- Salidas -->
-        <div class="stat-card salidas">
+        <div *appHasRole="[1,4,7,9]" class="stat-card salidas">
           <div class="stat-icon">
             <i class="fas fa-shipping-fast"></i>
           </div>

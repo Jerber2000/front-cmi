@@ -19,12 +19,12 @@ import { PdfExcelReporteriaService } from '../../services/pdf-excel-reporteria.s
 import { ArchivoService } from '../../services/archivo.service';
 import { AlertaService } from '../../services/alerta.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
-
+import { HasRoleDirective } from '../../directives/has-role.directive';
 
 @Component({
   selector: 'app-reporteria',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, HasRoleDirective, SidebarComponent],
   templateUrl: './reporteria.component.html',
   styleUrls: ['./reporteria.component.scss']
 })

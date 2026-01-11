@@ -778,9 +778,48 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
             this.alerta.alertaExito(mensaje);
           },
           error: (error) => {
-            // Tu manejo de errores existente se mantiene igual
             this.loading = false;
-            this.alerta.alertaError('Error al procesar la solicitud');
+            console.error('Error al procesar usuario:', error);
+            
+            let mensajeError = '';
+            
+            // 1. Verificar si el error tiene la estructura de respuesta del backend
+            if (error.error && error.error.message) {
+              mensajeError = error.error.message;
+            } 
+            // 2. Verificar si hay errores de validación en array
+            else if (error.error && error.error.errors && Array.isArray(error.error.errors)) {
+              mensajeError = error.error.errors[0].msg || error.error.errors[0].message || error.error.errors[0];
+            }
+            // 3. Error basado en código de estado HTTP
+            else if (error.status) {
+              switch (error.status) {
+                case 400:
+                  mensajeError = 'Datos inválidos o incompletos';
+                  break;
+                case 401:
+                  mensajeError = 'No tienes permisos para realizar esta acción';
+                  break;
+                case 404:
+                  mensajeError = 'Usuario no encontrado';
+                  break;
+                case 409:
+                  mensajeError = 'El correo o usuario ya existe';
+                  break;
+                case 500:
+                  mensajeError = 'Error interno del servidor. Intenta más tarde';
+                  break;
+                case 0:
+                  mensajeError = 'Sin conexión al servidor. Verifica tu conexión a internet';
+                  break;
+                default:
+                  mensajeError = `Error del servidor (${error.status})`;
+              }
+            } else {
+              mensajeError = 'Error al procesar la solicitud';
+            }
+            
+            this.alerta.alertaError(mensajeError);
           }
         });
 
