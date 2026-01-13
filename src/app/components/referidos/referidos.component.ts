@@ -154,9 +154,9 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
             this.archivoService.obtenerUrlPublica(this.usuarioActual.rutafotoperfil) : null  
         };
         
-        this.esAdmin = this.usuarioActual.fkrol === 1;
+        // ✅ CORRECCIÓN: Admin es fkrol 1 o 7
+        this.esAdmin = this.usuarioActual.fkrol === 1 || this.usuarioActual.fkrol === 7;
         
-        // ✅ CRÍTICO: Asegurar que fkclinica esté disponible
         console.log('👤 Usuario cargado:', {
           idusuario: this.usuarioActual.idusuario,
           usuario: this.usuarioActual.usuario,
@@ -165,7 +165,6 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
           esAdmin: this.esAdmin
         });
         
-        // ⚠️ Si fkclinica no existe en localStorage, alertar
         if (this.usuarioActual.fkclinica === undefined || this.usuarioActual.fkclinica === null) {
           console.warn('⚠️ ADVERTENCIA: fkclinica no está en localStorage');
           this.alerta.alertaPreventiva('Tu usuario no tiene clínica asignada. Contacta al administrador.');
