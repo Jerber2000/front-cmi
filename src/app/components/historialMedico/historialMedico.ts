@@ -1,4 +1,4 @@
-//historialMedico/historialMedico.ts
+//src/app/components/historialMedico/historialMedico.ts
 import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -11,6 +11,7 @@ import {
   HistorialMedicoService, 
   HistorialMedico, 
   InfoPaciente,
+  ExpedienteInfo,  // ✅ IMPORTAR ExpedienteInfo
   CrearSesionRequest,
   ActualizarSesionRequest 
 } from '../../services/historialMedico.service';
@@ -47,22 +48,18 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
   clinicaSeleccionada: number = 0;
   historialFiltrado: HistorialMedico[] = [];
 
-  archivosSubidosInfo: any[] = []; // Para mantener info de archivos subidos
-  maxArchivos = 10; // Límite de archivos
-  tamañoMaximoMB = 15; // MB por archivo
-  tamañoTotalMaximoMB = 50; // MB total
+  archivosSubidosInfo: any[] = [];
+  maxArchivos = 10;
+  tamañoMaximoMB = 15;
+  tamañoTotalMaximoMB = 50;
   
   sesionForm: FormGroup;
   diagnosticoForm: FormGroup;
   
-  // ✅ CAMBIO 1: Variables para archivos usando ArchivoService
   selectedFiles: File[] = [];
   archivosSubiendo = false;
   
-  // ✅ CAMBIO 2: Variable para foto del paciente
   fotoPacienteUrl: string | null = null;
-
-  // Agregar propiedad para archivos existentes
   archivosExistentes: any[] = [];
 
   constructor(
@@ -88,113 +85,144 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
     });
   }
 
-
-/**
- * ✅ Elimina el archivo de una sesión (sin obtenerSesion)
- */
-async eliminarArchivoExistente(archivo: any): Promise<void> {
-  if (!this.sesionActual) {
-    this.alerta.alertaError('No hay sesión seleccionada');
-    return;
-  }
-
-  const confirmado = await this.alerta.alertaConfirmacion(
-    '¿Eliminar archivo?',
-    `Se eliminará "${archivo.nombre}" de forma permanente`,
-    'Sí, eliminar',
-    'Cancelar'
-  );
-
-  if (!confirmado) return;
-
-  this.loading = true;
-
-  try {
-    // 1. Eliminar archivo físico del servidor
-    const rutaEliminar = archivo.rutaServicio || archivo.ruta;
-    
-    if (rutaEliminar) {
-      await this.archivoService.eliminarArchivo(rutaEliminar);
-      console.log('✅ Archivo físico eliminado:', rutaEliminar);
-    }
-
-    // 2. Actualizar BD (sin archivo)
-    await this.historialService.actualizarRutaArchivos(
-      this.sesionActual.idhistorial,
-      ''  // ✅ Sin archivo
-    ).toPromise();
-
-    // 3. Actualizar memoria
-    this.sesionActual.rutahistorialclinico = '';
-
-    // 4. Recargar archivos
-    await this.cargarArchivosExistentes(this.sesionActual.idhistorial);
-
-    this.alerta.alertaExito('Archivo eliminado correctamente');
-
-  } catch (error: any) {
-    console.error('❌ Error eliminando archivo:', error);
-    this.alerta.alertaError(error.message || 'Error al eliminar archivo');
-  } finally {
-    this.loading = false;
-  }
-}
-
-/**
- * ✅ Obtiene el ícono según el tipo de archivo
- */
-obtenerIconoArchivo(archivo: any): string {
-  const nombre = archivo.nombre || archivo.nombreOriginal || '';
-  const extension = nombre.toLowerCase().split('.').pop();
-
-  switch (extension) {
-    case 'pdf': return '📄';
-    case 'jpg':
-    case 'jpeg':
-    case 'png':
-    case 'webp':
-    case 'gif': return '🖼️';
-    case 'doc':
-    case 'docx': return '📝';
-    case 'xls':
-    case 'xlsx': return '📊';
-    default: return '📎';
-  }
-}
-
-/**
- * ✅ Verifica si es imagen
- */
-esImagen(archivo: any): boolean {
-  const nombre = archivo.nombre || archivo.nombreOriginal || '';
-  const extension = nombre.toLowerCase().split('.').pop();
-  return ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(extension || '');
-}
-  //abrir modal de referido
+  // ============================================================================
+  // ✅ MÉTODO CORREGIDO - abrirModalReferido CON VALIDACIÓN ROBUSTA
+  // ============================================================================
+  
   abrirModalReferido(): void {
+    console.log('🔵 === ABRIENDO MODAL REFERIDO ===');
+    console.log('📋 infoPaciente completo:', this.infoPaciente);
+    
     if (!this.infoPaciente) {
       this.alerta.alertaError('No se encontró información del paciente');
       return;
     }
 
+    // ✅ VALIDACIÓN ESTRICTA de expedientes
+    const expedientes = this.infoPaciente.expedientes || [];
+    console.log('📁 Expedientes originales:', expedientes);
+
+    if (!expedientes || expedientes.length === 0) {
+      this.alerta.alertaError('Este paciente no tiene expedientes disponibles para crear un referido');
+      return;
+    }
+
+    // ✅ FORMATEO ROBUSTO con type safety
+    const expedientesFormateados: ExpedienteInfo[] = expedientes.map(exp => {
+      // Acceso seguro con any solo para mayúsculas de SQL Server
+      const expAny = exp as any;
+      
+      const expedienteFormateado: ExpedienteInfo = {
+        idexpediente: exp.idexpediente || expAny.IDEXPEDIENTE || 0,
+        numeroexpediente: exp.numeroexpediente || expAny.NUMEROEXPEDIENTE || '',
+        fkpaciente: exp.fkpaciente || expAny.FKPACIENTE || this.infoPaciente!.idpaciente,
+        fkclinica: exp.fkclinica || expAny.FKCLINICA || this.infoPaciente!.fkclinica || 0,
+        fechaapertura: exp.fechaapertura || expAny.FECHAAPERTURA || new Date().toISOString().split('T')[0]
+      };
+
+      console.log('📝 Expediente formateado:', expedienteFormateado);
+      
+      return expedienteFormateado;
+    });
+
+    // ✅ VALIDAR que al menos un expediente tiene ID válido
+    const expedientesValidos = expedientesFormateados.filter(exp => exp.idexpediente > 0);
+    
+    if (expedientesValidos.length === 0) {
+      console.error('❌ No se encontraron expedientes con ID válido');
+      this.alerta.alertaError('Error: No se pudo obtener el ID del expediente. Contacte al administrador.');
+      return;
+    }
+
+    console.log('✅ Expedientes válidos:', expedientesValidos);
+
+    // ✅ CONSTRUIR objeto paciente para referir
     this.pacienteParaReferir = {
       idpaciente: this.infoPaciente.idpaciente,
       nombres: this.infoPaciente.nombres,
       apellidos: this.infoPaciente.apellidos,
       cui: this.infoPaciente.cui,
       fechanacimiento: this.infoPaciente.fechanacimiento || '',
-      genero: '',
+      genero: this.infoPaciente.genero || '',
       tipoconsulta: '',
       municipio: '',
       direccion: '',
-      expedientes: (this.infoPaciente.expedientes || []).map(exp => ({
-        ...exp,
-        idexpediente: (exp as any).idexpediente || 0
-      }))
+      expedientes: expedientesValidos as any[]
     };
+
+    console.log('🎯 Paciente para referir (final):', this.pacienteParaReferir);
+    console.log('✅ Modal de referido abierto correctamente');
   }
 
-  // ✅ AGREGAR ESTE MÉTODO
+  // ✅ RESTO DE MÉTODOS DEL COMPONENTE (sin cambios)
+  
+  async eliminarArchivoExistente(archivo: any): Promise<void> {
+    if (!this.sesionActual) {
+      this.alerta.alertaError('No hay sesión seleccionada');
+      return;
+    }
+
+    const confirmado = await this.alerta.alertaConfirmacion(
+      '¿Eliminar archivo?',
+      `Se eliminará "${archivo.nombre}" de forma permanente`,
+      'Sí, eliminar',
+      'Cancelar'
+    );
+
+    if (!confirmado) return;
+
+    this.loading = true;
+
+    try {
+      const rutaEliminar = archivo.rutaServicio || archivo.ruta;
+      
+      if (rutaEliminar) {
+        await this.archivoService.eliminarArchivo(rutaEliminar);
+      }
+
+      await this.historialService.actualizarRutaArchivos(
+        this.sesionActual.idhistorial,
+        ''
+      ).toPromise();
+
+      this.sesionActual.rutahistorialclinico = '';
+      await this.cargarArchivosExistentes(this.sesionActual.idhistorial);
+
+      this.alerta.alertaExito('Archivo eliminado correctamente');
+
+    } catch (error: any) {
+      console.error('❌ Error eliminando archivo:', error);
+      this.alerta.alertaError(error.message || 'Error al eliminar archivo');
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  obtenerIconoArchivo(archivo: any): string {
+    const nombre = archivo.nombre || archivo.nombreOriginal || '';
+    const extension = nombre.toLowerCase().split('.').pop();
+
+    switch (extension) {
+      case 'pdf': return '📄';
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'webp':
+      case 'gif': return '🖼️';
+      case 'doc':
+      case 'docx': return '📝';
+      case 'xls':
+      case 'xlsx': return '📊';
+      default: return '📎';
+    }
+  }
+
+  esImagen(archivo: any): boolean {
+    const nombre = archivo.nombre || archivo.nombreOriginal || '';
+    const extension = nombre.toLowerCase().split('.').pop();
+    return ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(extension || '');
+  }
+
   onModalReferidoCerrado(): void {
     this.pacienteParaReferir = null;
   }
@@ -210,8 +238,8 @@ esImagen(archivo: any): boolean {
   cerrarFormularioPsicologia(): void {
     this.mostrarFormularioPsicologia = false;
   }
-  //  para formatear tamaño
-    formatFileSize(size: number): string {
+
+  formatFileSize(size: number): string {
     return this.archivoService.formatearTamaño(size);
   }
 
@@ -228,10 +256,7 @@ esImagen(archivo: any): boolean {
     this.cargarClinicas(); 
   }
 
-
   cargarClinicas(): void {
-    // Puedes usar el mismo servicio que en pacientes
-    // O hacer un servicio específico para clínicas
     this.http.get<any>(`${environment.apiUrl}/pacientes/clinicas`).subscribe({
       next: (response) => {
         if (response.success) {
@@ -285,7 +310,12 @@ esImagen(archivo: any): boolean {
     }
   }
 
+  // ============================================================================
+  // ✅ MÉTODO MEJORADO - cargarDatosPaciente CON TYPE SAFETY
+  // ============================================================================
+  
   cargarDatosPaciente(): void {
+    console.log('🔵 === CARGANDO DATOS DEL PACIENTE ===');
     this.loading = true;
     
     const datosPacienteStr = sessionStorage.getItem('datosPacienteHistorial');
@@ -294,22 +324,34 @@ esImagen(archivo: any): boolean {
       try {
         const datosFromPacientes = JSON.parse(datosPacienteStr);
         
-        console.log('🔍 Datos completos desde sessionStorage:', datosFromPacientes);
-        console.log('📋 Género del paciente:', datosFromPacientes.genero);
+        console.log('📦 Datos desde sessionStorage:', datosFromPacientes);
+        console.log('📋 Expedientes originales:', datosFromPacientes.expedientes);
         
-        // ✅ AGREGAR GENERO AL MAPEO
+        // ✅ FORMATEAR expedientes con type safety
+        const expedientesFormateados: ExpedienteInfo[] = (datosFromPacientes.expedientes || []).map((exp: any): ExpedienteInfo => {
+          return {
+            idexpediente: exp.idexpediente || exp.IDEXPEDIENTE || 0,
+            numeroexpediente: exp.numeroexpediente || exp.NUMEROEXPEDIENTE || '',
+            fkpaciente: exp.fkpaciente || exp.FKPACIENTE || datosFromPacientes.idpaciente,
+            fkclinica: exp.fkclinica || exp.FKCLINICA || datosFromPacientes.fkclinica,
+            fechaapertura: exp.fechaapertura || exp.FECHAAPERTURA || new Date().toISOString().split('T')[0]
+          };
+        });
+
+        console.log('✅ Expedientes formateados:', expedientesFormateados);
+        
         this.infoPaciente = {
           idpaciente: datosFromPacientes.idpaciente,
           nombres: datosFromPacientes.nombres,
           apellidos: datosFromPacientes.apellidos,
           fkclinica: datosFromPacientes.fkclinica,
           cui: datosFromPacientes.cui,
-          genero: datosFromPacientes.genero,  // ✅ AGREGAR ESTA LÍNEA
+          genero: datosFromPacientes.genero,
           fechanacimiento: datosFromPacientes.fechanacimiento,
-          expedientes: datosFromPacientes.expedientes || []
+          expedientes: expedientesFormateados
         };
         
-        console.log('✅ infoPaciente con género:', this.infoPaciente);
+        console.log('✅ infoPaciente configurado:', this.infoPaciente);
         
         if (datosFromPacientes.rutafotoperfil) {
           this.fotoPacienteUrl = this.archivoService.obtenerUrlPublica(datosFromPacientes.rutafotoperfil);
@@ -320,14 +362,29 @@ esImagen(archivo: any): boolean {
         return;
         
       } catch (error) {
-        console.error('Error parseando datos del paciente desde sessionStorage:', error);
+        console.error('❌ Error parseando datos del paciente:', error);
       }
     }
     
     // Fallback: cargar del backend
+    console.log('⚠️ No hay datos en sessionStorage, cargando del backend...');
     this.historialService.obtenerInfoPaciente(this.idPaciente).subscribe({
       next: (info: InfoPaciente) => {
+        console.log('✅ Datos del backend:', info);
+        
+        // ✅ VALIDAR Y FORMATEAR expedientes del backend también
+        if (info.expedientes && info.expedientes.length > 0) {
+          info.expedientes = info.expedientes.map((exp: any): ExpedienteInfo => ({
+            idexpediente: exp.idexpediente || exp.IDEXPEDIENTE || 0,
+            numeroexpediente: exp.numeroexpediente || exp.NUMEROEXPEDIENTE || '',
+            fkpaciente: exp.fkpaciente || exp.FKPACIENTE || info.idpaciente,
+            fkclinica: exp.fkclinica || exp.FKCLINICA || info.fkclinica,
+            fechaapertura: exp.fechaapertura || exp.FECHAAPERTURA || new Date().toISOString().split('T')[0]
+          }));
+        }
+        
         this.infoPaciente = info;
+        console.log('✅ infoPaciente desde backend:', this.infoPaciente);
         
         if (info.rutafotoperfil) {
           this.fotoPacienteUrl = this.archivoService.obtenerUrlPublica(info.rutafotoperfil);
@@ -336,19 +393,22 @@ esImagen(archivo: any): boolean {
         this.cargarHistorial();
       },
       error: (error: any) => {
-        console.error('Error cargando info del paciente:', error);
+        console.error('❌ Error cargando info del paciente del backend:', error);
         this.loading = false;
         this.alerta.alertaError('Error al cargar información del paciente');
       }
     });
   }
 
+  // ============================================================================
+  // ✅ RESTO DE MÉTODOS SIN CAMBIOS
+  // ============================================================================
 
   cargarHistorial(): void {
     this.historialService.obtenerHistorialPorPaciente(this.idPaciente).subscribe({
       next: (historial: HistorialMedico[]) => {
         this.historialSesiones = historial;
-        this.aplicarFiltroClinica();  // ✅ APLICAR FILTRO
+        this.aplicarFiltroClinica();
         this.loading = false;
       },
       error: (error: any) => {
@@ -359,7 +419,6 @@ esImagen(archivo: any): boolean {
     });
   }
 
-    //Filtrar historial por clínica
   aplicarFiltroClinica(): void {
     const clinicaId = Number(this.clinicaSeleccionada);
     
@@ -370,8 +429,6 @@ esImagen(archivo: any): boolean {
         sesion => sesion.fkclinica === clinicaId
       );
     }
-    
-    console.log('🔍 Filtro aplicado:', clinicaId, 'Resultados:', this.historialFiltrado.length);
   }
 
   onFiltroClinicaChange(): void {
@@ -392,24 +449,21 @@ esImagen(archivo: any): boolean {
     this.currentView = 'notas-rapidas';
   }
 
-// Cargar archivos existentes cuando abres una sesión
-mostrarDiagnostico(sesion: HistorialMedico): void {
-  this.sesionActual = sesion;
-  this.currentView = 'diagnostico';
-  
-  this.diagnosticoForm = this.fb.group({
-    motivoconsulta: [sesion.motivoconsulta || ''],
-    notaconsulta: [sesion.notaconsulta || ''],
-    recordatorio: [sesion.recordatorio || ''],
-    evolucion: [sesion.evolucion || ''],
-    diagnosticotratamiento: [sesion.diagnosticotratamiento || '']
-  });
+  mostrarDiagnostico(sesion: HistorialMedico): void {
+    this.sesionActual = sesion;
+    this.currentView = 'diagnostico';
+    
+    this.diagnosticoForm = this.fb.group({
+      motivoconsulta: [sesion.motivoconsulta || ''],
+      notaconsulta: [sesion.notaconsulta || ''],
+      recordatorio: [sesion.recordatorio || ''],
+      evolucion: [sesion.evolucion || ''],
+      diagnosticotratamiento: [sesion.diagnosticotratamiento || '']
+    });
 
-  // CARGAR ARCHIVOS EXISTENTES
-  this.cargarArchivosExistentes(sesion.idhistorial);
-}
+    this.cargarArchivosExistentes(sesion.idhistorial);
+  }
 
-  // ✅ 11. MÉTODO MEJORADO PARA RESET FORMS
   resetForms(): void {
     this.sesionForm.reset();
     this.diagnosticoForm.reset();
@@ -419,139 +473,120 @@ mostrarDiagnostico(sesion: HistorialMedico): void {
     this.limpiarInputArchivos();
   }
 
-// ✅ LIMITAR A 1 SOLO ARCHIVO (como pacientes)
-onFilesSelected(event: any): void {
-  const files = event.target.files;
-  if (!files || files.length === 0) return;
+  onFilesSelected(event: any): void {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
-  // ✅ SOLO PERMITIR 1 ARCHIVO
-  if (files.length > 1) {
-    this.alerta.alertaError('Solo puedes subir 1 archivo por sesión');
-    event.target.value = '';
-    return;
-  }
-
-  const archivo = files[0];
-  
-  // Validar usando ArchivoService
-  const validation = this.archivoService.validarArchivo(
-    archivo,
-    archivo.type.startsWith('image/') ? 'image' : 'document',
-    this.tamañoMaximoMB
-  );
-
-  if (!validation.valido) {
-    this.alerta.alertaError(`${archivo.name}: ${validation.error}`);
-    event.target.value = '';
-    return;
-  }
-
-  // ✅ REEMPLAZAR (no agregar)
-  this.selectedFiles = [archivo];
-
-  // Limpiar input
-  event.target.value = '';
-}
-
-// ✅ CREAR SESIÓN (sin rutaAnterior porque es nuevo)
-async crearSesion(): Promise<void> {
-  if (this.sesionForm.valid && this.infoPaciente) {
-    this.loading = true;
-    
-    const usuarioData = localStorage.getItem('usuario');
-    if (!usuarioData) {
-      this.alerta.alertaError('No se encontró información del usuario');
-      this.loading = false;
+    if (files.length > 1) {
+      this.alerta.alertaError('Solo puedes subir 1 archivo por sesión');
+      event.target.value = '';
       return;
     }
 
-    const usuario = JSON.parse(usuarioData);
-    const formData = this.sesionForm.value;
+    const archivo = files[0];
     
-    // ✅ CALCULAR fkclinica con prioridad: paciente > usuario
-    const clinicaId = usuario.fkclinica || this.infoPaciente.fkclinica || null;
-    
-    const nuevaSesion: CrearSesionRequest = {
-      fkpaciente: this.idPaciente,
-      fkusuario: usuario.idusuario,
-      fkclinica: clinicaId, 
-      fecha: new Date().toISOString(),
-      motivoconsulta: formData.motivoconsulta,
-      notaconsulta: formData.notaconsulta || '',
-      recordatorio: formData.recordatorio || '',
-      evolucion: formData.evolucion || '',
-      diagnosticotratamiento: formData.diagnosticotratamiento || ''
-    };
+    const validation = this.archivoService.validarArchivo(
+      archivo,
+      archivo.type.startsWith('image/') ? 'image' : 'document',
+      this.tamañoMaximoMB
+    );
 
-    try {
-      // 1. Crear la sesión primero
-      const sesionCreada = await this.historialService.crearSesion(nuevaSesion).toPromise();
+    if (!validation.valido) {
+      this.alerta.alertaError(`${archivo.name}: ${validation.error}`);
+      event.target.value = '';
+      return;
+    }
+
+    this.selectedFiles = [archivo];
+    event.target.value = '';
+  }
+
+  async crearSesion(): Promise<void> {
+    if (this.sesionForm.valid && this.infoPaciente) {
+      this.loading = true;
       
-      if (!sesionCreada) {
-        throw new Error('Error al crear la sesión');
+      const usuarioData = localStorage.getItem('usuario');
+      if (!usuarioData) {
+        this.alerta.alertaError('No se encontró información del usuario');
+        this.loading = false;
+        return;
       }
+
+      const usuario = JSON.parse(usuarioData);
+      const formData = this.sesionForm.value;
       
-      // 2. Si hay UN archivo, subirlo (SIN rutaAnterior porque es nuevo)
-      let mensajeFinal = 'Sesión creada correctamente';
+      const clinicaId = usuario.fkclinica || this.infoPaciente.fkclinica || null;
       
-      if (this.selectedFiles.length > 0) {
-        // ✅ TOMAR SOLO EL PRIMER ARCHIVO
-        const archivo = this.selectedFiles[0];
+      const nuevaSesion: CrearSesionRequest = {
+        fkpaciente: this.idPaciente,
+        fkusuario: usuario.idusuario,
+        fkclinica: clinicaId, 
+        fecha: new Date().toISOString(),
+        motivoconsulta: formData.motivoconsulta,
+        notaconsulta: formData.notaconsulta || '',
+        recordatorio: formData.recordatorio || '',
+        evolucion: formData.evolucion || '',
+        diagnosticotratamiento: formData.diagnosticotratamiento || ''
+      };
+
+      try {
+        const sesionCreada = await this.historialService.crearSesion(nuevaSesion).toPromise();
         
-        let rutaArchivo: string;
-        
-        if (archivo.type.startsWith('image/')) {
-          rutaArchivo = await this.archivoService.subirFoto(
-            'historiales', 
-            sesionCreada.idhistorial, 
-            archivo
-            // ✅ SIN rutaAnterior porque es sesión nueva
-          );
-        } else {
-          rutaArchivo = await this.archivoService.subirDocumento(
-            'historiales', 
-            sesionCreada.idhistorial, 
-            archivo
-            // ✅ SIN rutaAnterior porque es sesión nueva
-          );
+        if (!sesionCreada) {
+          throw new Error('Error al crear la sesión');
         }
         
-        // Actualizar la sesión con la ruta del archivo
-        await this.historialService.actualizarRutaArchivos(
-          sesionCreada.idhistorial, 
-          rutaArchivo
-        ).toPromise();
+        let mensajeFinal = 'Sesión creada correctamente';
         
-        mensajeFinal = 'Sesión creada con archivo correctamente';
+        if (this.selectedFiles.length > 0) {
+          const archivo = this.selectedFiles[0];
+          
+          let rutaArchivo: string;
+          
+          if (archivo.type.startsWith('image/')) {
+            rutaArchivo = await this.archivoService.subirFoto(
+              'historiales', 
+              sesionCreada.idhistorial, 
+              archivo
+            );
+          } else {
+            rutaArchivo = await this.archivoService.subirDocumento(
+              'historiales', 
+              sesionCreada.idhistorial, 
+              archivo
+            );
+          }
+          
+          await this.historialService.actualizarRutaArchivos(
+            sesionCreada.idhistorial, 
+            rutaArchivo
+          ).toPromise();
+          
+          mensajeFinal = 'Sesión creada con archivo correctamente';
+        }
+        
+        this.alerta.alertaExito(mensajeFinal);
+        this.limpiarInputArchivos();
+        this.cargarHistorial();
+        this.mostrarHistorial();
+        
+      } catch (error: any) {
+        console.error('Error creando sesión:', error);
+        this.alerta.alertaError(error?.error?.message || 'Error al crear la sesión');
+      } finally {
+        this.loading = false;
       }
-      
-      this.alerta.alertaExito(mensajeFinal);
-      
-      // 3. Limpiar y recargar
-      this.limpiarInputArchivos();
-      this.cargarHistorial();
-      this.mostrarHistorial();
-      
-    } catch (error: any) {
-      console.error('Error creando sesión:', error);
-      this.alerta.alertaError(error?.error?.message || 'Error al crear la sesión');
-    } finally {
-      this.loading = false;
     }
   }
-}
 
-
-    // ✅ 7. MÉTODO PARA ELIMINAR ARCHIVO INDIVIDUAL
-eliminarArchivoSeleccionado(index: number): void {
-  if (index >= 0 && index < this.selectedFiles.length) {
-    const archivo = this.selectedFiles[index];
-    this.selectedFiles.splice(index, 1);
-    this.alerta.alertaInfo(`${archivo.name} eliminado de la selección`);
+  eliminarArchivoSeleccionado(index: number): void {
+    if (index >= 0 && index < this.selectedFiles.length) {
+      const archivo = this.selectedFiles[index];
+      this.selectedFiles.splice(index, 1);
+      this.alerta.alertaInfo(`${archivo.name} eliminado de la selección`);
+    }
   }
-}
   
-    // ✅ 8. MÉTODO PARA LIMPIAR TODOS LOS ARCHIVOS
   limpiarTodosLosArchivos(): void {
     if (this.selectedFiles.length > 0) {
       this.alerta.alertaConfirmacion(
@@ -568,32 +603,29 @@ eliminarArchivoSeleccionado(index: number): void {
     }
   }
 
- // ✅ 9. MÉTODO PARA OBTENER RESUMEN DE ARCHIVOS
-getResumenArchivos(): string {
-  if (this.selectedFiles.length === 0) return '';
-  
-  const totalSize = this.selectedFiles.reduce((sum, file) => sum + file.size, 0);
-  const formattedSize = this.archivoService.formatearTamaño(totalSize);
-  
-  return `${this.selectedFiles.length} archivo(s) - ${formattedSize}`;
-}
-
-  // ✅ 10. MÉTODO PARA VALIDAR ANTES DE ENVIAR
-validarArchivosAntesDeEnviar(): boolean {
-  if (this.selectedFiles.length === 0) return true;
-  
-  const totalSize = this.selectedFiles.reduce((sum, file) => sum + file.size, 0);
-  const maxTotalSize = this.tamañoTotalMaximoMB * 1024 * 1024;
-  
-  if (totalSize > maxTotalSize) {
-    this.alerta.alertaError(`El tamaño total no puede superar ${this.tamañoTotalMaximoMB}MB`);
-    return false;
+  getResumenArchivos(): string {
+    if (this.selectedFiles.length === 0) return '';
+    
+    const totalSize = this.selectedFiles.reduce((sum, file) => sum + file.size, 0);
+    const formattedSize = this.archivoService.formatearTamaño(totalSize);
+    
+    return `${this.selectedFiles.length} archivo(s) - ${formattedSize}`;
   }
-  
-  return true;
-}
 
-  // ✅ CAMBIO 7: Método auxiliar para limpiar inputs de archivos
+  validarArchivosAntesDeEnviar(): boolean {
+    if (this.selectedFiles.length === 0) return true;
+    
+    const totalSize = this.selectedFiles.reduce((sum, file) => sum + file.size, 0);
+    const maxTotalSize = this.tamañoTotalMaximoMB * 1024 * 1024;
+    
+    if (totalSize > maxTotalSize) {
+      this.alerta.alertaError(`El tamaño total no puede superar ${this.tamañoTotalMaximoMB}MB`);
+      return false;
+    }
+    
+    return true;
+  }
+
   private limpiarInputArchivos(): void {
     const fileInputs = [
       document.getElementById('archivos-nueva-sesion'),
@@ -609,86 +641,74 @@ validarArchivosAntesDeEnviar(): boolean {
     this.selectedFiles = [];
   }
 
-
-// ✅ VERSIÓN CORRECTA (como pacientes/usuarios - con rutaAnterior)
-async guardarDiagnostico(): Promise<void> {
-  if (this.sesionActual) {
-    this.loading = true;
-    
-    const formData = this.diagnosticoForm.value;
-    
-    const datosActualizacion: ActualizarSesionRequest = {
-      motivoconsulta: formData.motivoconsulta || '',
-      notaconsulta: formData.notaconsulta || '',
-      recordatorio: formData.recordatorio || '',
-      evolucion: formData.evolucion || '',
-      diagnosticotratamiento: formData.diagnosticotratamiento || ''
-    };
-
-    try {
-      // 1. Actualizar datos de la sesión
-      await this.historialService.actualizarSesion(
-        this.sesionActual.idhistorial, 
-        datosActualizacion
-      ).toPromise();
+  async guardarDiagnostico(): Promise<void> {
+    if (this.sesionActual) {
+      this.loading = true;
       
-      // 2. Si hay UN archivo nuevo, REEMPLAZAR el anterior
-      if (this.selectedFiles.length > 0) {
-        // ✅ TOMAR SOLO EL PRIMER ARCHIVO (límite de 1 por sesión)
-        const archivoNuevo = this.selectedFiles[0];
-        
-        // ✅ OBTENER RUTA ANTERIOR (para que el backend la elimine)
-        const rutaAnterior = this.sesionActual.rutahistorialclinico || '';
-        
-        // ✅ SUBIR CON rutaAnterior (backend elimina automáticamente)
-        let rutaNueva: string;
-        
-        if (archivoNuevo.type.startsWith('image/')) {
-          rutaNueva = await this.archivoService.subirFoto(
-            'historiales', 
-            this.sesionActual.idhistorial, 
-            archivoNuevo,
-            rutaAnterior  // ✅ Backend elimina esta automáticamente
-          );
-        } else {
-          rutaNueva = await this.archivoService.subirDocumento(
-            'historiales', 
-            this.sesionActual.idhistorial, 
-            archivoNuevo,
-            rutaAnterior  // ✅ Backend elimina esta automáticamente
-          );
-        }
-        
-        // ✅ GUARDAR NUEVA RUTA (solo 1 archivo, no lista)
-        await this.historialService.actualizarRutaArchivos(
+      const formData = this.diagnosticoForm.value;
+      
+      const datosActualizacion: ActualizarSesionRequest = {
+        motivoconsulta: formData.motivoconsulta || '',
+        notaconsulta: formData.notaconsulta || '',
+        recordatorio: formData.recordatorio || '',
+        evolucion: formData.evolucion || '',
+        diagnosticotratamiento: formData.diagnosticotratamiento || ''
+      };
+
+      try {
+        await this.historialService.actualizarSesion(
           this.sesionActual.idhistorial, 
-          rutaNueva  // ✅ Solo la ruta nueva, sin comas
+          datosActualizacion
         ).toPromise();
         
-        // ✅ ACTUALIZAR LA SESIÓN EN MEMORIA
-        this.sesionActual.rutahistorialclinico = rutaNueva;
+        if (this.selectedFiles.length > 0) {
+          const archivoNuevo = this.selectedFiles[0];
+          const rutaAnterior = this.sesionActual.rutahistorialclinico || '';
+          
+          let rutaNueva: string;
+          
+          if (archivoNuevo.type.startsWith('image/')) {
+            rutaNueva = await this.archivoService.subirFoto(
+              'historiales', 
+              this.sesionActual.idhistorial, 
+              archivoNuevo,
+              rutaAnterior
+            );
+          } else {
+            rutaNueva = await this.archivoService.subirDocumento(
+              'historiales', 
+              this.sesionActual.idhistorial, 
+              archivoNuevo,
+              rutaAnterior
+            );
+          }
+          
+          await this.historialService.actualizarRutaArchivos(
+            this.sesionActual.idhistorial, 
+            rutaNueva
+          ).toPromise();
+          
+          this.sesionActual.rutahistorialclinico = rutaNueva;
+          
+          this.alerta.alertaExito('Sesión actualizada - archivo reemplazado correctamente');
+        } else {
+          this.alerta.alertaExito('Sesión actualizada correctamente');
+        }
         
-        this.alerta.alertaExito('Sesión actualizada - archivo reemplazado correctamente');
-      } else {
-        this.alerta.alertaExito('Sesión actualizada correctamente');
+        this.limpiarInputArchivos();
+        await this.cargarArchivosExistentes(this.sesionActual.idhistorial);
+        this.cargarHistorial();
+        this.mostrarHistorial();
+        
+      } catch (error: any) {
+        console.error('Error actualizando sesión:', error);
+        this.alerta.alertaError(error?.error?.message || 'Error al actualizar la sesión');
+      } finally {
+        this.loading = false;
       }
-      
-      // 3. Limpiar y recargar
-      this.limpiarInputArchivos();
-      await this.cargarArchivosExistentes(this.sesionActual.idhistorial);
-      this.cargarHistorial();
-      this.mostrarHistorial();
-      
-    } catch (error: any) {
-      console.error('Error actualizando sesión:', error);
-      this.alerta.alertaError(error?.error?.message || 'Error al actualizar la sesión');
-    } finally {
-      this.loading = false;
     }
   }
-}
 
-  // Métodos auxiliares que permanecen igual
   private marcarFormularioComoTocado(form: FormGroup): void {
     Object.keys(form.controls).forEach(key => {
       const control = form.get(key);
@@ -727,87 +747,69 @@ async guardarDiagnostico(): Promise<void> {
     return fieldNames[fieldName] || fieldName;
   }
 
-
-// Implementar método para cargar archivos
-async cargarArchivosExistentes(idHistorial: number): Promise<void> {
-  try {
-    console.log('Cargando archivos para sesión:', idHistorial);
-    
-    const response = await this.historialService.obtenerArchivosSesion(idHistorial).toPromise();
-    
-    if (response && response.length > 0) {
-      this.archivosExistentes = response.map((archivo: any) => {
-        // Extraer nombre de archivo
-        let nombreArchivo = archivo.nombre || archivo.nombreOriginal;
-        
-        if (!nombreArchivo && archivo.ruta) {
-          nombreArchivo = archivo.ruta.split('/').pop();
-        }
-        
-        if (!nombreArchivo && archivo.rutaServicio) {
-          nombreArchivo = archivo.rutaServicio.split('/').pop();
-        }
-        
-        return {
-          id: archivo.id || Date.now() + Math.random(),
-          nombre: nombreArchivo || 'Archivo sin nombre',
-          nombreOriginal: archivo.nombreOriginal || nombreArchivo,
-          ruta: archivo.ruta || archivo.rutaServicio,
-          rutaServicio: archivo.rutaServicio || archivo.ruta,
-          // NO usar environment, usar ArchivoService igual que en usuarios
-          url: archivo.rutaServicio ? 
-            this.archivoService.obtenerUrlPublica(archivo.rutaServicio) : 
-            (archivo.ruta ? this.archivoService.obtenerUrlPublica(archivo.ruta) : null),
-          tipo: archivo.tipo || archivo.categoria || 'documento',
-          categoria: archivo.categoria || archivo.tipo || 'documento',
-          tamaño: archivo.tamaño || 0
-        };
-      });
+  async cargarArchivosExistentes(idHistorial: number): Promise<void> {
+    try {
+      const response = await this.historialService.obtenerArchivosSesion(idHistorial).toPromise();
       
-      console.log('Archivos cargados:', this.archivosExistentes);
-    } else {
-      console.log('No se encontraron archivos para esta sesión');
+      if (response && response.length > 0) {
+        this.archivosExistentes = response.map((archivo: any) => {
+          let nombreArchivo = archivo.nombre || archivo.nombreOriginal;
+          
+          if (!nombreArchivo && archivo.ruta) {
+            nombreArchivo = archivo.ruta.split('/').pop();
+          }
+          
+          if (!nombreArchivo && archivo.rutaServicio) {
+            nombreArchivo = archivo.rutaServicio.split('/').pop();
+          }
+          
+          return {
+            id: archivo.id || Date.now() + Math.random(),
+            nombre: nombreArchivo || 'Archivo sin nombre',
+            nombreOriginal: archivo.nombreOriginal || nombreArchivo,
+            ruta: archivo.ruta || archivo.rutaServicio,
+            rutaServicio: archivo.rutaServicio || archivo.ruta,
+            url: archivo.rutaServicio ? 
+              this.archivoService.obtenerUrlPublica(archivo.rutaServicio) : 
+              (archivo.ruta ? this.archivoService.obtenerUrlPublica(archivo.ruta) : null),
+            tipo: archivo.tipo || archivo.categoria || 'documento',
+            categoria: archivo.categoria || archivo.tipo || 'documento',
+            tamaño: archivo.tamaño || 0
+          };
+        });
+      } else {
+        this.archivosExistentes = [];
+      }
+      
+    } catch (error) {
+      console.error('Error cargando archivos existentes:', error);
       this.archivosExistentes = [];
+      this.alerta.alertaError('Error al cargar archivos de la sesión');
+    }
+  }
+
+  descargarArchivo(archivo: any): void {
+    let url: string | null = null;
+    
+    if (archivo.rutaServicio) {
+      url = this.archivoService.obtenerUrlPublica(archivo.rutaServicio);
+    } else if (archivo.ruta) {
+      url = this.archivoService.obtenerUrlPublica(archivo.ruta);
     }
     
-  } catch (error) {
-    console.error('Error cargando archivos existentes:', error);
-    this.archivosExistentes = [];
-    this.alerta.alertaError('Error al cargar archivos de la sesión');
+    if (url) {
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.download = archivo.nombre || archivo.nombreOriginal || 'archivo';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      this.alerta.alertaError('No se pudo acceder al archivo');
+    }
   }
-}
-
-// Método para descargar archivos
-descargarArchivo(archivo: any): void {
-  console.log('Intentando descargar archivo:', archivo);
-  
-  let url: string | null = null;
-  
-  // Usar la misma lógica que en el componente de usuarios
-  if (archivo.rutaServicio) {
-    url = this.archivoService.obtenerUrlPublica(archivo.rutaServicio);
-  } else if (archivo.ruta) {
-    url = this.archivoService.obtenerUrlPublica(archivo.ruta);
-  }
-  
-  if (url) {
-    console.log('URL generada:', url);
-    
-    // Crear enlace de descarga temporal (igual que en usuarios)
-    const link = document.createElement('a');
-    link.href = url;
-    link.target = '_blank';
-    link.download = archivo.nombre || archivo.nombreOriginal || 'archivo';
-    
-    // Agregar al DOM temporalmente y hacer clic
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } else {
-    console.error('No se pudo generar URL para el archivo:', archivo);
-    this.alerta.alertaError('No se pudo acceder al archivo');
-  }
-}
 
   eliminarSesion(sesion: HistorialMedico): void {
     this.alerta.alertaConfirmacion(
@@ -841,8 +843,6 @@ descargarArchivo(archivo: any): void {
     });
   }
 
-  
-
   formatearFecha(fecha: string): string {
     return this.historialService.formatearFechaDisplay(fecha);
   }
@@ -852,12 +852,10 @@ descargarArchivo(archivo: any): void {
   }
 
   obtenerGenero(): string {
-    // ✅ Si viene del backend directamente
     if (this.infoPaciente?.genero) {
       return this.infoPaciente.genero === 'M' ? 'Masculino' : 'Femenino';
     }
     
-    // ✅ Fallback: calcular desde CUI
     if (this.infoPaciente?.cui) {
       const ultimoDigito = parseInt(this.infoPaciente.cui.slice(-1));
       return ultimoDigito % 2 === 0 ? 'Femenino' : 'Masculino';
@@ -867,7 +865,6 @@ descargarArchivo(archivo: any): void {
   }
 
   ngOnDestroy(): void {
-    // Limpiar sessionStorage solo al salir del componente
     sessionStorage.removeItem('datosPacienteHistorial');
   }
 }

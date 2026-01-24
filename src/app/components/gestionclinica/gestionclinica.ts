@@ -1,33 +1,39 @@
-// gestionclinica.component.ts - Versión actualizada sin quickActions
-import { Component, OnInit, OnDestroy, AfterViewInit, ChangeDetectionStrategy, inject } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
+// gestionclinica.component.ts - ✅ VERSION SIMPLIFICADA CON ROL Y CLINICA
+import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { Observable, Subject, combineLatest } from 'rxjs';
-import { takeUntil, map } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { ArchivoService } from '../../services/archivo.service';
-
 import { SidebarComponent } from '../sidebar/sidebar.component';
-import { 
-  GestionClinicaService, 
-  DashboardConfig, 
-  ModuleConfig, 
-  ModuleType 
-} from '../../services/gestionclinica.service';
 
-// Interface para información del usuario
+// ============================================================================
+// INTERFACES
+// ============================================================================
+
 interface UserInfo {
   name: string;
   avatar?: string;
-  permissions?: string[];
-  role?: string;
+  rol: number;
+  clinica: number;
 }
 
-// Interface para estadísticas formateadas
-interface FormattedStat {
+interface Modulo {
+  id: string;
+  nombre: string;
+  icono: string;
+  ruta: string;
+  descripcion: string;
+  color: string;
+  roles: number[];  // Roles permitidos
+  activo: boolean;
+}
+
+interface Estadistica {
   label: string;
-  value: string | number;
-  icon?: string;
-  color?: string;
+  valor: number;
+  icono: string;
+  color: string;
 }
 
 @Component({
@@ -35,66 +41,44 @@ interface FormattedStat {
   standalone: true,
   imports: [CommonModule, SidebarComponent],
   templateUrl: './gestionclinica.html',
-  styleUrls: ['./gestionclinica.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  styleUrls: ['./gestionclinica.scss']
 })
 export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit {
   
-  // Servicios inyectados
-  private readonly gestionService = inject(GestionClinicaService);
-  public readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
-  private readonly archivoService = inject(ArchivoService);
+  private destroy$ = new Subject<void>();
   
-  // Subject para cleanup
-  private readonly destroy$ = new Subject<void>();
+  // Estados
+  sidebarExpanded = false;
+  loading = false;
   
-  // Observables públicos
-  public readonly currentDate$ = new Observable<Date>(observer => {
-    const emit = () => observer.next(new Date());
-    emit();
-    const interval = setInterval(emit, 60000); // Actualizar cada minuto
-    return () => clearInterval(interval);
-  });
+  // Usuario
+  userInfo: UserInfo = {
+    name: 'Usuario',
+    rol: 1,
+    clinica: 0
+  };
+  
+  // Datos
+  modulos: Modulo[] = [];
+  modulosFiltrados: Modulo[] = [];
+  estadisticas: Estadistica[] = [];
+  
+  // Fecha
+  fechaActual = new Date();
 
-  public readonly dashboardConfig$ = this.gestionService.dashboardConfig$;
-  public readonly loading$ = this.gestionService.loading$;
-  public readonly currentModule$ = this.gestionService.currentModule$;
-
-  // Propiedades del componente
-  public sidebarExpanded = true;
-  public userInfo: UserInfo = { name: 'Usuario', permissions: [] };
-
-  // Propiedades computadas
-  public readonly formattedDate$ = this.currentDate$.pipe(
-    map(date => date.toLocaleDateString('es-GT', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    }))
-  );
-
-  // Combinar datos del dashboard
-  public readonly dashboardData$ = combineLatest([
-    this.dashboardConfig$,
-    this.currentModule$
-  ]).pipe(
-    map(([config, module]) => ({
-      config,
-      module,
-      activeModules: config ? this.getFilteredModules(config.modules) : [],
-      formattedStats: config ? this.formatStats(config.stats) : [],
-      totalNotifications: this.gestionService.getTotalNotifications()
-    }))
-  );
+  constructor(
+    public router: Router,
+    private archivoService: ArchivoService
+  ) {}
 
   ngOnInit(): void {
-    this.initializeComponent();
-    this.setupSubscriptions();
+    this.cargarUsuario();
+    this.cargarModulos();
+    this.cargarEstadisticas();
   }
 
   ngAfterViewInit(): void {
-    this.sidebarExpanded = false; // Empezar siempre contraído
+    this.sidebarExpanded = false;
   }
 
   ngOnDestroy(): void {
@@ -102,56 +86,14 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
     this.destroy$.complete();
   }
 
-  /**
-   * Inicializar componente
-   */
-  private initializeComponent(): void {
-    this.loadUserInfo();
-    this.detectAndSetModule();
-  }
+  // ============================================================================
+  // CARGAR DATOS
+  // ============================================================================
 
   /**
-   * Configurar suscripciones
+   * ✅ Cargar info del usuario desde localStorage
    */
-  private setupSubscriptions(): void {
-    this.router.events.pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(() => {
-      this.detectAndSetModule();
-    });
-
-    this.currentModule$.pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(module => {
-      console.log(`Módulo actual: ${module}`);
-    });
-  }
-
-  /**
-   * Detectar y establecer módulo basado en la ruta
-   */
-  private detectAndSetModule(): void {
-    const currentPath = this.router.url.toLowerCase();
-    const moduleType = this.detectModuleFromPath(currentPath);
-    this.gestionService.setCurrentModule(moduleType);
-  }
-
-  /**
-   * Detectar módulo desde la ruta
-   */
-  private detectModuleFromPath(path: string): ModuleType {
-    if (path.includes('educacion-inclusiva')) return 'educacion-inclusiva';
-    if (path.includes('fisioterapia')) return 'fisioterapia';
-    if (path.includes('medicina-general')) return 'medicina-general';
-    if (path.includes('nutricion')) return 'nutricion';
-    if (path.includes('psicologia')) return 'psicologia';
-    return 'administracion';
-  }
-
-  /**
-   * Cargar información del usuario
-   */
-  private loadUserInfo(): void {
+  cargarUsuario(): void {
     try {
       const usuarioData = localStorage.getItem('usuario');
       
@@ -159,145 +101,245 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
         const usuario = JSON.parse(usuarioData);
         
         this.userInfo = {
-          name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim() || 'Usuario',
-          avatar: usuario.rutafotoperfil ? this.obtenerUrlPublica(usuario.rutafotoperfil) || undefined : undefined,
-          permissions: usuario.permisos || [],
-          role: usuario.rol || 'user'
+          name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim(),
+          avatar: usuario.rutafotoperfil ? 
+            this.archivoService.obtenerUrlPublica(usuario.rutafotoperfil) || undefined : undefined,
+          rol: usuario.fkrol || 1,
+          clinica: usuario.fkclinica || 0
         };
+        
+        console.log('👤 Usuario cargado:', {
+          nombre: this.userInfo.name,
+          rol: this.userInfo.rol,
+          clinica: this.userInfo.clinica
+        });
       }
     } catch (error) {
-      console.error('Error al cargar información del usuario:', error);
-      this.userInfo = { name: 'Usuario', permissions: [] };
+      console.error('Error al cargar usuario:', error);
     }
   }
 
   /**
-   * Obtener URL pública de archivos
+   * ✅ Cargar y filtrar módulos según el rol
    */
-  private obtenerUrlPublica(ruta: string): string | undefined {
-    const result = this.archivoService.obtenerUrlPublica(ruta);
-    return result || undefined;
-  }
+  cargarModulos(): void {
+    // ✅ TODOS LOS MÓDULOS DEL SISTEMA
+    const todosLosModulos: Modulo[] = [
+      {
+        id: 'pacientes',
+        nombre: 'Pacientes',
+        icono: 'fas fa-hospital-user',
+        ruta: '/pacientes',
+        descripcion: 'Gestión de pacientes',
+        color: 'patients',
+        roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
+        activo: true
+      },
+      {
+        id: 'expedientes',
+        nombre: 'Expedientes',
+        icono: 'fas fa-folder-open',
+        ruta: '/expedientes',
+        descripcion: 'Expedientes médicos',
+        color: 'doctors',
+        roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
+        activo: true
+      },
+      {
+        id: 'agenda',
+        nombre: 'Agenda',
+        icono: 'fas fa-calendar-alt',
+        ruta: '/agenda',
+        descripcion: 'Calendario de citas',
+        color: 'calendar',
+        roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
+        activo: true
+      },
+      {
+        id: 'referidos',
+        nombre: 'Referidos',
+        icono: 'fas fa-exchange-alt',
+        ruta: '/referidos',
+        descripcion: 'Gestión de referidos',
+        color: 'exchange',
+        roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
+        activo: true
+      },
+      {
+        id: 'reporteria',
+        nombre: 'Reportes',
+        icono: 'fas fa-chart-line',
+        ruta: '/reporteria',
+        descripcion: 'Reportes y estadísticas',
+        color: 'reports',
+        roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
+        activo: true
+      },
+      {
+        id: 'inventario',
+        nombre: 'Inventario',
+        icono: 'fas fa-boxes',
+        ruta: '/inventario',
+        descripcion: 'Control de inventario',
+        color: 'settings',
+        roles: [1,4,7,9],  // ✅ Solo Admin, Sistemas, Auxiliar Admin, Farmacia
+        activo: true
+      },
+      {
+        id: 'salida-inventario',
+        nombre: 'Salida Inventario',
+        icono: 'fas fa-dolly',
+        ruta: '/salida-inventario',
+        descripcion: 'Registro de salidas',
+        color: 'settings',
+        roles: [1,4,7,9],
+        activo: true
+      },
+      {
+        id: 'documentos',
+        nombre: 'Documentos',
+        icono: 'fas fa-file-alt',
+        ruta: '/documentos',
+        descripcion: 'Gestión documental',
+        color: 'pdf',
+        roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
+        activo: true
+      },
+      {
+        id: 'usuarios',
+        nombre: 'Usuarios',
+        icono: 'fas fa-users-cog',
+        ruta: '/usuario',
+        descripcion: 'Gestión de usuarios',
+        color: 'stats',
+        roles: [1,4,7],  // ✅ Solo Admin, Sistemas, Auxiliar Admin
+        activo: true
+      }
+    ];
 
-  /**
-   * Filtrar módulos según permisos del usuario
-   */
-  private getFilteredModules(modules: ModuleConfig[]): ModuleConfig[] {
-    return modules.filter(module => {
-      if (!module.isActive) return false;
-      if (!module.permissions) return true;
-      return this.userHasPermission(module.permissions);
-    });
-  }
-
-  /**
-   * Verificar si el usuario tiene los permisos requeridos
-   */
-  private userHasPermission(requiredPermissions: string[]): boolean {
-    const userPermissions = this.userInfo.permissions || [];
-    return requiredPermissions.some(permission => 
-      userPermissions.includes(permission) || userPermissions.includes('admin')
-    );
-  }
-
-  /**
-   * Formatear estadísticas para mostrar
-   */
-  private formatStats(stats: any): FormattedStat[] {
-    if (!stats) return [];
+    this.modulos = todosLosModulos;
     
-    return Object.keys(stats).map(key => ({
-      label: this.formatStatLabel(key),
-      value: stats[key],
-      icon: this.getStatIcon(key),
-      color: this.getStatColor(key)
-    }));
+    // ✅ FILTRAR MÓDULOS POR ROL DEL USUARIO
+    this.filtrarModulosPorRol();
   }
 
   /**
-   * Formatear etiquetas de estadísticas
+   * ✅ Filtrar módulos según el rol del usuario
    */
-  private formatStatLabel(key: string): string {
-    const labels: { [key: string]: string } = {
-      'pacientesHoy': 'Pacientes Hoy',
-      'citasPendientes': 'Citas Pendientes',
-      'reportesGenerados': 'Reportes Generados'
-    };
-    return labels[key] || key.charAt(0).toUpperCase() + key.slice(1);
+  filtrarModulosPorRol(): void {
+    this.modulosFiltrados = this.modulos.filter(modulo => 
+      modulo.activo && modulo.roles.includes(this.userInfo.rol)
+    );
+    
+    console.log('📋 Módulos filtrados:', this.modulosFiltrados.length);
   }
 
   /**
-   * Obtener icono para estadística
+   * ✅ Cargar estadísticas (puedes conectar al backend después)
    */
-  private getStatIcon(key: string): string {
-    const icons: { [key: string]: string } = {
-      'pacientesHoy': 'fas fa-users',
-      'citasPendientes': 'fas fa-clock',
-      'reportesGenerados': 'fas fa-chart-line'
-    };
-    return icons[key] || 'fas fa-info-circle';
+  cargarEstadisticas(): void {
+    this.estadisticas = [
+      {
+        label: 'Pacientes Hoy',
+        valor: 0,
+        icono: 'fas fa-users',
+        color: 'primary'
+      },
+      {
+        label: 'Citas Pendientes',
+        valor: 0,
+        icono: 'fas fa-clock',
+        color: 'warning'
+      },
+      {
+        label: 'Expedientes',
+        valor: 0,
+        icono: 'fas fa-folder',
+        color: 'info'
+      },
+      {
+        label: 'Referidos',
+        valor: 0,
+        icono: 'fas fa-share',
+        color: 'success'
+      }
+    ];
   }
 
-  /**
-   * Obtener color para estadística
-   */
-  private getStatColor(key: string): string {
-    const colors: { [key: string]: string } = {
-      'pacientesHoy': 'primary',
-      'citasPendientes': 'warning',
-      'reportesGenerados': 'success'
-    };
-    return colors[key] || 'primary';
-  }
+  // ============================================================================
+  // ACCIONES
+  // ============================================================================
 
   /**
-   * Navegar a una ruta específica
+   * ✅ Navegar a un módulo con validación
    */
-  public navigateTo(route: string): void {
-    if (!route) {
-      console.warn('Ruta no válida');
+  navegarA(modulo: Modulo): void {
+    if (!modulo.activo) {
+      console.warn('⚠️ Módulo desactivado');
       return;
     }
     
-    this.gestionService.navigateToModule(route);
+    // ✅ VALIDAR ACCESO
+    if (!this.tieneAcceso(modulo)) {
+      console.error('❌ Acceso denegado');
+      alert('No tienes permisos para acceder a este módulo');
+      return;
+    }
+    
+    console.log('📍 Navegando a:', modulo.ruta);
+    this.router.navigate([modulo.ruta]);
   }
 
   /**
-   * Manejar toggle del sidebar
+   * ✅ Verificar si el usuario tiene acceso al módulo
    */
-  public onSidebarToggle(event: any): void {
-    this.sidebarExpanded = event.expanded || event.detail?.expanded || event;
+  tieneAcceso(modulo: Modulo): boolean {
+    return modulo.roles.includes(this.userInfo.rol);
   }
 
   /**
-   * Track by function para ngFor optimizado
+   * ✅ Handle sidebar toggle
    */
-  public trackByModuleId(index: number, module: ModuleConfig): string {
-    return module.id;
+  onSidebarToggle(event: any): void {
+    this.sidebarExpanded = event;
   }
 
-  public trackByStatLabel(index: number, stat: FormattedStat): string {
+  // ============================================================================
+  // GETTERS
+  // ============================================================================
+
+  get fechaFormateada(): string {
+    return this.fechaActual.toLocaleDateString('es-GT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  }
+
+  get nombreClinica(): string {
+    // Aquí puedes cargar el nombre desde un servicio si lo necesitas
+    return 'Sistema de Gestión Clínica';
+  }
+
+  /**
+   * ✅ Track by para ngFor
+   */
+  trackByModuloId(index: number, modulo: Modulo): string {
+    return modulo.id;
+  }
+
+  trackByEstadistica(index: number, stat: Estadistica): string {
     return stat.label;
   }
 
   /**
-   * Verificar si hay módulos configurados
+   * ✅ Dividir módulos en filas de 4
    */
-  public hasModules(modules: ModuleConfig[]): boolean {
-    return modules && modules.length > 0;
-  }
-
-  /**
-   * Verificar si hay estadísticas disponibles
-   */
-  public hasStats(stats: FormattedStat[]): boolean {
-    return stats && stats.length > 0;
-  }
-
-  /**
-   * Obtener total de notificaciones
-   */
-  public getTotalNotifications(): number {
-    return this.gestionService.getTotalNotifications();
+  get filasModulos(): Modulo[][] {
+    const filas: Modulo[][] = [];
+    for (let i = 0; i < this.modulosFiltrados.length; i += 4) {
+      filas.push(this.modulosFiltrados.slice(i, i + 4));
+    }
+    return filas;
   }
 }
