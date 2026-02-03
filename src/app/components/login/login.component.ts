@@ -93,7 +93,10 @@ export class LoginComponent {
       error: (err) => {
         // ✅ MANEJO ESPECIAL PARA SESIÓN ACTIVA
         if (err.status === 409 && err.error?.sessionActiva) {
-          this.showNotification('error', err.error.message);
+          // Mensaje con sugerencia de usar "Olvidé mi contraseña"
+          const mensajeCompleto = err.error.message + 
+            '\n\n💡 Sugerencia: Usa "Olvidé mi contraseña" para cerrar todas las sesiones y recuperar el acceso.';
+          this.showNotification('error', mensajeCompleto);
         } else if (err.error?.message) {
           this.showNotification('error', err.error.message);
         } else {
@@ -129,13 +132,23 @@ export class LoginComponent {
       error: (err) => {
         let mensaje = 'Error al enviar el correo de recuperación';
         
-        if (err.error?.message) {
+        // Manejo especial para error 429 (Too Many Requests)
+        if (err.status === 429) {
+          if (err.error?.detalles) {
+            mensaje = `${err.error.message}\n\n${err.error.detalles}`;
+          } else if (err.error?.message) {
+            mensaje = err.error.message;
+          } else {
+            mensaje = 'Has excedido el límite de intentos. Por favor espera 15 minutos.';
+          }
+        } 
+        else if (err.error?.message) {
           if (err.error.message.includes('no encontrado') || err.error.message.includes('inválidas')) {
             mensaje = 'No se encontró un usuario con ese correo electrónico';
           } else if (err.error.message.includes('inactivo')) {
             mensaje = 'Usuario inactivo. Contacte al administrador';
-          } else if (err.error.message.includes('Too Many Requests')) {
-            mensaje = 'Demasiados intentos. Espere un momento antes de volver a intentar';
+          } else {
+            mensaje = err.error.message;
           }
         }
         

@@ -1709,3 +1709,22 @@
   position: relative;
   z-index: 1;
 }
+
+/* ====================================
+   SWEETALERT2 - SIEMPRE AL FRENTE
+   ==================================== */
+::ng-deep .swal2-container {
+  z-index: 10000000 !important;
+}
+
+::ng-deep .swal2-popup {
+  z-index: 10000001 !important;
+}
+
+::ng-deep .swal2-backdrop-show {
+  z-index: 9999999 !important;
+}
+
+::ng-deep .swal2-shown {
+  z-index: 10000000 !important;
+}

@@ -1,9 +1,10 @@
-// sidebar.component.ts
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { HasRoleDirective } from '../../directives/has-role.directive';
+import { PerfilService } from '../../services/perfil.service';
+import { Subscription } from 'rxjs';
 
 export interface MenuItem {
   label: string;
@@ -21,14 +22,16 @@ export interface MenuItem {
   styleUrls: ['./sidebar.component.scss'],
   imports: [CommonModule, HasRoleDirective],
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit, OnDestroy {
   @Input() isExpanded: boolean = true;
-  @Input() userInfo: { name: string; avatar?: string } = { name: 'Usuario' };
+  @Input() userInfo: { name: string; avatar?: string | null } = { name: 'Usuario' }; // ✅ Permitir null
   @Input() menuItems: MenuItem[] = [];
   @Input() footerText: string = '© CMI - Clinicas Municipales Inclusivas. Todos los derechos reservados.';
 
   @Output() toggleSidebar = new EventEmitter<boolean>();
   @Output() menuItemClick = new EventEmitter<MenuItem>();
+
+  private perfilSubscription?: Subscription;
 
   defaultMenuItems: MenuItem[] = [
     {
@@ -48,8 +51,8 @@ export class SidebarComponent {
         { label: 'Pacientes', route: '/pacientes', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
         { label: 'Expedientes', route: '/expedientes', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
         { label: 'Referidos', route: '/referidos', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] }
-    ]
-  },
+      ]
+    },
     {
       label: 'Gestión Clinica',
       icon: 'fas fa-hospital',
@@ -59,13 +62,7 @@ export class SidebarComponent {
         { label: 'Reporteria', route: '/reporteria', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
         { label: 'Documentos', route: '/documentos', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
         { label: 'Inventario', route: '/inventario', roles: [1,4,7,9] },
-        { label: 'Salida Inventario', route: '/salida-inventario', roles: [1,4,7,9] },
-        //{ label: 'Administración', route: '/administracion', roles: [1,5,8] },
-        //{ label: 'Educación Inclusiva', route: '/educacion-inclusiva', roles: [1,5,15,16] },
-        //{ label: 'Fisioterapia', route: '/fisioterapia', roles: [1,5,6,14] },
-        //{ label: 'Medicina General', route: '/medicina-general', roles: [1,2,3,5,14] },
-       //{ label: 'Nutrición', route: '/nutricion', roles: [1,5,13,14] },
-        //{ label: 'Psicología', route: '/psicologia', roles: [1,5,7,11] }
+        { label: 'Salida Inventario', route: '/salida-inventario', roles: [1,4,7,9] }
       ]
     },
     {
@@ -80,8 +77,31 @@ export class SidebarComponent {
 
   constructor(
     private router: Router, 
-    private authService: AuthService
+    private authService: AuthService,
+    private perfilService: PerfilService
   ){}
+
+  ngOnInit(): void {
+    // Suscribirse a cambios del perfil para actualizar avatar en tiempo real
+    this.perfilSubscription = this.perfilService.perfil$.subscribe((usuario) => {
+      if (usuario) {
+        const updatedInfo = this.perfilService.obtenerInfoSidebar();
+        // Solo actualizar si recibimos datos válidos
+        if (updatedInfo && updatedInfo.name) {
+          // ✅ Convertir null a undefined si es necesario
+          this.userInfo = {
+            name: updatedInfo.name,
+            avatar: updatedInfo.avatar || undefined
+          };
+          console.log('📸 Sidebar - UserInfo actualizado:', this.userInfo);
+        }
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.perfilSubscription?.unsubscribe();
+  }
 
   get currentMenuItems(): MenuItem[] {
     return this.menuItems.length > 0 ? this.menuItems : this.defaultMenuItems;
@@ -101,9 +121,9 @@ export class SidebarComponent {
     this.menuItemClick.emit(item);
   }
 
-    onSubMenuItemClick(item: MenuItem) {
+  onSubMenuItemClick(item: MenuItem) {
     if (item.label === 'Cerrar Sesion') {
-      this.authService.logout(); // Usar tu servicio existente
+      this.authService.logout();
     } else if (item.route) {
       this.router.navigate([item.route]);
       this.menuItemClick.emit(item);
@@ -115,6 +135,4 @@ export class SidebarComponent {
   onUserNameClick() {
     this.router.navigate(['/menu']);
   }
-
-
 }
