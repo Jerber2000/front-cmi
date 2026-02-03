@@ -807,3 +807,124 @@ html {
 .btn-historial i {
   font-size: 1rem;
 }
+
+/* Estilos para el ng-select de pacientes */
+::ng-deep .ng-select.ng-select-opened > .ng-select-container {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Opciones del dropdown */
+.paciente-option {
+  padding: 8px 0;
+  transition: background-color 0.2s;
+}
+
+.paciente-nombre {
+  font-size: 14px;
+  font-weight: 500;
+  color: #212529;
+  margin-bottom: 4px;
+}
+
+.paciente-nombre i {
+  font-size: 16px;
+}
+
+.paciente-cui {
+  font-size: 12px;
+  color: #6c757d;
+  margin-left: 32px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.paciente-cui i {
+  font-size: 11px;
+}
+
+/* Hover en las opciones */
+::ng-deep .ng-dropdown-panel .ng-dropdown-panel-items .ng-option:hover {
+  background-color: #f8f9fa;
+}
+
+::ng-deep .ng-dropdown-panel .ng-dropdown-panel-items .ng-option.ng-option-selected {
+  background-color: #e7f1ff;
+  color: #0d6efd;
+}
+
+/* Estilo del item seleccionado en el input - MEJORADO */
+::ng-deep .ng-select .ng-select-container .ng-value-container .ng-value {
+  background-color: transparent;
+  padding: 0;
+}
+
+.paciente-seleccionado {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.paciente-seleccionado-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.paciente-seleccionado-nombre {
+  font-size: 14px;
+  font-weight: 500;
+  color: #212529;
+  line-height: 1.2;
+}
+
+.paciente-seleccionado-dpi {
+  font-size: 11px;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1;
+}
+
+.paciente-seleccionado-dpi i {
+  font-size: 10px;
+}
+
+/* Icono principal del paciente seleccionado */
+.paciente-seleccionado > i {
+  font-size: 18px;
+  color: #0d6efd;
+  flex-shrink: 0;
+}
+
+/* Loading spinner */
+::ng-deep .ng-select .ng-spinner-loader {
+  border-color: #0d6efd transparent transparent;
+}
+
+/* Placeholder */
+::ng-deep .ng-select .ng-placeholder {
+  color: #6c757d;
+}
+
+/* Clear button */
+::ng-deep .ng-select .ng-clear-wrapper {
+  color: #dc3545;
+  margin-top: -8px;
+}
+
+::ng-deep .ng-select .ng-clear-wrapper:hover {
+  color: #bb2d3b;
+}
+
+/* Ajustar altura del contenedor para acomodar dos líneas */
+::ng-deep .ng-select .ng-select-container {
+  min-height: 50px;
+}
+
+::ng-deep .ng-select .ng-value-container {
+  padding: 4px 8px;
+}

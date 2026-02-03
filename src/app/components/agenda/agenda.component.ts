@@ -100,6 +100,12 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     selectMirror: true,
     dayMaxEvents: 3,
     
+    selectAllow: (selectInfo) => {
+      const fechaSeleccionada = selectInfo.startStr.split('T')[0];
+      const hoy = format(new Date(), 'yyyy-MM-dd');
+      return fechaSeleccionada >= hoy; // Solo permitir selección de hoy en adelante
+    },
+
     // Callbacks
     select: this.handleDateSelect.bind(this),
     eventClick: this.handleEventClick.bind(this),
@@ -153,6 +159,7 @@ export class AgendaComponent implements OnInit, AfterViewInit {
   reporteTransportes: any[] = [];
   fechaReporte: string = '';
   loadingReporte = false;
+  fechaMinima: string = '';
 
   slotsDisponibles: any[] = [
     { hora: '08:00:00' },
@@ -213,10 +220,47 @@ export class AgendaComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.currentUserId = this.getCurrentUserId();
+    this.configurarFiltroAutomatico();
     this.cargarCitas();
     this.loadUserInfo();
     this.cargarUsuariosPorRol();
     this.ListarPacientes();
+    this.fechaMinima = format(new Date(), 'yyyy-MM-dd');
+  }
+
+  private configurarFiltroAutomatico(): void {
+    try {
+      const usuarioData = localStorage.getItem('usuario');
+      if (usuarioData) {
+        const usuario = JSON.parse(usuarioData);
+        
+        console.log('Configurando filtro para usuario:', usuario); // Para debug
+        
+        // Verificar si es administrador o profesional
+        // Ajusta según tu estructura - estas son las opciones más comunes:
+        const esAdministrador = usuario.rol === 'administrador' || 
+                              usuario.rol === 'admin' ||
+                              usuario.fkrol === 1 ||
+                              usuario.idusuario === 1; // Si el ID 1 es siempre admin
+        
+        if (!esAdministrador && usuario.idusuario) {
+          // Es profesional - filtrar automáticamente por su ID
+          this.selectedMedico = usuario.idusuario.toString();
+          this.isSelectDisabled = true;
+          console.log('Usuario profesional detectado. Filtrando por ID:', this.selectedMedico);
+        } else {
+          // Es administrador - mostrar todos los profesionales
+          this.selectedMedico = '';
+          this.isSelectDisabled = false;
+          console.log('Usuario administrador detectado. Mostrando todos los profesionales.');
+        }
+      }
+    } catch (error) {
+      console.error('Error al configurar filtro automático:', error);
+      // Por defecto, no filtrar
+      this.selectedMedico = '';
+      this.isSelectDisabled = false;
+    }
   }
 
   ngAfterViewInit(): void {
@@ -560,11 +604,12 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     this.loadingPacientes = true;
     this.PacienteService.obtenerListadoPacientes().subscribe({
       next: (listadoUsuario) => { 
-        // Agregar campo nombreCompleto para búsqueda
         this.paciente = listadoUsuario.map((pac: Paciente) => ({
           ...pac,
-          nombreCompleto: `${pac.nombres} ${pac.apellidos}`.trim()
+          nombreCompleto: `${pac.nombres} ${pac.apellidos} ${pac.cui || ''}`.trim(),
+          cui: pac.cui
         }));
+        
         this.loadingPacientes = false;
       },
       error: (error) => {
@@ -873,6 +918,14 @@ export class AgendaComponent implements OnInit, AfterViewInit {
 
   handleDateSelect(selectInfo: DateSelectArg): void {
     const fechaSeleccionada = selectInfo.startStr.split('T')[0];
+    const hoy = format(new Date(), 'yyyy-MM-dd');
+
+    if (fechaSeleccionada < hoy) {
+      this.alerta.alertaError('No se pueden crear citas en fechas pasadas');
+      const calendarApi = selectInfo.view.calendar;
+      calendarApi.unselect();
+      return;
+    }
 
     this.selectedDate = fechaSeleccionada;
     this.modalMode = 'create';
@@ -994,7 +1047,8 @@ export class AgendaComponent implements OnInit, AfterViewInit {
   // }
 
   abrirModalNuevaCita(): void {
-    const fechaHoy = format(new Date(), 'yyyy-MM-dd');
+    //const fechaHoy = format(new Date(), 'yyyy-MM-dd');
+    const fechaHoy = this.fechaMinima;
     
     this.selectedDate = fechaHoy;
     this.modalMode = 'create';
@@ -1238,6 +1292,14 @@ export class AgendaComponent implements OnInit, AfterViewInit {
   guardarCita(): void {
     if (this.citaForm.invalid) {
       this.alerta.alertaError('Por favor complete todos los campos requeridos');
+      return;
+    }
+
+    const fechaCita = this.citaForm.get('fechaatencion')?.value;
+    const hoy = format(new Date(), 'yyyy-MM-dd');
+    
+    if (fechaCita < hoy) {
+      this.alerta.alertaError('No se pueden crear citas en fechas pasadas');
       return;
     }
 
@@ -1522,6 +1584,7 @@ export class AgendaComponent implements OnInit, AfterViewInit {
             if (error.status === 403) {
               return;
             }
+            console.error('Error completo:', error); // ← AGREGAR PARA DEBUG
             this.alerta.alertaError('Error al eliminar la cita');
           }
         });
@@ -1541,6 +1604,9 @@ export class AgendaComponent implements OnInit, AfterViewInit {
       
       this.loading = true;
       const currentUserId = this.getCurrentUserId();
+
+      console.log('Eliminando cita ID:', this.selectedCita.idagenda); // ← DEBUG
+      console.log('Usuario:', currentUserId); // ← DEBUG
       
       this.agendaService.eliminarCita(this.selectedCita.idagenda, currentUserId).subscribe({
         next: (response) => {
@@ -1555,6 +1621,12 @@ export class AgendaComponent implements OnInit, AfterViewInit {
         },
         error: (error) => {
           this.loading = false;
+
+          console.error('Error completo al eliminar cita:', error); // ← DEBUG COMPLETO
+          console.error('Error status:', error.status); // ← DEBUG
+          console.error('Error message:', error.message); // ← DEBUG
+          console.error('Error body:', error.error); // ← DEBUG
+
           if (error.status === 403) {
             return;
           }

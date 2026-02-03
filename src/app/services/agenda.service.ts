@@ -163,8 +163,10 @@ export class AgendaService {
       usuariomodificacion: usuarioModificacion
     }).pipe(
       tap(response => {
+        console.log('Respuesta del backend:', response);
       }),
       catchError((error: HttpErrorResponse) => {
+        console.error('Error HTTP completo:', error); // ← DEBUG
         if ((error.status === 400 || error.status === 422) && error.error) {
           return of(error.error);
         }

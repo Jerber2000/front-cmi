@@ -46,20 +46,20 @@ export class SidebarComponent implements OnInit, OnDestroy {
     {
       label: 'Gestión de Pacientes',
       icon: 'fas fa-hospital-user',
-      roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
+      roles: [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16],
       children: [
-        { label: 'Pacientes', route: '/pacientes', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
-        { label: 'Expedientes', route: '/expedientes', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
-        { label: 'Referidos', route: '/referidos', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] }
-      ]
-    },
+        { label: 'Pacientes', route: '/pacientes', roles: [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16] },
+        { label: 'Expedientes', route: '/expedientes', roles: [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16] },
+        { label: 'Referidos', route: '/referidos', roles: [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16] }
+    ]
+  },
     {
       label: 'Gestión Clinica',
       icon: 'fas fa-hospital',
       roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
       children: [
-        { label: 'Agenda', route: '/agenda', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
-        { label: 'Reporteria', route: '/reporteria', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
+        { label: 'Agenda', route: '/agenda', roles: [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16] },
+        { label: 'Reporteria', route: '/reporteria', roles: [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16] },
         { label: 'Documentos', route: '/documentos', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
         { label: 'Inventario', route: '/inventario', roles: [1,4,7,9] },
         { label: 'Salida Inventario', route: '/salida-inventario', roles: [1,4,7,9] }

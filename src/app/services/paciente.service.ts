@@ -118,7 +118,6 @@ export class ServicioPaciente {
     const ruta = `${this.urlApi}/obtenerListado`;
     return this.http.get<any>(ruta).pipe(
       tap(response => {
-        console.log('Respuesta obtenerListado:', response);
       }),
       map(response => {
         if (response && response.exito && response.datos && Array.isArray(response.datos)) {

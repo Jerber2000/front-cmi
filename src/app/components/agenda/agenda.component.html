@@ -178,28 +178,40 @@
                   bindLabel="nombreCompleto"
                   bindValue="idpaciente"
                   formControlName="fkpaciente"
-                  placeholder="Seleccione un paciente"
+                  placeholder="Buscar por nombre o DPI"
                   [searchable]="true"
                   [clearable]="true"
                   (change)="onPacienteSeleccionadoNgSelect($event)"
                   notFoundText="No se encontraron pacientes"
                   [loading]="loadingPacientes">
                   
-                  <!-- Template personalizado para cada item -->
+                  <!-- Template personalizado para cada item en el dropdown -->
                   <ng-template ng-option-tmp let-item="item">
                     <div class="paciente-option">
                       <div class="paciente-nombre">
                         <i class="fas fa-user-injured me-2 text-primary"></i>
-                        <strong>{{ item.nombres }} {{ item.apellidos }}</strong>
+                        {{ item.nombres }} {{ item.apellidos }}
+                      </div>
+                      <div class="paciente-cui">
+                        <i class="fas fa-id-card"></i>
+                        <span>DPI: {{ item.cui || 'No disponible' }}</span>
                       </div>
                     </div>
                   </ng-template>
                   
                   <!-- Template para el item seleccionado -->
                   <ng-template ng-label-tmp let-item="item">
-                    <div class="d-flex align-items-center">
-                      <i class="fas fa-user-injured me-2"></i>
-                      {{ item.nombres }} {{ item.apellidos }}
+                    <div class="paciente-seleccionado">
+                      <i class="fas fa-user-injured"></i>
+                      <div class="paciente-seleccionado-info">
+                        <span class="paciente-seleccionado-nombre">
+                          {{ item.nombres }} {{ item.apellidos }}
+                        </span>
+                        <span class="paciente-seleccionado-dpi">
+                          <i class="fas fa-id-card"></i>
+                          DPI: {{ item.cui || 'No disponible' }}
+                        </span>
+                      </div>
                     </div>
                   </ng-template>
                 </ng-select>
@@ -219,8 +231,8 @@
                 <input type="text" class="form-control" id="contactoEncargado" formControlName="contactoEncargado" required readonly>
               </div>
             </div>
-          </div>
-          
+          </div>        
+
           <div class="row">
             <div class="col-md-12">
               <div class="mb-3">
@@ -266,7 +278,7 @@
             <div class="col-md-6">
               <div class="mb-3">
                 <label for="fecha" class="form-label">Fecha *</label>
-                <input type="date" class="form-control" id="fechaatencion" formControlName="fechaatencion" required>
+                <input type="date" class="form-control" id="fechaatencion" formControlName="fechaatencion" [min]="fechaMinima" required>
               </div>
             </div>
             
@@ -410,7 +422,7 @@
                       id="fechaFin" 
                       [(ngModel)]="fechaFinRecurrencia"
                       [ngModelOptions]="{standalone: true}"
-                      [min]="citaForm.get('fechaatencion')?.value">
+                      [min]="citaForm.get('fechaatencion')?.value || fechaMinima">
                   </div>
                   
                   <div class="col-md-6" *ngIf="!usarFechaFin">
@@ -470,7 +482,7 @@
             <div class="col-md-6">
               <div class="mb-3">
                 <label for="fechatransporte" class="form-label">Fecha Transporte</label>
-                <input type="date" class="form-control" id="fechatransporte" formControlName="fechatransporte">
+                <input type="date" class="form-control" id="fechatransporte" formControlName="fechatransporte" [min]="fechaMinima">
               </div>
             </div>
             <div class="col-md-6">
