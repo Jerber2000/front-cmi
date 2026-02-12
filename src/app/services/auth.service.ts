@@ -62,7 +62,7 @@ export class AuthService {
   saveAuthData(token: string, usuario: any): void {
     localStorage.setItem('token', token);
     localStorage.setItem('usuario', JSON.stringify(usuario));
-    localStorage.setItem('loginTime', Date.now().toString()); // ✅ AGREGADO
+    localStorage.setItem('loginTime', Date.now().toString()); 
   }
 
   /**
@@ -72,6 +72,9 @@ export class AuthService {
     if (response.success && response.data) {
       // Guardar datos de autenticación
       this.saveAuthData(response.data.token, response.data.usuario);
+      
+      //  Emitir cambio de usuario para que el sidebar se actualice
+      this.loadUserInfo();
       
       // Verificar si debe cambiar contraseña
       if (response.data.cambiarclave || response.cambiarclave) {
@@ -145,10 +148,10 @@ export class AuthService {
     if (token) {
       this.http.post(`${this.apiUrl}/logout`, {}).subscribe({
         next: () => {
-          console.log('Sesión cerrada en el servidor');
+          // Sesión cerrada en el servidor
         },
         error: (error: any) => {
-          console.error('Error al cerrar sesión en el servidor:', error);
+          // Error al cerrar sesión
         },
         complete: () => {
           this.clearLocalData();
@@ -165,30 +168,36 @@ export class AuthService {
   private clearLocalData(): void {
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
-    localStorage.removeItem('loginTime'); // ✅ AGREGADO
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('loginTime');
+    
+    // Limpiar estado de usuario en el BehaviorSubject
+    this.userInfoSubject.next({ name: 'Usuario', avatar: null });
     this.cambiarClaveSubject.next(false);
+    
     this.router.navigate(['/login']);
   }
 
+  /**
+   * Actualizar estado de cambio de clave
+   */
   actualizarEstadoCambioClave(): void {
     const currentUser = this.getCurrentUser();
     if (currentUser) {
       currentUser.cambiarclave = false;
-      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      localStorage.setItem('usuario', JSON.stringify(currentUser));
     }
   }
 
+  /**
+   * Cargar información del usuario desde localStorage y emitir
+   */
   loadUserInfo(): void {
-    console.log('🚀 loadUserInfo() SE ESTÁ EJECUTANDO');
     try {
       const usuarioData = localStorage.getItem('usuario');
-      console.log('=== DEBUG SIMPLE ===');
-      console.log('usuarioData raw:', usuarioData);
 
       if (usuarioData) {
         const usuario = JSON.parse(usuarioData);        
-        console.log('usuario parseado:', usuario);
-        console.log('usuario.rutafotoperfil:', usuario.rutafotoperfil);
       
         const userInfo = {
           name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim(),
@@ -199,7 +208,6 @@ export class AuthService {
         this.userInfoSubject.next(userInfo);
       } 
     } catch (error) {
-      console.error('Error al cargar información del usuario:', error);
       this.userInfoSubject.next({ name: 'Usuario', avatar: null });
     }
   }
@@ -209,8 +217,8 @@ export class AuthService {
   // ========================================
 
   /**
-  * Obtener el rol del usuario actual (ID)
-  */
+   * Obtener el rol del usuario actual (ID)
+   */
   get userRole(): number | null {
     const user = this.getCurrentUser();
     return user?.fkrol || null;

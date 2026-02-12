@@ -64,7 +64,6 @@ export class DocumentoService {
         return [];
       }),
       catchError(error => {
-        console.error('Error al obtener clínicas:', error);
         return of([]);
       })
     );
@@ -95,7 +94,6 @@ export class DocumentoService {
         return [];
       }),
       catchError(error => {
-        console.error('Error al listar documentos:', error);
         return of([]);
       })
     );
@@ -115,7 +113,6 @@ export class DocumentoService {
         return null;
       }),
       catchError(error => {
-        console.error('Error al obtener documento:', error);
         return of(null);
       })
     );
@@ -132,7 +129,6 @@ export class DocumentoService {
 
     return this.http.post<any>(this.apiUrl, formData, { headers }).pipe(
       tap(response => {
-        console.log('Documento creado:', response);
       }),
       catchError((error: HttpErrorResponse) => {
         if ((error.status === 400 || error.status === 422) && error.error) {
@@ -154,7 +150,6 @@ export class DocumentoService {
 
     return this.http.put<any>(`${this.apiUrl}/${id}`, formData, { headers }).pipe(
       tap(response => {
-        console.log('Documento actualizado:', response);
       }),
       catchError((error: HttpErrorResponse) => {
         if ((error.status === 400 || error.status === 422) && error.error) {
@@ -173,7 +168,6 @@ export class DocumentoService {
       headers: this.getHeaders()
     }).pipe(
       tap(response => {
-        console.log('Documento eliminado:', response);
       }),
       catchError((error: HttpErrorResponse) => {
         if (error.status === 400 && error.error && error.error.success === false) {
@@ -194,10 +188,8 @@ export class DocumentoService {
       { headers: this.getHeaders() }
     ).pipe(
       tap(response => {
-        console.log('Estado cambiado:', response);
       }),
       catchError(error => {
-        console.error('Error al cambiar estado:', error);
         throw error;
       })
     );

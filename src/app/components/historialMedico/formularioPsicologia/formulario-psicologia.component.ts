@@ -66,7 +66,6 @@ export class FormularioPsicologiaComponent implements OnInit {
   observacionesGenerales: string = '';
 
   ngOnInit(): void {
-    console.log('Formulario Psicología inicializado', this.pacienteInfo);
   }
 
   cerrarModal(): void {
@@ -245,7 +244,6 @@ export class FormularioPsicologiaComponent implements OnInit {
       doc.save(`Examen_Mental_${nombrePaciente}_${fechaFormato}.pdf`);
       
     } catch (error) {
-      console.error('Error generando PDF:', error);
       alert('Error al generar el PDF');
     } finally {
       this.generandoPDF = false;
@@ -348,12 +346,12 @@ export class FormularioPsicologiaComponent implements OnInit {
   }
 
   obtenerGenero(): string {
-    // ✅ Si viene del backend directamente
+    // Si viene del backend directamente
     if (this.pacienteInfo?.genero) {
       return this.pacienteInfo.genero === 'M' ? 'Masculino' : 'Femenino';
     }
     
-    // ✅ Fallback: calcular desde CUI
+    // Fallback: calcular desde CUI
     if (this.pacienteInfo?.cui) {
       const ultimoDigito = parseInt(this.pacienteInfo.cui.slice(-1));
       return ultimoDigito % 2 === 0 ? 'Femenino' : 'Masculino';

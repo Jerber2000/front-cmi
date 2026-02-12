@@ -7,7 +7,7 @@ import jsPDF from 'jspdf';
 })
 export class MembreteService {
 
-  // 🆕 Configuración para encabezado y pie de página
+  // Configuración para encabezado y pie de página
   private readonly CONFIG = {
     encabezado: {
       ruta: 'assets/img/encabezado.png',
@@ -43,7 +43,7 @@ export class MembreteService {
   }
 
   /**
-   * 🆕 Obtiene la posición Y donde debe empezar el contenido después del encabezado
+   * Obtiene la posición Y donde debe empezar el contenido después del encabezado
    */
   getYInicio(): number {
     return this.CONFIG.encabezado.margenSuperior + 
@@ -52,7 +52,7 @@ export class MembreteService {
   }
 
   /**
-   * 🆕 Obtiene la posición Y máxima donde debe terminar el contenido (antes del pie)
+   * Obtiene la posición Y máxima donde debe terminar el contenido (antes del pie)
    */
   getYMaximo(doc: jsPDF): number {
     const alturaPagina = doc.internal.pageSize.getHeight();
@@ -63,7 +63,7 @@ export class MembreteService {
   }
 
   /**
-   * 🆕 Carga ambas imágenes del membrete (con caché)
+   * Carga ambas imágenes del membrete (con caché)
    */
   async cargarMembretes(): Promise<{encabezado: string | null, piePagina: string | null}> {
     // Si ya están en caché, devolverlas
@@ -83,12 +83,10 @@ export class MembreteService {
     this.cargaEnProgreso = Promise.all([
       this.cargarImagenComoBase64(this.CONFIG.encabezado.ruta)
         .catch(err => {
-          console.warn('⚠️ No se pudo cargar el encabezado:', err);
           return null;
         }),
       this.cargarImagenComoBase64(this.CONFIG.piePagina.ruta)
         .catch(err => {
-          console.warn('⚠️ No se pudo cargar el pie de página:', err);
           return null;
         })
     ]).then(([encabezado, piePagina]) => {
@@ -102,14 +100,13 @@ export class MembreteService {
   }
 
   /**
-   * 🆕 Inserta el encabezado en el documento
+   * Inserta el encabezado en el documento
    */
   async insertarEncabezado(doc: jsPDF, encabezadoData?: string | null): Promise<void> {
     try {
       const imgData = encabezadoData || this.encabezadoCache;
       
       if (!imgData) {
-        console.warn('⚠️ No hay imagen de encabezado disponible');
         return;
       }
 
@@ -127,19 +124,17 @@ export class MembreteService {
         'FAST'
       );
     } catch (error) {
-      console.error('❌ Error al insertar encabezado:', error);
     }
   }
 
   /**
-   * 🆕 Inserta el pie de página en el documento
+   * Inserta el pie de página en el documento
    */
   async insertarPiePagina(doc: jsPDF, piePaginaData?: string | null): Promise<void> {
     try {
       const imgData = piePaginaData || this.piePaginaCache;
       
       if (!imgData) {
-        console.warn('⚠️ No hay imagen de pie de página disponible');
         return;
       }
 
@@ -162,12 +157,11 @@ export class MembreteService {
         'FAST'
       );
     } catch (error) {
-      console.error('❌ Error al insertar pie de página:', error);
     }
   }
 
   /**
-   * 🆕 Inserta encabezado y pie de página completos
+   * Inserta encabezado y pie de página completos
    */
   async insertarMembreteCompleto(
     doc: jsPDF, 
@@ -183,7 +177,7 @@ export class MembreteService {
   }
 
   /**
-   * 🆕 Verifica si se necesita una nueva página considerando ambos membretes
+   * Verifica si se necesita una nueva página considerando ambos membretes
    */
   async verificarNuevaPagina(
     yPosition: number,
@@ -214,7 +208,7 @@ export class MembreteService {
   }
 
   /**
-   * 🆕 Actualiza la configuración del encabezado
+   * Actualiza la configuración del encabezado
    */
   actualizarConfiguracionEncabezado(config: Partial<typeof this.CONFIG.encabezado>): void {
     Object.assign(this.CONFIG.encabezado, config);
@@ -224,7 +218,7 @@ export class MembreteService {
   }
 
   /**
-   * 🆕 Actualiza la configuración del pie de página
+   * Actualiza la configuración del pie de página
    */
   actualizarConfiguracionPiePagina(config: Partial<typeof this.CONFIG.piePagina>): void {
     Object.assign(this.CONFIG.piePagina, config);
@@ -234,7 +228,7 @@ export class MembreteService {
   }
 
   /**
-   * 🆕 Actualiza ambas rutas de imágenes
+   * Actualiza ambas rutas de imágenes
    */
   actualizarRutas(encabezado: string, piePagina: string): void {
     this.CONFIG.encabezado.ruta = encabezado;
@@ -284,14 +278,13 @@ export class MembreteService {
   }
 
   // ==========================================
-  // 🆕 MÉTODOS DE COMPATIBILIDAD (deprecated)
+  // MÉTODOS DE COMPATIBILIDAD (deprecated)
   // ==========================================
 
   /**
    * @deprecated Usar cargarMembretes() en su lugar
    */
   async cargarMembrete(): Promise<string | null> {
-    console.warn('⚠️ cargarMembrete() está deprecated. Usar cargarMembretes() para obtener encabezado y pie.');
     const membretes = await this.cargarMembretes();
     return membretes.encabezado;
   }
@@ -300,7 +293,6 @@ export class MembreteService {
    * @deprecated Usar insertarMembreteCompleto() en su lugar
    */
   async insertarMembrete(doc: jsPDF, membreteData?: string | null): Promise<void> {
-    console.warn('⚠️ insertarMembrete() está deprecated. Usar insertarEncabezado() o insertarMembreteCompleto().');
     await this.insertarEncabezado(doc, membreteData);
   }
 }

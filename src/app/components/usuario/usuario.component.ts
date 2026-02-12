@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms'; 
@@ -9,6 +9,8 @@ import { FormatoTelefonicoDirective } from '../../directives/numeroFormato';
 import { formatoInputDirective } from '../../directives/formatoInput';
 import { ArchivoService } from '../../services/archivo.service';
 import { AuthService } from '../../services/auth.service';
+import { PerfilService } from '../../services/perfil.service';
+import { Subscription } from 'rxjs';
 
 // Extender la interface User para incluir los nuevos campos
 export interface ExtendedUser extends Usuario {
@@ -25,7 +27,7 @@ export interface ExtendedUser extends Usuario {
   templateUrl: './usuario.component.html',
   styleUrls: ['./usuario.component.css']
 })
-export class UsuarioComponent implements OnInit, AfterViewInit {
+export class UsuarioComponent implements OnInit, AfterViewInit, OnDestroy {
   currentView: 'list' | 'form' | 'detail' = 'list';
   users: ExtendedUser[] = [];
   filteredUsers: ExtendedUser[] = [];
@@ -59,13 +61,15 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
   showConfirmPassword = false;
 
   private currentUserId: string = '1';
+  private perfilSubscription?: Subscription;
 
   constructor(
     private UsuarioService: UsuarioService,
     private fb: FormBuilder,
     private alerta: AlertaService,
     private archivoService: ArchivoService,
-    private authService: AuthService
+    private authService: AuthService,
+    private perfilService: PerfilService
   ) {
     this.userForm = this.fb.group({
       nombres: ['', [Validators.required]],
@@ -113,7 +117,6 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
         }
       }
     } catch (error) {
-      console.error('Error al obtener el ID del usuario desde localStorage:', error);
     }
     
     // Valor por defecto si no se puede obtener
@@ -157,7 +160,6 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
     return rol ? rol.nombre : 'Sin rol';
   }
 
-  
   private getFieldDisplayName(fieldName: string): string {
     const fieldNames: { [key: string]: string } = {
       'nombres': 'Nombres',
@@ -218,7 +220,24 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.currentUserId = this.getCurrentUserId();
-    this.loadUserInfo();
+    
+    // Suscribirse al perfil para que el sidebar se actualice reactivamente
+    this.perfilSubscription = this.perfilService.perfil$.subscribe({
+      next: (usuario) => {
+        if (usuario) {
+          this.userInfo = this.perfilService.obtenerInfoSidebar();
+        }
+      },
+      error: (error) => {
+      }
+    });
+    
+    // Cargar el perfil desde el backend para inicializar
+    this.perfilService.obtenerPerfilDesdeBackend().subscribe({
+      error: (error) => {
+      }
+    });
+    
     this.loadUsers();
     this.loadRoles();
     this.cargarClinicas();
@@ -226,6 +245,10 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit(): void {
     this.detectSidebarState();
+  }
+
+  ngOnDestroy(): void {
+    this.perfilSubscription?.unsubscribe();
   }
 
   detectSidebarState(): void {
@@ -264,7 +287,6 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
         };
       } 
     } catch (error) {
-      console.error('Error al cargar información del usuario:', error);
     }
   }
 
@@ -274,7 +296,6 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
         this.roles = roles; // Tu service ya maneja la extracción de .data
       },
       error: (error) => {
-        console.error('Error loading roles:', error);
         this.alerta.alertaError('Error al cargar los roles');
       }
     });
@@ -286,7 +307,6 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
         this.clinicas = clinicas;
       },
       error: (error) => {
-        console.log('Error al cargar clinicas: ', error);
         this.alerta.alertaError('Error al cargar las clinicas');
       }
     });
@@ -469,19 +489,15 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
         const date = new Date(dateString + 'T00:00:00.000Z');
         
         if (isNaN(date.getTime())) {
-          console.error('Fecha inválida:', dateString);
           return '';
         }
         
         // Devolver en formato ISO para Prisma
         return date.toISOString();
       }
-      
-      console.error('Formato de fecha no reconocido:', dateString);
       return '';
       
     } catch (error) {
-      console.error('Error procesando fecha:', error);
       return '';
     }
   }
@@ -582,7 +598,6 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
         this.loading = false;
       },
       error: (error) => {
-        console.error('Error loading users:', error);
         this.loading = false;
       }
     });
@@ -608,8 +623,6 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
           this.alerta.alertaExito('Usuario eliminado correctamente');
         },
         error: (error) => {
-          console.error('Error no manejado al eliminar:', error);
-          
           let mensajeError = '';
           
           // Verificar si el error tiene la estructura de respuesta del backend
@@ -702,24 +715,22 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
       
       try {
         // ========================================================================
-        // ✅ MANEJO DE FOTO - Backend elimina automáticamente la anterior
+        //  MANEJO DE FOTO - Backend elimina automáticamente la anterior
         // ========================================================================
         let rutaFoto = '';
         
         if (this.selectedPhoto) {
           const usuarioId = this.selectedUser?.idusuario || 0;
           
-          // ✅ Enviar ruta anterior (si existe) para que el backend la elimine
+          //  Enviar ruta anterior (si existe) para que el backend la elimine
           const rutaAnterior = this.selectedUser?.rutafotoperfil || '';
           
           rutaFoto = await this.archivoService.subirFoto(
             'usuarios',
             usuarioId,
             this.selectedPhoto,
-            rutaAnterior  // ✅ Backend eliminará esta si viene
+            rutaAnterior  
           );
-          
-          console.log('✅ Foto subida:', rutaFoto);
         }
 
         const currentUserId = this.getCurrentUserId();
@@ -779,8 +790,6 @@ export class UsuarioComponent implements OnInit, AfterViewInit {
           },
           error: (error) => {
             this.loading = false;
-            console.error('Error al procesar usuario:', error);
-            
             let mensajeError = '';
             
             // 1. Verificar si el error tiene la estructura de respuesta del backend

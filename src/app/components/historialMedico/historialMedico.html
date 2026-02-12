@@ -1,4 +1,4 @@
-<!-- historialMedico.html - TEMPLATE ACTUALIZADO -->
+<!-- historialMedico.html -->
 <div class="content-area" [class.sidebar-expanded]="sidebarExpanded">
   <app-sidebar [userInfo]="userInfo"></app-sidebar>
   
@@ -15,10 +15,10 @@
     </header>
   </div>
 
-  <!-- ✅ INFORMACIÓN DEL PACIENTE CON FOTO -->
+  <!-- INFORMACIÓN DEL PACIENTE CON FOTO -->
   <div class="patient-info-card" *ngIf="infoPaciente">
     <div class="patient-card-header">
-      <!-- ✅ CAMBIO: Avatar con foto del paciente -->
+      <!-- CAMBIO: Avatar con foto del paciente -->
       <div class="patient-avatar">
         <div class="avatar-circle">
           <img 
@@ -51,7 +51,7 @@
   <!-- VISTA HISTORIAL -->
   <div class="main-card" *ngIf="currentView === 'historial'">
     
-    <!-- ✅ NUEVO: FILTRO POR CLÍNICA -->
+    <!-- FILTRO POR CLÍNICA -->
     <div class="filtros-container">
       <div class="filtro-clinica">
         <label for="filtro-clinica">Filtrar por clínica:</label>
@@ -76,7 +76,7 @@
         <button *appHasRole="[1,4,10,11]" class="btn-formulario-psicologia" (click)="abrirFormularioPsicologia()">
           <i class="fas fa-brain"></i> Examen Mental 
         </button>
-        <!-- ✅ NUEVO BOTÓN CREAR REFERIDO -->
+        <!--BOTÓN CREAR REFERIDO -->
         <button class="btn-crear-referido" (click)="abrirModalReferido()">
           <i class="fas fa-share"></i> Crear Referido
         </button>
@@ -112,7 +112,7 @@
             Dr. {{ sesion.usuario.nombres }} {{ sesion.usuario.apellidos }}
           </div>
           <span class="badge-clinica" *ngIf="sesion.clinica">
-            🏥 {{ sesion.clinica.nombreclinica }}
+             {{ sesion.clinica.nombreclinica }}
           </span>
         </div>
         <div class="sesion-status">
@@ -198,7 +198,7 @@
     </div>
   </div>
 
-  <!-- ✅ MODAL NUEVA SESIÓN CON ARCHIVOS MEJORADO -->
+  <!-- MODAL  SESIÓN CON ARCHIVOS MEJORADO -->
   <div class="modal-backdrop" *ngIf="currentView === 'nueva-sesion'" (click)="mostrarHistorial()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       
@@ -266,7 +266,7 @@
             ></textarea>
           </div>
 
-          <!-- ✅ SECCIÓN DE ARCHIVOS MEJORADA -->
+          <!-- SECCIÓN DE ARCHIVOS MEJORADA -->
           <div class="files-section">
             <h4><i class="fas fa-paperclip"></i> Archivos Adjuntos (Opcional)</h4>
             <div class="file-upload-area">
@@ -338,7 +338,7 @@
     </div>
   </div>
 
-  <!-- ✅ MODAL EDITAR SESIÓN (DIAGNÓSTICO) CON ARCHIVOS -->
+  <!-- MODAL EDITAR SESIÓN (DIAGNÓSTICO) CON ARCHIVOS -->
   <div class="modal-backdrop" *ngIf="currentView === 'diagnostico'" (click)="mostrarHistorial()">
     <div class="modal-content modal-diagnostico" (click)="$event.stopPropagation()">
       
@@ -442,7 +442,7 @@
             </div>
           </div>
 
-          <!-- ✅ SECCIÓN DE ARCHIVOS PARA DIAGNÓSTICO -->
+          <!-- SECCIÓN DE ARCHIVOS PARA DIAGNÓSTICO -->
           <div class="files-section">
             <h4><i class="fas fa-paperclip"></i>Reemplazar Archivo</h4>
             <div class="file-upload-area">
@@ -516,7 +516,7 @@
 </div>
 
 
-  <!-- ✅ MODAL REFERIDOS -->
+  <!--MODAL REFERIDOS -->
   <app-referidos 
     *ngIf="pacienteParaReferir && router.url !== '/referidos'"
     [pacienteExterno]="pacienteParaReferir"

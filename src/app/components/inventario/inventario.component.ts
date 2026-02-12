@@ -1,6 +1,8 @@
 // src/app/components/inventario/inventario.component.ts
-import { Component, OnInit, AfterViewInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PerfilService } from '../../services/perfil.service';
+import { Subscription } from 'rxjs';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { 
@@ -20,7 +22,8 @@ import { AlertaService } from '../../services/alerta.service';
   templateUrl: './inventario.component.html',
   styleUrls: ['./inventario.component.scss']
 })
-export class InventarioComponent implements OnInit, AfterViewInit {
+export class InventarioComponent implements OnInit, AfterViewInit, OnDestroy {
+  private perfilSubscription?: Subscription;
   sidebarExpanded = true;
   loading = false;
   guardando = false;
@@ -61,7 +64,8 @@ export class InventarioComponent implements OnInit, AfterViewInit {
     private fb: FormBuilder,
     public inventarioService: InventarioService,
     private alerta: AlertaService,
-    private archivoService: ArchivoService
+    private archivoService: ArchivoService,
+    private perfilService: PerfilService
   ) {
     this.medicamentoForm = this.fb.group({
       codigoproducto: ['', [Validators.maxLength(50)]],
@@ -76,12 +80,32 @@ export class InventarioComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    this.loadUserInfo();
+    this.perfilSubscription = this.perfilService.perfil$.subscribe({
+      next: (usuario) => {
+        if (usuario) {
+          this.userInfo = this.perfilService.obtenerInfoSidebar();
+        }
+      },
+      error: (error) => {
+        console.error('Error en perfil subscription:', error);
+      }
+    });
+
+    this.perfilService.obtenerPerfilDesdeBackend().subscribe({
+      error: (error) => {
+        console.error('Error al cargar perfil desde backend:', error);
+      }
+    });
+
     this.cargarMedicamentos();
   }
 
   ngAfterViewInit(): void {
     this.detectSidebarState();
+  }
+
+  ngOnDestroy(): void {
+    this.perfilSubscription?.unsubscribe();
   }
 
   loadUserInfo(): void {
@@ -296,7 +320,7 @@ export class InventarioComponent implements OnInit, AfterViewInit {
     this.medicamentoSeleccionado = medicamento;
     
     this.medicamentoForm.patchValue({
-      codigoproducto: medicamento.codigoproducto || '', // ← AGREGAR
+      codigoproducto: medicamento.codigoproducto || '', 
       nombre: medicamento.nombre,
       descripcion: medicamento.descripcion,
       unidades: medicamento.unidades,
@@ -325,7 +349,7 @@ export class InventarioComponent implements OnInit, AfterViewInit {
     this.guardando = true;
     
     const datos: ActualizarMedicamentoRequest = {
-      codigoproducto: this.medicamentoForm.value.codigoproducto || undefined, // ← AGREGAR
+      codigoproducto: this.medicamentoForm.value.codigoproducto || undefined, 
       nombre: this.medicamentoForm.value.nombre,
       descripcion: this.medicamentoForm.value.descripcion,
       unidades: this.medicamentoForm.value.unidades,

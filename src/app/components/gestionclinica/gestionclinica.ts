@@ -91,7 +91,7 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
   // ============================================================================
 
   /**
-   * ✅ Cargar info del usuario desde localStorage
+   * Cargar info del usuario desde localStorage
    */
   cargarUsuario(): void {
     try {
@@ -107,23 +107,16 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
           rol: usuario.fkrol || 1,
           clinica: usuario.fkclinica || 0
         };
-        
-        console.log('👤 Usuario cargado:', {
-          nombre: this.userInfo.name,
-          rol: this.userInfo.rol,
-          clinica: this.userInfo.clinica
-        });
       }
     } catch (error) {
-      console.error('Error al cargar usuario:', error);
     }
   }
 
   /**
-   * ✅ Cargar y filtrar módulos según el rol
+   * Cargar y filtrar módulos según el rol
    */
   cargarModulos(): void {
-    // ✅ TODOS LOS MÓDULOS DEL SISTEMA
+    // TODOS LOS MÓDULOS DEL SISTEMA
     const todosLosModulos: Modulo[] = [
       {
         id: 'pacientes',
@@ -182,7 +175,7 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
         ruta: '/inventario',
         descripcion: 'Control de inventario',
         color: 'settings',
-        roles: [1,4,7,9],  // ✅ Solo Admin, Sistemas, Auxiliar Admin, Farmacia
+        roles: [1,4,7,9],  // Solo Admin, Sistemas, Auxiliar Admin, Farmacia
         activo: true
       },
       {
@@ -212,30 +205,28 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
         ruta: '/usuario',
         descripcion: 'Gestión de usuarios',
         color: 'stats',
-        roles: [1,4,7],  // ✅ Solo Admin, Sistemas, Auxiliar Admin
+        roles: [1,4,7],  // Solo Admin, Sistemas, Auxiliar Admin
         activo: true
       }
     ];
 
     this.modulos = todosLosModulos;
     
-    // ✅ FILTRAR MÓDULOS POR ROL DEL USUARIO
+    // FILTRAR MÓDULOS POR ROL DEL USUARIO
     this.filtrarModulosPorRol();
   }
 
   /**
-   * ✅ Filtrar módulos según el rol del usuario
+   * Filtrar módulos según el rol del usuario
    */
   filtrarModulosPorRol(): void {
     this.modulosFiltrados = this.modulos.filter(modulo => 
       modulo.activo && modulo.roles.includes(this.userInfo.rol)
     );
-    
-    console.log('📋 Módulos filtrados:', this.modulosFiltrados.length);
   }
 
   /**
-   * ✅ Cargar estadísticas (puedes conectar al backend después)
+   * Cargar estadísticas (puedes conectar al backend después)
    */
   cargarEstadisticas(): void {
     this.estadisticas = [
@@ -271,34 +262,30 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
   // ============================================================================
 
   /**
-   * ✅ Navegar a un módulo con validación
+   * Navegar a un módulo con validación
    */
   navegarA(modulo: Modulo): void {
     if (!modulo.activo) {
-      console.warn('⚠️ Módulo desactivado');
       return;
     }
     
-    // ✅ VALIDAR ACCESO
     if (!this.tieneAcceso(modulo)) {
-      console.error('❌ Acceso denegado');
       alert('No tienes permisos para acceder a este módulo');
       return;
     }
     
-    console.log('📍 Navegando a:', modulo.ruta);
     this.router.navigate([modulo.ruta]);
   }
 
   /**
-   * ✅ Verificar si el usuario tiene acceso al módulo
+   * Verificar si el usuario tiene acceso al módulo
    */
   tieneAcceso(modulo: Modulo): boolean {
     return modulo.roles.includes(this.userInfo.rol);
   }
 
   /**
-   * ✅ Handle sidebar toggle
+   * Handle sidebar toggle
    */
   onSidebarToggle(event: any): void {
     this.sidebarExpanded = event;
@@ -322,7 +309,7 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   /**
-   * ✅ Track by para ngFor
+   * Track by para ngFor
    */
   trackByModuloId(index: number, modulo: Modulo): string {
     return modulo.id;
@@ -333,7 +320,7 @@ export class GestionClinicaComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   /**
-   * ✅ Dividir módulos en filas de 4
+   * Dividir módulos en filas de 4
    */
   get filasModulos(): Modulo[][] {
     const filas: Modulo[][] = [];

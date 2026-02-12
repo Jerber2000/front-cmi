@@ -108,13 +108,9 @@ private initializeComponent(): void {
     }
   });
   
-  // SIEMPRE cargar desde el backend (no importa si hay datos en localStorage)
   this.cargarDesdeBackend();
 }
 
-/**
- * Carga el perfil desde el backend - ÚNICA FUENTE DE DATOS
- */
 private cargarDesdeBackend(): void {
   this.perfilService.obtenerPerfilDesdeBackend().subscribe({
     next: (usuario) => {

@@ -42,7 +42,6 @@ export class LoginComponent {
     this.showPassword = !this.showPassword;
   }
 
-  // ✅ AGREGAR estos métodos
   showNotification(type: 'success' | 'error' | 'info', message: string) {
     this.notification = { type, message, show: true };
     setTimeout(() => {
@@ -91,12 +90,9 @@ export class LoginComponent {
         }
       },
       error: (err) => {
-        // ✅ MANEJO ESPECIAL PARA SESIÓN ACTIVA
         if (err.status === 409 && err.error?.sessionActiva) {
-          // Mensaje con sugerencia de usar "Olvidé mi contraseña"
-          const mensajeCompleto = err.error.message + 
-            '\n\n💡 Sugerencia: Usa "Olvidé mi contraseña" para cerrar todas las sesiones y recuperar el acceso.';
-          this.showNotification('error', mensajeCompleto);
+          // Mostrar solo el mensaje del backend
+          this.showNotification('error', err.error.message);
         } else if (err.error?.message) {
           this.showNotification('error', err.error.message);
         } else {

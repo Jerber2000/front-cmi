@@ -435,7 +435,6 @@ export class GestionClinicaService {
    */
   navigateToModule(route: string): void {
     if (!route) {
-      console.warn('Ruta no válida');
       return;
     }
 

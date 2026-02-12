@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { 
@@ -15,6 +15,8 @@ import {
   CrearSesionRequest,
   ActualizarSesionRequest 
 } from '../../services/historialMedico.service';
+import { AuthService } from '../../services/auth.service';
+import { PerfilService } from '../../services/perfil.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AlertaService } from '../../services/alerta.service';
 import { ArchivoService } from '../../services/archivo.service';
@@ -61,6 +63,7 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
   
   fotoPacienteUrl: string | null = null;
   archivosExistentes: any[] = [];
+  private perfilSubscription?: Subscription;
 
   constructor(
     private fb: FormBuilder,
@@ -69,7 +72,9 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
     public historialService: HistorialMedicoService,
     public archivoService: ArchivoService,
     private alerta: AlertaService,
-    private http: HttpClient
+    private http: HttpClient,
+    private authService: AuthService,
+    private perfilService: PerfilService
   ) {
     this.sesionForm = this.fb.group({
       motivoconsulta: ['', [Validators.required, Validators.minLength(10)]],
@@ -86,28 +91,24 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   // ============================================================================
-  // ✅ MÉTODO CORREGIDO - abrirModalReferido CON VALIDACIÓN ROBUSTA
+  //  abrirModalReferido CON VALIDACIÓN ROBUSTA
   // ============================================================================
   
   abrirModalReferido(): void {
-    console.log('🔵 === ABRIENDO MODAL REFERIDO ===');
-    console.log('📋 infoPaciente completo:', this.infoPaciente);
-    
+
     if (!this.infoPaciente) {
       this.alerta.alertaError('No se encontró información del paciente');
       return;
     }
 
-    // ✅ VALIDACIÓN ESTRICTA de expedientes
+    // VALIDACIÓN ESTRICTA de expedientes
     const expedientes = this.infoPaciente.expedientes || [];
-    console.log('📁 Expedientes originales:', expedientes);
-
     if (!expedientes || expedientes.length === 0) {
       this.alerta.alertaError('Este paciente no tiene expedientes disponibles para crear un referido');
       return;
     }
 
-    // ✅ FORMATEO ROBUSTO con type safety
+    // FORMATEO ROBUSTO con type safety
     const expedientesFormateados: ExpedienteInfo[] = expedientes.map(exp => {
       // Acceso seguro con any solo para mayúsculas de SQL Server
       const expAny = exp as any;
@@ -119,24 +120,17 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
         fkclinica: exp.fkclinica || expAny.FKCLINICA || this.infoPaciente!.fkclinica || 0,
         fechaapertura: exp.fechaapertura || expAny.FECHAAPERTURA || new Date().toISOString().split('T')[0]
       };
-
-      console.log('📝 Expediente formateado:', expedienteFormateado);
-      
       return expedienteFormateado;
     });
 
-    // ✅ VALIDAR que al menos un expediente tiene ID válido
+    // VALIDAR que al menos un expediente tiene ID válido
     const expedientesValidos = expedientesFormateados.filter(exp => exp.idexpediente > 0);
     
     if (expedientesValidos.length === 0) {
-      console.error('❌ No se encontraron expedientes con ID válido');
       this.alerta.alertaError('Error: No se pudo obtener el ID del expediente. Contacte al administrador.');
       return;
     }
-
-    console.log('✅ Expedientes válidos:', expedientesValidos);
-
-    // ✅ CONSTRUIR objeto paciente para referir
+    // CONSTRUIR objeto paciente para referir
     this.pacienteParaReferir = {
       idpaciente: this.infoPaciente.idpaciente,
       nombres: this.infoPaciente.nombres,
@@ -150,11 +144,9 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
       expedientes: expedientesValidos as any[]
     };
 
-    console.log('🎯 Paciente para referir (final):', this.pacienteParaReferir);
-    console.log('✅ Modal de referido abierto correctamente');
   }
 
-  // ✅ RESTO DE MÉTODOS DEL COMPONENTE (sin cambios)
+  // RESTO DE MÉTODOS DEL COMPONENTE (sin cambios)
   
   async eliminarArchivoExistente(archivo: any): Promise<void> {
     if (!this.sesionActual) {
@@ -191,7 +183,6 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
       this.alerta.alertaExito('Archivo eliminado correctamente');
 
     } catch (error: any) {
-      console.error('❌ Error eliminando archivo:', error);
       this.alerta.alertaError(error.message || 'Error al eliminar archivo');
     } finally {
       this.loading = false;
@@ -243,9 +234,24 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
     return this.archivoService.formatearTamaño(size);
   }
 
-  
   ngOnInit(): void {
-    this.loadUserInfo();
+    // Suscribirse al perfil para que el sidebar se actualice reactivamente
+    this.perfilSubscription = this.perfilService.perfil$.subscribe({
+      next: (usuario) => {
+        if (usuario) {
+          this.userInfo = this.perfilService.obtenerInfoSidebar();
+        }
+      },
+      error: (error) => {
+      }
+    });
+
+    // Cargar el perfil desde el backend para inicializar
+    this.perfilService.obtenerPerfilDesdeBackend().subscribe({
+      error: (error) => {
+      }
+    });
+
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
       if (id) {
@@ -253,7 +259,29 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
         this.cargarDatosPaciente();
       }
     });
-    this.cargarClinicas(); 
+    this.cargarClinicas();
+    this.establecerFiltroClinicaDefecto();
+  }
+
+  /**
+   * Establece el filtro de clínica por defecto según el rol del usuario
+   * - Admin (1) y Sistemas (4): Ver todas las clínicas
+   * - Otros: Filtrar por su clínica asignada
+   */
+  private establecerFiltroClinicaDefecto(): void {
+    const userRole = this.authService.userRole;
+    const user = this.authService.getCurrentUser();
+
+    // Si es Admin (1) o Sistemas (4), mostrar todas las clínicas
+    if (userRole === 1 || userRole === 4) {
+      this.clinicaSeleccionada = 0;
+      return;
+    }
+
+    // Para otros roles, filtrar por su clínica asignada
+    if (user?.fkclinica) {
+      this.clinicaSeleccionada = user.fkclinica;
+    }
   }
 
   cargarClinicas(): void {
@@ -264,7 +292,6 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
         }
       },
       error: (error) => {
-        console.error('Error cargando clínicas:', error);
       }
     });
   }
@@ -285,7 +312,6 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
         };
       }
     } catch (error) {
-      console.error('Error al cargar información del usuario:', error);
     }
   }
 
@@ -311,11 +337,10 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   // ============================================================================
-  // ✅ MÉTODO MEJORADO - cargarDatosPaciente CON TYPE SAFETY
+  // MÉTODO MEJORADO - cargarDatosPaciente CON TYPE SAFETY
   // ============================================================================
   
   cargarDatosPaciente(): void {
-    console.log('🔵 === CARGANDO DATOS DEL PACIENTE ===');
     this.loading = true;
     
     const datosPacienteStr = sessionStorage.getItem('datosPacienteHistorial');
@@ -323,11 +348,8 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
     if (datosPacienteStr) {
       try {
         const datosFromPacientes = JSON.parse(datosPacienteStr);
-        
-        console.log('📦 Datos desde sessionStorage:', datosFromPacientes);
-        console.log('📋 Expedientes originales:', datosFromPacientes.expedientes);
-        
-        // ✅ FORMATEAR expedientes con type safety
+
+        // FORMATEAR expedientes con type safety
         const expedientesFormateados: ExpedienteInfo[] = (datosFromPacientes.expedientes || []).map((exp: any): ExpedienteInfo => {
           return {
             idexpediente: exp.idexpediente || exp.IDEXPEDIENTE || 0,
@@ -337,9 +359,6 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
             fechaapertura: exp.fechaapertura || exp.FECHAAPERTURA || new Date().toISOString().split('T')[0]
           };
         });
-
-        console.log('✅ Expedientes formateados:', expedientesFormateados);
-        
         this.infoPaciente = {
           idpaciente: datosFromPacientes.idpaciente,
           nombres: datosFromPacientes.nombres,
@@ -350,9 +369,6 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
           fechanacimiento: datosFromPacientes.fechanacimiento,
           expedientes: expedientesFormateados
         };
-        
-        console.log('✅ infoPaciente configurado:', this.infoPaciente);
-        
         if (datosFromPacientes.rutafotoperfil) {
           this.fotoPacienteUrl = this.archivoService.obtenerUrlPublica(datosFromPacientes.rutafotoperfil);
         }
@@ -362,17 +378,13 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
         return;
         
       } catch (error) {
-        console.error('❌ Error parseando datos del paciente:', error);
       }
     }
     
     // Fallback: cargar del backend
-    console.log('⚠️ No hay datos en sessionStorage, cargando del backend...');
     this.historialService.obtenerInfoPaciente(this.idPaciente).subscribe({
       next: (info: InfoPaciente) => {
-        console.log('✅ Datos del backend:', info);
-        
-        // ✅ VALIDAR Y FORMATEAR expedientes del backend también
+        // VALIDAR Y FORMATEAR expedientes del backend también
         if (info.expedientes && info.expedientes.length > 0) {
           info.expedientes = info.expedientes.map((exp: any): ExpedienteInfo => ({
             idexpediente: exp.idexpediente || exp.IDEXPEDIENTE || 0,
@@ -384,8 +396,6 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
         }
         
         this.infoPaciente = info;
-        console.log('✅ infoPaciente desde backend:', this.infoPaciente);
-        
         if (info.rutafotoperfil) {
           this.fotoPacienteUrl = this.archivoService.obtenerUrlPublica(info.rutafotoperfil);
         }
@@ -393,7 +403,6 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
         this.cargarHistorial();
       },
       error: (error: any) => {
-        console.error('❌ Error cargando info del paciente del backend:', error);
         this.loading = false;
         this.alerta.alertaError('Error al cargar información del paciente');
       }
@@ -401,7 +410,7 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   // ============================================================================
-  // ✅ RESTO DE MÉTODOS SIN CAMBIOS
+  // RESTO DE MÉTODOS SIN CAMBIOS
   // ============================================================================
 
   cargarHistorial(): void {
@@ -412,7 +421,6 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
         this.loading = false;
       },
       error: (error: any) => {
-        console.error('Error cargando historial:', error);
         this.loading = false;
         this.alerta.alertaError('Error al cargar el historial médico');
       }
@@ -571,7 +579,6 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
         this.mostrarHistorial();
         
       } catch (error: any) {
-        console.error('Error creando sesión:', error);
         this.alerta.alertaError(error?.error?.message || 'Error al crear la sesión');
       } finally {
         this.loading = false;
@@ -701,7 +708,6 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
         this.mostrarHistorial();
         
       } catch (error: any) {
-        console.error('Error actualizando sesión:', error);
         this.alerta.alertaError(error?.error?.message || 'Error al actualizar la sesión');
       } finally {
         this.loading = false;
@@ -782,7 +788,6 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
       }
       
     } catch (error) {
-      console.error('Error cargando archivos existentes:', error);
       this.archivosExistentes = [];
       this.alerta.alertaError('Error al cargar archivos de la sesión');
     }
@@ -828,7 +833,6 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
             this.cargarHistorial();
           },
           error: (error: any) => {
-            console.error('Error eliminando sesión:', error);
             this.loading = false;
             
             let mensaje = 'Error al eliminar sesión';
@@ -866,5 +870,6 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
 
   ngOnDestroy(): void {
     sessionStorage.removeItem('datosPacienteHistorial');
+    this.perfilSubscription?.unsubscribe();
   }
 }

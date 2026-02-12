@@ -8,14 +8,15 @@ import { ServicioPaciente, Paciente, RespuestaPaciente, Clinica } from '../../se
 import { ServicioExpediente } from '../../services/expediente.service'; 
 import { ArchivoService } from '../../services/archivo.service';
 import { AlertaService } from '../../services/alerta.service';
+import { AuthService } from '../../services/auth.service';
+import { PerfilService } from '../../services/perfil.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
-import { Subject } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { ExpedienteListaComponent } from '../expediente/expediente';
 import { HostListener } from '@angular/core';
 
-
-// ✅ AGREGAR LA DIRECTIVA DE TELÉFONO
+// AGREGAR LA DIRECTIVA DE TELÉFONO
 import { FormatoTelefonicoDirective } from '../../directives/numeroFormato';
 
 // Interfaz para la información del usuario
@@ -36,7 +37,7 @@ export interface InformacionUsuario {
     FormsModule, 
     SidebarComponent,
     ExpedienteListaComponent,
-    FormatoTelefonicoDirective  // ✅ AGREGAR AQUÍ
+    FormatoTelefonicoDirective  
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './paciente-list.component.html',
@@ -46,7 +47,7 @@ export class PacienteListaComponent implements OnInit, AfterViewInit, OnDestroy 
   
   @ViewChild(ExpedienteListaComponent) componenteExpediente!: ExpedienteListaComponent;
   private destruir$ = new Subject<void>();
-
+  private perfilSubscription?: Subscription;
 
 @HostListener('document:keydown.escape', ['$event'])
 onEscapeKey(event: Event): void {
@@ -99,11 +100,9 @@ onEscapeKey(event: Event): void {
   fotoEncargadoSeleccionada: string | null = null;
   cartaSeleccionada: string | null = null;
   esCartaPDF = false;
-  
 
   modalAccionesAbierto = false;
   pacienteSeleccionadoAcciones: Paciente | null = null;
-
 
 abrirModalAcciones(paciente: Paciente, index: number): void {
   this.pacienteSeleccionadoAcciones = paciente;
@@ -124,7 +123,6 @@ obtenerIniciales(nombres?: string, apellidos?: string): string {
   return inicial1 + inicial2 || '??';
 }
 
-  
   // Búsqueda y paginación
   terminoBusqueda = '';
   private sujetoBusqueda = new Subject<string>();
@@ -147,30 +145,68 @@ obtenerIniciales(nombres?: string, apellidos?: string): string {
     private servicioExpediente: ServicioExpediente,
     private fb: FormBuilder,
     private servicioAlerta: AlertaService,
-    public archivoService: ArchivoService,  // ✅ HACER PÚBLICO PARA EL HTML
-    private router: Router
+    public archivoService: ArchivoService,  
+    private router: Router,
+    private authService: AuthService,
+    private perfilService: PerfilService
   ) {
     this.formularioPaciente = this.crearFormulario();
     this.configurarBusqueda();
   }
 
   ngOnInit(): void {
-    this.cargarInformacionUsuario();
-    this.cargarClinicas(); 
+    // Suscribirse al perfil para que el sidebar se actualice reactivamente
+    this.perfilSubscription = this.perfilService.perfil$.subscribe({
+      next: (usuario) => {
+        if (usuario) {
+          this.informacionUsuario = this.perfilService.obtenerInfoSidebar();
+        }
+      },
+      error: (error) => {
+      }
+    });
+
+    // Cargar el perfil desde el backend para inicializar
+    this.perfilService.obtenerPerfilDesdeBackend().subscribe({
+      error: (error) => {
+      }
+    });
+
+    this.cargarClinicas();
+    this.establecerFiltroClinicaDefecto();
     this.cargarPacientes();
   }
 
   /**
-   * ✅ NUEVO: Carga lista de clínicas para el filtro
+   * Establece el filtro de clínica por defecto según el rol del usuario
+   * - Admin (1) y Sistemas (4): Ver todas las clínicas
+   * - Otros: Filtrar por su clínica asignada
+   */
+  private establecerFiltroClinicaDefecto(): void {
+    const userRole = this.authService.userRole;
+    const user = this.authService.getCurrentUser();
+
+    // Si es Admin (1) o Sistemas (4), mostrar todas las clínicas
+    if (userRole === 1 || userRole === 4) {
+      this.clinicaSeleccionada = 0;
+      return;
+    }
+
+    // Para otros roles, filtrar por su clínica asignada
+    if (user?.fkclinica) {
+      this.clinicaSeleccionada = user.fkclinica;
+    }
+  }
+
+  /**
+   * Carga lista de clínicas para el filtro
    */
   cargarClinicas(): void {
     this.servicioUsuario.obtenerClinicas().subscribe({
       next: (clinicas) => {
         this.clinicas = clinicas;
-        console.log('Clínicas cargadas:', clinicas);
       },
       error: (error) => {
-        console.error('Error al cargar clínicas:', error);
       }
     });
   }
@@ -182,14 +218,15 @@ obtenerIniciales(nombres?: string, apellidos?: string): string {
   ngOnDestroy(): void {
     this.destruir$.next();
     this.destruir$.complete();
+    this.perfilSubscription?.unsubscribe();
   }
 
   // ==========================================
-  // ✅ MÉTODOS PARA EL HTML (ARCHIVOS Y UTILIDADES)
+  // MÉTODOS PARA EL HTML (ARCHIVOS Y UTILIDADES)
   // ==========================================
 
   /**
-   * ✅ Verifica si es archivo PDF
+   * Verifica si es archivo PDF
    */
   esArchivoPDF(rutaArchivo: string): boolean {
     if (!rutaArchivo) return false;
@@ -198,7 +235,7 @@ obtenerIniciales(nombres?: string, apellidos?: string): string {
   }
 
   /**
-   * ✅ Verifica si es archivo de imagen
+   * Verifica si es archivo de imagen
    */
   esArchivoImagen(rutaArchivo: string): boolean {
     if (!rutaArchivo) return false;
@@ -207,7 +244,7 @@ obtenerIniciales(nombres?: string, apellidos?: string): string {
   }
 
   /**
-   * ✅ Obtiene el nombre del archivo
+   * Obtiene el nombre del archivo
    */
   obtenerNombreArchivo(rutaArchivo: string): string {
     if (!rutaArchivo) return 'Archivo';
@@ -215,7 +252,7 @@ obtenerIniciales(nombres?: string, apellidos?: string): string {
   }
 
   /**
-   * ✅ Formatea fecha para mostrar
+   * Formatea fecha para mostrar
    */
   formatearFecha(fecha: string): string {
     if (!fecha) return 'No especificada';
@@ -233,7 +270,7 @@ obtenerIniciales(nombres?: string, apellidos?: string): string {
   }
 
   /**
-   * ✅ Descarga documento
+   * Descarga documento
    */
   descargarDocumento(rutaArchivo: string): void {
     if (!rutaArchivo) {
@@ -262,13 +299,12 @@ obtenerIniciales(nombres?: string, apellidos?: string): string {
       
       this.servicioAlerta.alertaInfo(`Descargando: ${nombreArchivo}`);
     } catch (error) {
-      console.error('Error al descargar archivo:', error);
       this.servicioAlerta.alertaError('Error al acceder al archivo');
     }
   }
 
   /**
-   * ✅ Maneja errores de carga de imágenes
+   * Maneja errores de carga de imágenes
    */
   onImageError(event: any): void {
     const img = event.target as HTMLImageElement;
@@ -308,7 +344,6 @@ obtenerIniciales(nombres?: string, apellidos?: string): string {
     });
   }
 
-  
   //Configura la búsqueda con debounce
 configurarBusqueda(): void {
   this.sujetoBusqueda
@@ -330,7 +365,6 @@ configurarBusqueda(): void {
     });
 }
 
-
 //Carga la información del usuario desde localStorage
 cargarInformacionUsuario(): void {
   try {
@@ -347,14 +381,12 @@ cargarInformacionUsuario(): void {
       };
     }
   } catch (error) {
-    console.error('Error al cargar información del usuario:', error);
     this.informacionUsuario = {
   name: 'Usuario',
   avatar: null
     };
   }
 }
-
 
   //Detecta el estado de la barra lateral
   detectarEstadoBarraLateral(): void {
@@ -417,7 +449,6 @@ cargarInformacionUsuario(): void {
     this.reiniciarFormulario();
   }
 
-  
 // Reinicia el formulario a su estado inicial
 reiniciarFormulario(): void {
   this.formularioPaciente.reset();
@@ -441,25 +472,23 @@ reiniciarFormulario(): void {
   this.error = '';
 }
 
-
   // ==========================================
   // GESTIÓN DE DATOS
   // ==========================================
 
-  
   // Carga la lista de pacientes desde el servidor
   cargarPacientes(): void {
     this.cargando = true;
     this.error = '';
 
-    // ✅ NUEVO: Pasar filtro de clínica
+    // Pasar filtro de clínica
     const clinicaFiltro = this.clinicaSeleccionada > 0 ? this.clinicaSeleccionada : undefined;
 
     this.servicioUsuario.obtenerTodosLosPacientes(
       this.paginaActual,
       this.tamanoPagina,
       this.terminoBusqueda,
-      clinicaFiltro  // ✅ AGREGAR ESTE PARÁMETRO
+      clinicaFiltro
     ).subscribe({
       next: (respuesta: RespuestaPaciente) => {
         if (respuesta.exito) {
@@ -481,7 +510,6 @@ reiniciarFormulario(): void {
         this.cargando = false;
       },
       error: (error) => {
-        console.error('Error al cargar pacientes:', error);
         this.error = 'Error al cargar los pacientes';
         this.servicioAlerta.alertaError(this.error);
         this.cargando = false;
@@ -493,7 +521,6 @@ reiniciarFormulario(): void {
 filtrarPacientes(): void {
   this.sujetoBusqueda.next(this.terminoBusqueda);
 }
-
 
 formatearTelefono(campo: string): void {
   let valor: string = this.formularioPaciente.get(campo)?.value || '';
@@ -549,7 +576,6 @@ formatearTelefono(campo: string): void {
         await this.crearPacienteConArchivos(datosPaciente);
       }
     } catch (error) {
-      console.error('Error en envío:', error);
       this.error = error instanceof Error ? error.message : 'Error desconocido';
       this.servicioAlerta.alertaError(this.error);
       this.cargando = false;
@@ -684,7 +710,7 @@ private limpiarArchivosSeleccionados(): void {
   }
   
 /**
- * ✅ Sube todos los archivos seleccionados con eliminación automática de anteriores
+ * Sube todos los archivos seleccionados con eliminación automática de anteriores
  */
 private async subirTodosLosArchivos(pacienteId: number): Promise<{ 
   rutaFotoPaciente?: string, 
@@ -704,52 +730,45 @@ private async subirTodosLosArchivos(pacienteId: number): Promise<{
       rutaCartaAutorizacion?: string 
     } = {};
 
-    // ✅ OBTENER RUTAS ANTERIORES del paciente actual
+    // OBTENER RUTAS ANTERIORES del paciente actual
     const pacienteActual = this.pacienteSeleccionado;
     const rutaFotoPacienteAnterior = pacienteActual?.rutafotoperfil || '';
     const rutaFotoEncargadoAnterior = pacienteActual?.rutafotoencargado || '';
     const rutaCartaAnterior = pacienteActual?.rutacartaautorizacion || '';
 
-    // ✅ 1. SUBIR FOTO DEL PACIENTE (elimina anterior automáticamente)
+    // 1. SUBIR FOTO DEL PACIENTE (elimina anterior automáticamente)
     if (this.selectedFotoPaciente) {
-      console.log('📸 Subiendo foto del paciente...');
       resultados.rutaFotoPaciente = await this.archivoService.subirFoto(
         'pacientes',
         pacienteId,
         this.selectedFotoPaciente,
-        rutaFotoPacienteAnterior  // ✅ Backend eliminará esta
+        rutaFotoPacienteAnterior 
       );
-      console.log('✅ Foto paciente subida:', resultados.rutaFotoPaciente);
     }
 
-    // ✅ 2. SUBIR FOTO DEL ENCARGADO (elimina anterior automáticamente)
+    // 2. SUBIR FOTO DEL ENCARGADO (elimina anterior automáticamente)
     if (this.selectedFotoEncargado) {
-      console.log('📸 Subiendo foto del encargado...');
       resultados.rutaFotoEncargado = await this.archivoService.subirFoto(
         'pacientes',
         pacienteId,
         this.selectedFotoEncargado,
-        rutaFotoEncargadoAnterior  // ✅ Backend eliminará esta
+        rutaFotoEncargadoAnterior  
       );
-      console.log('✅ Foto encargado subida:', resultados.rutaFotoEncargado);
     }
 
-    // ✅ 3. SUBIR CARTA DE AUTORIZACIÓN (elimina anterior automáticamente)
+    // 3. SUBIR CARTA DE AUTORIZACIÓN (elimina anterior automáticamente)
     if (this.selectedCartaAutorizacion) {
-      console.log('📄 Subiendo carta de autorización...');
       resultados.rutaCartaAutorizacion = await this.archivoService.subirDocumento(
         'pacientes',
         pacienteId,
         this.selectedCartaAutorizacion,
-        rutaCartaAnterior  // ✅ Backend eliminará esta
+        rutaCartaAnterior 
       );
-      console.log('✅ Carta autorización subida:', resultados.rutaCartaAutorizacion);
     }
 
     return resultados;
     
   } catch (error) {
-    console.error('❌ Error subiendo archivos de paciente:', error);
     throw error;
   } finally {
     this.subiendoArchivos = false;
@@ -779,7 +798,6 @@ private async subirTodosLosArchivos(pacienteId: number): Promise<{
             this.cargando = false;
           },
           error: (error) => {
-            console.error('Error:', error);
             this.servicioAlerta.alertaError('Error al eliminar paciente');
             this.cargando = false;
           }
@@ -840,7 +858,6 @@ private async subirTodosLosArchivos(pacienteId: number): Promise<{
           break;
       }
     } catch (error) {
-      console.error('Error:', error);
       this.servicioAlerta.alertaError('Error al procesar archivo');
     }
   }
@@ -1012,7 +1029,7 @@ verHistorialClinicoDesdeModal(paciente: Paciente): void {
     const informacionExpediente = this.obtenerInformacionExpedientePaciente(paciente);
     
     if (!informacionExpediente.tieneExpediente) {
-      // ✅ IR DIRECTO A CREAR EXPEDIENTE (sin diálogo previo)
+      // IR DIRECTO A CREAR EXPEDIENTE (sin diálogo previo)
       this.crearExpedientePaciente(paciente);
       return;
     }
@@ -1066,9 +1083,8 @@ verHistorialClinicoDesdeModal(paciente: Paciente): void {
       if (this.componenteExpediente) {
         this.componenteExpediente.abrirModalDesdePacientes(this.datosExpedientePaciente);
         
-        // ✅ SUSCRIBIRSE AL EVENTO DE EXPEDIENTE CREADO
+        // SUSCRIBIRSE AL EVENTO DE EXPEDIENTE CREADO
         this.componenteExpediente.expedienteCreado.subscribe(() => {
-          console.log('Expediente creado, recargando pacientes...');
           this.cerrarModalExpediente();
         });
       }
@@ -1080,12 +1096,12 @@ verHistorialClinicoDesdeModal(paciente: Paciente): void {
     this.vistaActual = 'lista';
     this.datosExpedientePaciente = null;
     
-    // ✅ RECARGAR PACIENTES DESPUÉS DE CERRAR EL MODAL
+    // RECARGAR PACIENTES DESPUÉS DE CERRAR EL MODAL
     this.cargarPacientes();
   }
 
   /**
-   * ✅ NUEVO: Maneja cambio en select de clínica
+   *  Maneja cambio en select de clínica
    */
   onClinicaChange(): void {
     this.currentPage = 1;
@@ -1093,7 +1109,7 @@ verHistorialClinicoDesdeModal(paciente: Paciente): void {
   }
 
   /**
-   * ✅ NUEVO: Limpia el filtro de clínica
+   * Limpia el filtro de clínica
    */
   limpiarFiltroClinica(): void {
     this.clinicaSeleccionada = 0;
@@ -1102,7 +1118,7 @@ verHistorialClinicoDesdeModal(paciente: Paciente): void {
   }
 
   /**
-   * ✅ NUEVO: Obtiene el nombre de la clínica de un paciente
+   * Obtiene el nombre de la clínica de un paciente
    */
   obtenerNombreClinica(paciente: Paciente): string {
     return paciente.clinica?.nombreclinica || 'Sin clínica';

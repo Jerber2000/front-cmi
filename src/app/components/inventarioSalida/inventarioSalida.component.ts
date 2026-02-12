@@ -1,6 +1,8 @@
 // src/app/components/inventarioSalida/inventarioSalida.component.ts
-import { Component, OnInit, AfterViewInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PerfilService } from '../../services/perfil.service';
+import { Subscription } from 'rxjs';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { 
@@ -24,7 +26,8 @@ import { AlertaService } from '../../services/alerta.service';
   templateUrl: './inventarioSalida.component.html',
   styleUrls: ['./inventarioSalida.component.scss']
 })
-export class InventarioSalidaComponent implements OnInit, AfterViewInit {
+export class InventarioSalidaComponent implements OnInit, AfterViewInit, OnDestroy {
+  private perfilSubscription?: Subscription;
   sidebarExpanded = true;
   loading = false;
   guardando = false;
@@ -70,7 +73,8 @@ export class InventarioSalidaComponent implements OnInit, AfterViewInit {
     public inventarioSalidaService: InventarioSalidaService,
     private inventarioService: InventarioService,
     private alerta: AlertaService,
-    private archivoService: ArchivoService
+    private archivoService: ArchivoService,
+    private perfilService: PerfilService
   ) {
     this.salidaForm = this.fb.group({
       fkmedicina: ['', [Validators.required]],
@@ -83,7 +87,23 @@ export class InventarioSalidaComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    this.loadUserInfo();
+    this.perfilSubscription = this.perfilService.perfil$.subscribe({
+      next: (usuario) => {
+        if (usuario) {
+          this.userInfo = this.perfilService.obtenerInfoSidebar();
+        }
+      },
+      error: (error) => {
+        console.error('Error en perfil subscription:', error);
+      }
+    });
+
+    this.perfilService.obtenerPerfilDesdeBackend().subscribe({
+      error: (error) => {
+        console.error('Error al cargar perfil desde backend:', error);
+      }
+    });
+
     this.cargarMedicamentos();
     this.cargarSalidas();
     this.cargarEstadisticas();
@@ -101,6 +121,10 @@ export class InventarioSalidaComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit(): void {
     this.detectSidebarState();
+  }
+
+  ngOnDestroy(): void {
+    this.perfilSubscription?.unsubscribe();
   }
 
   loadUserInfo(): void {
@@ -366,7 +390,7 @@ guardarSalida(): void {
   const datos: CrearSalidaRequest = {
     fkmedicina: parseInt(this.salidaForm.value.fkmedicina.toString()),
     fkusuario: this.usuarioActual.idusuario,
-    cantidad: parseInt(cantidad.toString()), // ← Asegurar que sea número
+    cantidad: parseInt(cantidad.toString()), 
     motivo: this.salidaForm.value.motivo?.trim() || undefined,
     destino: this.salidaForm.value.destino?.trim() || undefined,
     observaciones: this.salidaForm.value.observaciones?.trim() || undefined,

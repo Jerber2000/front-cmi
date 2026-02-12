@@ -1,5 +1,7 @@
-import { Component, OnInit, AfterViewInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PerfilService } from '../../services/perfil.service';
+import { Subscription } from 'rxjs';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { DocumentoService, Documento, Clinica } from '../../services/documento.service';
@@ -14,7 +16,8 @@ import { ArchivoService } from '../../services/archivo.service';
   templateUrl: './documento.component.html',
   styleUrls: ['./documento.component.scss']
 })
-export class DocumentoComponent implements OnInit, AfterViewInit {
+export class DocumentoComponent implements OnInit, AfterViewInit, OnDestroy {
+  private perfilSubscription?: Subscription;
   currentView: 'list' | 'form' = 'list';
   documentos: Documento[] = [];
   documentosFiltrados: Documento[] = [];
@@ -29,7 +32,6 @@ export class DocumentoComponent implements OnInit, AfterViewInit {
   sidebarExpanded = true;
   userInfo: any = {};
 
-  // ← AGREGAR ESTAS VARIABLES
   clinicas: Clinica[] = [];
   selectedClinicaFilter: string = '';
 
@@ -47,23 +49,45 @@ export class DocumentoComponent implements OnInit, AfterViewInit {
     private documentoService: DocumentoService,
     private fb: FormBuilder,
     private alerta: AlertaService,
-    private archivoService: ArchivoService
+    private archivoService: ArchivoService,
+    private perfilService: PerfilService
   ) {
     this.documentoForm = this.fb.group({
       nombredocumento: ['', [Validators.required, Validators.minLength(3)]],
       descripcion: [''],
-      fkclinica: [null, [Validators.required]] // ← AGREGAR ESTE CAMPO
+      fkclinica: [null, [Validators.required]] 
     });
   }
 
   ngOnInit(): void {
-    this.loadUserInfo();
-    this.cargarClinicas(); // ← AGREGAR ESTA LÍNEA
+    // Suscribirse al perfil para que el sidebar se actualice reactivamente
+    this.perfilSubscription = this.perfilService.perfil$.subscribe({
+      next: (usuario) => {
+        if (usuario) {
+          this.userInfo = this.perfilService.obtenerInfoSidebar();
+        }
+      },
+      error: (error) => {
+        console.error('Error en perfil subscription:', error);
+      }
+    });
+
+    this.perfilService.obtenerPerfilDesdeBackend().subscribe({
+      error: (error) => {
+        console.error('Error al cargar perfil desde backend:', error);
+      }
+    });
+
+    this.cargarClinicas();
     this.cargarDocumentos();
   }
 
   ngAfterViewInit(): void {
     this.detectSidebarState();
+  }
+
+  ngOnDestroy(): void {
+    this.perfilSubscription?.unsubscribe();
   }
 
   detectSidebarState(): void {
@@ -104,7 +128,6 @@ export class DocumentoComponent implements OnInit, AfterViewInit {
     }
   }
 
-  // ← AGREGAR ESTE MÉTODO
   cargarClinicas(): void {
     this.documentoService.obtenerClinicas().subscribe({
       next: (clinicas) => {
@@ -117,7 +140,6 @@ export class DocumentoComponent implements OnInit, AfterViewInit {
     });
   }
 
-  // ← AGREGAR ESTE MÉTODO
   filtrarPorClinica(): void {
     this.cargarDocumentos();
   }
@@ -192,7 +214,6 @@ export class DocumentoComponent implements OnInit, AfterViewInit {
   cargarDocumentos(): void {
     this.loading = true;
     
-    // ← MODIFICAR ESTA LÍNEA PARA INCLUIR FILTRO DE CLÍNICA
     const filtros: any = { estado: 1 };
     if (this.selectedClinicaFilter) {
       filtros.fkclinica = this.selectedClinicaFilter;
@@ -209,8 +230,7 @@ export class DocumentoComponent implements OnInit, AfterViewInit {
         this.updatePagination();
         this.loading = false;
       },
-      error: (error) => {
-        console.error('Error al cargar documentos:', error);
+      error: () => {
         this.alerta.alertaError('Error al cargar documentos');
         this.loading = false;
       }
@@ -287,8 +307,6 @@ export class DocumentoComponent implements OnInit, AfterViewInit {
           this.alerta.alertaExito('Documento eliminado correctamente');
         },
         error: (error) => {
-          console.error('Error al eliminar:', error);
-          
           let mensajeError = 'Error al eliminar el documento';
           
           if (error.error && error.error.message) {
@@ -369,7 +387,7 @@ export class DocumentoComponent implements OnInit, AfterViewInit {
     const fieldNames: { [key: string]: string } = {
       'nombredocumento': 'Nombre del documento',
       'descripcion': 'Descripción',
-      'fkclinica': 'Clínica' // ← AGREGAR ESTA LÍNEA
+      'fkclinica': 'Clínica' 
     };
     return fieldNames[fieldName] || fieldName;
   }
@@ -387,7 +405,7 @@ export class DocumentoComponent implements OnInit, AfterViewInit {
       try {
         const formData = new FormData();
         formData.append('nombredocumento', this.documentoForm.value.nombredocumento);
-        formData.append('fkclinica', this.documentoForm.value.fkclinica); // ← AGREGAR ESTA LÍNEA
+        formData.append('fkclinica', this.documentoForm.value.fkclinica); 
         
         if (this.documentoForm.value.descripcion) {
           formData.append('descripcion', this.documentoForm.value.descripcion);
@@ -421,7 +439,6 @@ export class DocumentoComponent implements OnInit, AfterViewInit {
           },
           error: (error) => {
             this.loading = false;
-            console.error('Error:', error);
             this.alerta.alertaError('Error al procesar la solicitud');
           }
         });

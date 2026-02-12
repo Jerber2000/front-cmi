@@ -1,5 +1,5 @@
 // src/app/components/referidos/referidos.component.ts
-import { Component, OnInit, AfterViewInit, HostListener, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, AfterViewInit, HostListener, Input, Output, EventEmitter, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
@@ -8,13 +8,15 @@ import {
   ReferidosService, 
   Referido, 
   CrearReferidoRequest,
-  Clinica  // ✅ Agregado
+  Clinica 
 } from '../../services/referidos.service';
 import { ServicioPaciente, Paciente } from '../../services/paciente.service';
 import { ServicioExpediente, Expediente } from '../../services/expediente.service';
 import { ArchivoService } from '../../services/archivo.service';
+import { PerfilService } from '../../services/perfil.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AlertaService } from '../../services/alerta.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-referidos',
@@ -23,7 +25,7 @@ import { AlertaService } from '../../services/alerta.service';
   templateUrl: './referidos.component.html',
   styleUrls: ['./referidos.component.scss']
 })
-export class ReferidosComponent implements OnInit, AfterViewInit {
+export class ReferidosComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @Input() pacienteExterno: Paciente | null = null;
   @Output() modalCerrado = new EventEmitter<void>();
@@ -37,11 +39,12 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
   userInfo: any = {};
   usuarioActual: any = null;
   esAdmin = false;
+  private perfilSubscription?: Subscription;
   
   // Datos
   referidos: Referido[] = [];
   pacientes: Paciente[] = [];
-  clinicas: Clinica[] = [];  // ✅ Tipo correcto
+  clinicas: Clinica[] = []; 
   expedientesDisponibles: Expediente[] = [];
   
   // Filtros y búsqueda
@@ -70,7 +73,7 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
   mostrarModalConfirmacion = false;
   mostrarModalEditar = false;
   
-  // Formularios (✅ SIN fkusuariodestino)
+  // Formularios
   referidoForm: FormGroup;
   referidoEditForm: FormGroup;
   
@@ -106,9 +109,10 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
     public referidosService: ReferidosService,
     private alerta: AlertaService,
     private servicioPaciente: ServicioPaciente,
-    private archivoService: ArchivoService 
+    private archivoService: ArchivoService,
+    private perfilService: PerfilService
   ) {
-    // ✅ FORMULARIO SIN fkusuariodestino
+    // FORMULARIO SIN fkusuariodestino
     this.referidoForm = this.fb.group({
       fkpaciente: ['', Validators.required],
       fkexpediente: ['', Validators.required],
@@ -116,7 +120,7 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
       comentario: ['', [Validators.required, Validators.minLength(10)]]
     });
 
-    // ✅ FORMULARIO EDITAR SIN fkusuariodestino
+    // FORMULARIO EDITAR SIN fkusuariodestino
     this.referidoEditForm = this.fb.group({
       fkclinica: ['', Validators.required],
       comentario: ['', [Validators.required, Validators.minLength(10)]]
@@ -124,7 +128,26 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
+    // ✅ Cargar información del usuario actual
     this.loadUserInfo();
+
+    // Suscribirse al perfil para que el sidebar se actualice reactivamente
+    this.perfilSubscription = this.perfilService.perfil$.subscribe({
+      next: (usuario) => {
+        if (usuario) {
+          this.userInfo = this.perfilService.obtenerInfoSidebar();
+          // Actualizar usuarioActual y esAdmin cuando el perfil cambia
+          this.loadUserInfo();
+        }
+      },
+      error: (error) => {}
+    });
+
+    // Cargar el perfil desde el backend para inicializar
+    this.perfilService.obtenerPerfilDesdeBackend().subscribe({
+      error: (error) => {}
+    });
+
     this.cargarDatosIniciales();    
     if (this.pacienteExterno) {
       setTimeout(() => {
@@ -143,6 +166,10 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
     this.detectSidebarState();
   }
 
+  ngOnDestroy(): void {
+    this.perfilSubscription?.unsubscribe();
+  }
+
   loadUserInfo(): void {
     try {
       const usuarioData = localStorage.getItem('usuario');
@@ -154,25 +181,14 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
             this.archivoService.obtenerUrlPublica(this.usuarioActual.rutafotoperfil) : null  
         };
         
-        // ✅ CORRECCIÓN: Admin es fkrol 1 o 7
+        // CORRECCIÓN: Admin es fkrol 1 o 7
         this.esAdmin = this.usuarioActual.fkrol === 1 || this.usuarioActual.fkrol === 7;
         
-        console.log('👤 Usuario cargado:', {
-          idusuario: this.usuarioActual.idusuario,
-          usuario: this.usuarioActual.usuario,
-          fkrol: this.usuarioActual.fkrol,
-          fkclinica: this.usuarioActual.fkclinica,
-          esAdmin: this.esAdmin
-        });
-        
         if (this.usuarioActual.fkclinica === undefined || this.usuarioActual.fkclinica === null) {
-          console.warn('⚠️ ADVERTENCIA: fkclinica no está en localStorage');
           this.alerta.alertaPreventiva('Tu usuario no tiene clínica asignada. Contacta al administrador.');
         }
       }
-    } catch (error) {
-      console.error('Error loading user info:', error);
-    }
+    } catch (error) {}
   }
 
   detectSidebarState(): void {
@@ -204,7 +220,7 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
     this.loading = true;
     try {
       await this.cargarPacientes();
-      await this.cargarClinicas();  // ✅ Ya no carga médicos
+      await this.cargarClinicas();  
       await this.cargarReferidos();
     } catch (error) {
       this.alerta.alertaError('Error al cargar los datos');
@@ -275,7 +291,7 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
     });
   }
 
-  // ✅ NUEVO: Cargar clínicas desde BD
+  // Cargar clínicas desde BD
   cargarClinicas(): Promise<void> {
     return new Promise((resolve) => {
       this.referidosService.obtenerClinicas().subscribe({
@@ -284,7 +300,6 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
           resolve();
         },
         error: (error: any) => {
-          console.error('Error al cargar clínicas:', error);
           this.alerta.alertaError('Error al cargar clínicas');
           this.clinicas = [];
           resolve();
@@ -295,8 +310,7 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
 
   // ============================================================================
   // PAGINACIÓN
-  // ============================================================================
-
+  // =====
   updatePagination(): void {
     this.totalItems = this.referidos.length;
     this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
@@ -454,7 +468,7 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
       const paciente = this.pacientes.find(p => p.idpaciente === parseInt(idPaciente));
       this.expedientesDisponibles = paciente?.expedientes || [];
       
-      // ✅ NUEVO: Auto-seleccionar el primer expediente si existe
+      //Auto-seleccionar el primer expediente si existe
       if (this.expedientesDisponibles.length > 0) {
         this.referidoForm.patchValue({ 
           fkexpediente: this.expedientesDisponibles[0].idexpediente 
@@ -479,7 +493,7 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
     return '';
   }
 
-  // ✅ GUARDAR REFERIDO (SIN fkusuariodestino)
+  // GUARDAR REFERIDO (SIN fkusuariodestino)
   async guardarReferido(): Promise<void> {
     if (!this.referidoForm.valid) {
       this.marcarFormularioComoTocado();
@@ -586,46 +600,36 @@ export class ReferidosComponent implements OnInit, AfterViewInit {
   // ============================================================================
 
 async editarReferido(referido: Referido): Promise<void> {
-  console.log('🔧 === EDITAR REFERIDO ===');
-  console.log('Referido a editar:', referido);
-  
-  // ✅ 1. CERRAR OTROS MODALES PRIMERO
+
+  // 1. CERRAR OTROS MODALES PRIMERO
   this.mostrarModalDetalle = false;
   this.mostrarModalConfirmacion = false;
   this.referidoSeleccionado = null;
   
-  // ✅ 2. LIMPIAR ARCHIVOS TEMPORALES
+  // 2. LIMPIAR ARCHIVOS TEMPORALES
   this.archivoDocumentoInicial = null;
   const inputInicial = document.getElementById('inputDocumentoEditarInicial') as HTMLInputElement;
   if (inputInicial) inputInicial.value = '';
   
-  // ✅ 3. CARGAR CLÍNICAS SI NO ESTÁN CARGADAS (SIN AWAIT)
+  // 3. CARGAR CLÍNICAS SI NO ESTÁN CARGADAS (SIN AWAIT)
   if (this.clinicas.length === 0) {
-    console.log('⏳ Cargando clínicas en background...');
-    this.cargarClinicas(); // ✅ SIN await - que cargue en paralelo
+    this.cargarClinicas(); // SIN await - que cargue en paralelo
   }
 
-  // ✅ 4. OBTENER DETALLE DEL REFERIDO
-  console.log('⏳ Obteniendo detalle del referido...');
+  // 4. OBTENER DETALLE DEL REFERIDO
   this.referidosService.obtenerReferidoPorId(referido.idrefpaciente).subscribe({
     next: (detalle) => {
-      console.log('✅ Detalle obtenido:', detalle);
       this.referidoEnEdicion = detalle;
       
-      // ✅ 5. LLENAR EL FORMULARIO
+      // 5. LLENAR EL FORMULARIO
       this.referidoEditForm.patchValue({
         fkclinica: detalle.fkclinica,
         comentario: detalle.comentario
       });
-      
-      console.log('✅ Formulario llenado:', this.referidoEditForm.value);
-      
-      // ✅ 6. ABRIR MODAL
+      // 6. ABRIR MODAL
       this.mostrarModalEditar = true;
-      console.log('✅ Modal de edición abierto');
     },
     error: (error) => {
-      console.error('❌ Error al cargar referido:', error);
       this.alerta.alertaError('Error al cargar los datos del referido');
       this.mostrarModalEditar = false;
       this.referidoEnEdicion = null;
@@ -634,7 +638,6 @@ async editarReferido(referido: Referido): Promise<void> {
 }
 
 cerrarModalEditar(): void {
-  console.log('🔴 Cerrando modal de edición');
   this.mostrarModalEditar = false;
   this.referidoEnEdicion = null;
   this.referidoEditForm.reset();
@@ -727,22 +730,18 @@ async guardarEdicion(): Promise<void> {
   // ============================================================================
 
 verDetalleReferido(referido: Referido): void {
-  console.log('🔍 === verDetalleReferido ===');
-  console.log('Referido a ver:', referido);
-  
-  // ✅ CERRAR MODAL DE EDITAR SI ESTÁ ABIERTO
+
+  // CERRAR MODAL DE EDITAR SI ESTÁ ABIERTO
   this.mostrarModalEditar = false;
   this.referidoEnEdicion = null;
   
   this.referidosService.obtenerReferidoPorId(referido.idrefpaciente).subscribe({
     next: (detalle) => {
-      console.log('✅ Detalle cargado:', detalle);
       this.referidoSeleccionado = detalle;
       this.actualizarUrlsDocumentos();
       this.mostrarModalDetalle = true;
     },
     error: (error) => {
-      console.error('❌ Error al cargar detalle:', error);
       this.alerta.alertaError('Error al cargar el detalle del referido');
     }
   });
@@ -763,25 +762,18 @@ verDetalleReferido(referido: Referido): void {
     this.mostrarModalConfirmacion = true;
   }
 
-
-
 async confirmarDesdeDetalle(): Promise<void> {
-  console.log('🔵 === confirmarDesdeDetalle ===');
-  console.log('referidoSeleccionado:', this.referidoSeleccionado);
-  
+
   if (!this.referidoSeleccionado) {
-    console.log('❌ No hay referido seleccionado');
     return;
   }
 
-  // ✅ ETAPA 4: Verificar si necesita subir documento final
+  // ETAPA 4: Verificar si necesita subir documento final
   if (this.referidoSeleccionado.confirmacion4 === 0 && 
       this.referidoSeleccionado.confirmacion3 === 1) {
     
     // Si no hay documento y hay uno seleccionado, subirlo primero
     if (!this.referidoSeleccionado.rutadocumentofinal && this.archivoDocumentoFinal) {
-      console.log('📤 Subiendo documento final antes de confirmar...');
-      
       try {
         this.subiendoDocumento = true;
         
@@ -813,8 +805,6 @@ async confirmarDesdeDetalle(): Promise<void> {
         });
 
         this.subiendoDocumento = false;
-        console.log('✅ Documento subido, procediendo con confirmación...');
-        
       } catch (error: any) {
         this.subiendoDocumento = false;
         this.alerta.alertaError(error.message || 'Error al subir documento final');
@@ -837,16 +827,13 @@ async confirmarDesdeDetalle(): Promise<void> {
   cerrarModalConfirmacion(): void {
     this.mostrarModalConfirmacion = false;
     this.comentarioConfirmacion = '';
-    // ✅ Ahora sí limpiar el referido seleccionado
+    // Ahora sí limpiar el referido seleccionado
     this.referidoSeleccionado = null;
   }
 
   ejecutarConfirmacion(): void {
-    console.log('🔵 === CLIC EN BOTÓN APROBAR ===');
-    console.log('referidoSeleccionado:', this.referidoSeleccionado);
-    
+
     if (!this.referidoSeleccionado) {
-      console.log('❌ No hay referido seleccionado');
       return;
     }
 
@@ -857,14 +844,12 @@ async confirmarDesdeDetalle(): Promise<void> {
       this.comentarioConfirmacion || undefined
     ).subscribe({
       next: (referido) => {
-        console.log('✅ Confirmación exitosa:', referido);
         this.alerta.alertaExito('Referido aprobado exitosamente');
-        this.cerrarModalConfirmacion(); // ✅ Esto ahora limpia referidoSeleccionado
+        this.cerrarModalConfirmacion(); // Esto ahora limpia referidoSeleccionado
         this.cargarReferidos();
         this.confirmando = false;
       },
       error: (error) => {
-        console.error('❌ ERROR en confirmación:', error);
         this.alerta.alertaError(
           error.error?.mensaje || error.error?.message || 'Error al aprobar el referido'
         );
@@ -1132,48 +1117,34 @@ async confirmarDesdeDetalle(): Promise<void> {
   // PERMISOS (ACTUALIZADOS POR CLÍNICA)
   // ============================================================================
 
-  // ✅ ACTUALIZADO: Validación por clínica
+  // ACTUALIZADO: Validación por clínica
   puedeConfirmar(referido: Referido): boolean {
-    console.log('🔍 === puedeConfirmar ===');
-    console.log('referido:', referido);
-    console.log('usuarioActual:', this.usuarioActual);
-    
+
     if (!referido || !this.usuarioActual) {
-      console.log('❌ No hay referido o usuario');
       return false;
     }
 
     if (referido.confirmacion4 === 1) {
-      console.log('❌ Referido completado');
       return false;
     }
 
     // Etapa 2: Admin
     if (referido.confirmacion2 === 0 && referido.confirmacion1 === 1) {
-      console.log('📍 ETAPA 2 - Admin requerido');
-      console.log('esAdmin:', this.esAdmin);
+
       return this.esAdmin;
     }
 
     // Etapa 3: Otro admin
     if (referido.confirmacion3 === 0 && referido.confirmacion2 === 1) {
-      console.log('📍 ETAPA 3 - Otro admin requerido');
-      console.log('esAdmin:', this.esAdmin);
-      console.log('usuarioconfirma2:', referido.usuarioconfirma2);
-      console.log('usuario actual:', this.usuarioActual.usuario);
+
       return this.esAdmin && referido.usuarioconfirma2 !== this.usuarioActual.usuario;
     }
 
-    // ✅ Etapa 4: Usuario de la clínica destino
+    // Etapa 4: Usuario de la clínica destino
     if (referido.confirmacion4 === 0 && referido.confirmacion3 === 1) {
-      console.log('📍 ETAPA 4 - Usuario de clínica destino');
-      console.log('fkclinica usuario:', this.usuarioActual.fkclinica);
-      console.log('fkclinica referido:', referido.fkclinica);
-      console.log('¿Coinciden?:', this.usuarioActual.fkclinica === referido.fkclinica);
+
       return this.usuarioActual.fkclinica === referido.fkclinica;
     }
-
-    console.log('❌ No cumple ninguna condición');
     return false;
   }
 
@@ -1299,7 +1270,7 @@ async confirmarDesdeDetalle(): Promise<void> {
   }
 
   /**
- * ✅ Verifica si el referido está en etapa 4 y necesita documento final
+ * Verifica si el referido está en etapa 4 y necesita documento final
  */
 necesitaDocumentoFinal(): boolean {
   if (!this.referidoSeleccionado) return false;
@@ -1313,7 +1284,7 @@ necesitaDocumentoFinal(): boolean {
 }
 
 /**
- * ✅ Obtiene el texto dinámico del botón de confirmar
+ * Obtiene el texto dinámico del botón de confirmar
  */
 obtenerTextoBotonConfirmar(): string {
   if (!this.referidoSeleccionado) return 'Aprobar';

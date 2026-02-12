@@ -5,15 +5,15 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { FormsModule } from '@angular/forms';
 import { ServicioExpediente, Expediente, RespuestaCreacionExpediente, RespuestaListaExpedientes, EstadisticasExpediente } from '../../services/expediente.service';
 import { AlertaService } from '../../services/alerta.service';
+import { AuthService } from '../../services/auth.service';
+import { PerfilService } from '../../services/perfil.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
-import { Subject } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { NgxPaginationModule } from 'ngx-pagination';
 import { PdfExcelReporteriaService } from '../../services/pdf-excel-reporteria.service';
 import { ArchivoService } from '../../services/archivo.service';
-
-
 
 @Component({
   selector: 'app-expediente-lista',
@@ -30,6 +30,7 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
   @Output() expedienteCreado = new EventEmitter<any>();
   
   private destruir$ = new Subject<void>();
+  private perfilSubscription?: Subscription;
   
   // Estados de la aplicación
   vistaActual: 'lista' | 'formulario' | 'detalle' = 'lista';
@@ -48,7 +49,6 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
   totalPages = 0;
   totalItems = 0;
   paginatedExpedientes: Expediente[] = [];
-  
 
   // Exponer Math para usar en el template
   Math = Math;
@@ -79,17 +79,52 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
     private fb: FormBuilder,
     private servicioAlerta: AlertaService,
     private archivoService: ArchivoService,
-    private pdfExcelService: PdfExcelReporteriaService 
+    private pdfExcelService: PdfExcelReporteriaService,
+    private authService: AuthService,
+    private perfilService: PerfilService
   ) {
     this.formularioExpediente = this.crearFormulario();
     this.configurarBusqueda();
   }
 
   ngOnInit(): void {
-    this.cargarInformacionUsuario();
+    // Suscribirse al perfil para que el sidebar se actualice reactivamente
+    this.perfilSubscription = this.perfilService.perfil$.subscribe({
+      next: (usuario) => {
+        if (usuario) {
+          this.informacionUsuario = this.perfilService.obtenerInfoSidebar();
+        }
+      },
+      error: (error) => {
+      }
+    });
+
+    // Cargar el perfil desde el backend para inicializar
+    this.perfilService.obtenerPerfilDesdeBackend().subscribe({
+      error: (error) => {
+      }
+    });
+
     this.cargarClinicas();
+    this.establecerFiltroClinicaDefecto();
     this.cargarExpedientes();
     this.cargarEstadisticas();
+  }
+
+  private establecerFiltroClinicaDefecto(): void {
+    const userRole = this.authService.userRole;
+    const user = this.authService.getCurrentUser();
+
+    // Si es Admin (1) o Sistemas (4), mostrar todas las clínicas
+    if (userRole === 1 || userRole === 4) {
+      this.clinicaSeleccionada = 0;
+      return;
+    }
+
+    // Para otros roles, filtrar por su clínica asignada
+    if (user?.fkclinica) {
+      this.clinicaSeleccionada = user.fkclinica;
+    }
   }
 
   ngAfterViewInit(): void {
@@ -99,6 +134,7 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
   ngOnDestroy(): void {
     this.destruir$.next();
     this.destruir$.complete();
+    this.perfilSubscription?.unsubscribe();
   }
 
   // ==========================================
@@ -203,11 +239,10 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
         this.informacionUsuario = {
           name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim(),
           avatar: usuario.rutafotoperfil ? 
-            this.archivoService.obtenerUrlPublica(usuario.rutafotoperfil) : null  // ✅ CAMBIAR esta línea
+            this.archivoService.obtenerUrlPublica(usuario.rutafotoperfil) : null  
         };
       }
     } catch (error) {
-      console.error('Error al cargar información del usuario:', error);
       this.informacionUsuario = { name: 'Usuario', avatar: null };
     }
     
@@ -280,8 +315,6 @@ private verDetallesExpediente(expediente: Expediente): void {
   this.vistaActual = 'detalle';
 }
 
-
-
 /**
  * Descargar PDF del expediente
  */
@@ -294,7 +327,6 @@ descargarPDFExpediente(expediente: Expediente): void {
     this.pdfExcelService.generarPDFExpediente(expedienteSeguro);  // ← CAMBIAR
     this.servicioAlerta.alertaExito('PDF generado exitosamente');
   } catch (error) {
-    console.error('Error al generar PDF:', error);
     this.servicioAlerta.alertaError('Error al generar el PDF del expediente');
   }
 }
@@ -352,7 +384,6 @@ private obtenerNombrePaciente(expediente: Expediente): string {
   }
 }
 
-
   /**
    * Abre el formulario para editar un expediente
    */
@@ -399,8 +430,6 @@ private obtenerNombrePaciente(expediente: Expediente): string {
   // GESTIÓN DE DATOS
   // ==========================================
 
-
-
   /**
    * Carga la lista de expedientes desde el servidor - ESTRUCTURA ARREGLADA
    */
@@ -421,12 +450,6 @@ cargarExpedientes(): void {
         this.expedientes = respuesta.datos || [];
         this.expedientesFiltrados = [...this.expedientes];
         
-        // ✅ AGREGAR ESTOS LOGS
-        console.log('📦 Total expedientes:', this.expedientes.length);
-        console.log('📦 Primer expediente completo:', this.expedientes[0]);
-        console.log('👤 Estructura de paciente:', this.expedientes[0]?.paciente);
-        console.log('🏥 Estructura de clínica:', this.expedientes[0]?.paciente?.clinica);
-        
         if (respuesta.paginacion) {
           this.totalElementos = respuesta.paginacion.total;
           this.totalPaginas = respuesta.paginacion.totalPaginas;
@@ -440,7 +463,6 @@ cargarExpedientes(): void {
       this.cargando = false;
     },
     error: (error) => {
-      console.error('❌ Error al cargar expedientes:', error);
       this.error = 'Error al cargar los expedientes';
       this.servicioAlerta.alertaError(this.error);
       this.cargando = false;
@@ -461,31 +483,23 @@ cargarExpedientes(): void {
           }
         },
         error: (error: any) => {
-          console.error('Error al cargar estadísticas:', error);
         }
       });
   }
 
   /**
-   * ✅ NUEVO: Carga lista de clínicas para el filtro
+   * Carga lista de clínicas para el filtro
    */
   cargarClinicas(): void {
-    console.log('🔍 Llamando a obtenerClinicas()...');
     this.servicioExpediente.obtenerClinicas().subscribe({
       next: (respuesta) => {
-        console.log('📦 Respuesta completa:', respuesta);
-        console.log('✅ respuesta.exito:', respuesta.exito);
-        console.log('📋 respuesta.datos:', respuesta.datos);
-        
+
         if (respuesta.exito) {
           this.clinicas = respuesta.datos;
-          console.log('🏥 Clínicas asignadas:', this.clinicas);
         } else {
-          console.warn('⚠️ Respuesta sin éxito:', respuesta);
         }
       },
       error: (error) => {
-        console.error('❌ Error al cargar clínicas:', error);
       }
     });
   }
@@ -540,7 +554,6 @@ cargarExpedientes(): void {
         await this.crearExpediente(datosExpediente);
       }
     } catch (error) {
-      console.error('Error en envío:', error);
       this.error = error instanceof Error ? error.message : 'Error desconocido';
       this.servicioAlerta.alertaError(this.error);
       this.cargando = false;
@@ -681,7 +694,7 @@ cargarExpedientes(): void {
   }
 
 /**
- * Elimina un expediente con confirmación - VERSION SIMPLIFICADA
+ * Elimina un expediente con confirmación 
  */
 eliminarExpediente(id: number): void {
   this.servicioAlerta.alertaConfirmacion(
@@ -700,29 +713,24 @@ eliminarExpediente(id: number): void {
  * Ejecuta la eliminación del expediente
  */
 private ejecutarEliminacion(id: number): void {
-  console.log('✅ Ejecutando eliminación del expediente:', id);
   this.cargando = true;
   
   this.servicioExpediente.eliminarExpediente(id)
     .pipe(takeUntil(this.destruir$))
     .subscribe({
       next: (respuesta: any) => {
-        console.log('📥 Respuesta del servidor:', respuesta);
         this.cargando = false;
         
         if (respuesta && respuesta.exito) {
-          console.log('✅ Expediente eliminado exitosamente');
           this.servicioAlerta.alertaExito('Expediente eliminado exitosamente');
           this.cargarExpedientes();
           this.cargarEstadisticas();
         } else {
-          console.warn('⚠️ Respuesta indica fallo:', respuesta);
           const mensajeError = respuesta?.mensaje || 'Error desconocido al eliminar expediente';
           this.servicioAlerta.alertaError(mensajeError);
         }
       },
       error: (error: any) => {
-        console.error('❌ Error completo al eliminar:', error);
         this.cargando = false;
         
         let mensajeError = 'Error al eliminar expediente';
@@ -747,8 +755,6 @@ private ejecutarEliminacion(id: number): void {
         } else if (error.status === 500) {
           mensajeError = 'Error interno del servidor al eliminar expediente';
         }
-        
-        console.error('📢 Mostrando error al usuario:', mensajeError);
         this.servicioAlerta.alertaError(mensajeError);
       }
     });
@@ -800,7 +806,6 @@ private ejecutarEliminacion(id: number): void {
         this.servicioAlerta.alertaInfo(`Número sugerido: ${respuesta.datos.numeroexpediente}`);
       }
     } catch (error) {
-      console.error('Error al sugerir número:', error);
       this.servicioAlerta.alertaError('Error al generar número de expediente');
     }
   }
@@ -888,8 +893,6 @@ llenarFormulario(expediente: Expediente): void {
     examenfisgmt: expediente.examenfisgmt ?? ''
   });
 }
-
-
 
   /**
    * Obtiene el texto legible para intolerancia a lactosa
@@ -997,8 +1000,6 @@ llenarFormulario(expediente: Expediente): void {
     return '';
   }
 
-
-  
   /**
    * Marca todos los campos del formulario como tocados
    */
@@ -1008,8 +1009,6 @@ llenarFormulario(expediente: Expediente): void {
       control?.markAsTouched();
     });
   }
-
-
 
   // MÉTODOS DE PAGINACIÓN
 
@@ -1113,7 +1112,7 @@ llenarFormulario(expediente: Expediente): void {
   }
 
   /**
- * ✅ NUEVO: Maneja cambio en select de clínica
+ * Maneja cambio en select de clínica
  */
 onClinicaChange(): void {
   this.currentPage = 1;
@@ -1121,7 +1120,7 @@ onClinicaChange(): void {
 }
 
 /**
- * ✅ NUEVO: Limpia el filtro de clínica
+ * Limpia el filtro de clínica
  */
 limpiarFiltroClinica(): void {
   this.clinicaSeleccionada = 0;

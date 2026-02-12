@@ -96,7 +96,7 @@ export class ReferidosService {
   }
 
   // ============================================================================
-  // ✅ NUEVO: Obtener clínicas desde BD
+  // Obtener clínicas desde BD
   // ============================================================================
   obtenerClinicas(): Observable<Clinica[]> {
     return this.http.get<ApiResponse<Clinica[]>>(
@@ -161,26 +161,16 @@ export class ReferidosService {
 
   // En referidos.service.ts
   confirmarReferido(id: number, comentario?: string): Observable<Referido> {
-    console.log('🌐 === SERVICIO confirmarReferido ===');
-    console.log('ID:', id);
-    console.log('Comentario:', comentario);
-    
+
     const body: ConfirmarReferidoRequest = comentario ? { comentario } : {};
-    console.log('Body de la petición:', body);
-    
     const url = `${this.apiUrl}/${id}/confirmar`;
-    console.log('URL completa:', url);
-    console.log('Headers:', this.getHeaders());
-    
-    console.log('📡 Enviando petición HTTP PUT...');
-    
+
     return this.http.put<ApiResponse<Referido>>(
       url,
       body,
       { headers: this.getHeaders() }
     ).pipe(
       map(response => {
-        console.log('✅ Respuesta recibida:', response);
         return response.data!;
       })
     );
@@ -258,7 +248,7 @@ export class ReferidosService {
   }
 
 /**
- * ✅ Verifica si el usuario puede eliminar documento final
+ * Verifica si el usuario puede eliminar documento final
  */
   puedeEliminarDocumentoFinal(referido: Referido, usuarioActual: any, esAdmin: boolean): boolean {
     if (!referido || !usuarioActual) return false;
@@ -278,7 +268,7 @@ export class ReferidosService {
   // ============================================================================
 
   /**
-   * ✅ Verifica si el usuario puede subir documento inicial
+   * Verifica si el usuario puede subir documento inicial
    */
   puedeEliminarDocumentoInicial(referido: Referido, usuarioActual: any, esAdmin: boolean): boolean {
     if (!referido || !usuarioActual) return false;
@@ -296,29 +286,19 @@ export class ReferidosService {
   }
 
   /**
-   * ✅ ACTUALIZADO: Verifica si el usuario puede subir documento final
-   * Ahora valida si pertenece a la clínica destino
+    * - Solo si el referido está confirmado por la clínica destino (confirmacion3 = 1)
    */
   puedeSubirDocumentoFinal(referido: Referido, usuarioActual: any): boolean {
-    console.log('🔍 === puedeSubirDocumentoFinal ===');
-    console.log('referido:', referido);
-    console.log('usuarioActual:', usuarioActual);
-    
+
     if (!referido || !usuarioActual) {
-      console.log('❌ Faltan datos');
       return false;
     }
     
     if (referido.confirmacion3 !== 1) {
-      console.log('❌ confirmacion3 no está en 1:', referido.confirmacion3);
       return false;
     }
-    
-    console.log('fkclinica usuario:', usuarioActual.fkclinica);
-    console.log('fkclinica referido:', referido.fkclinica);
-    console.log('¿Coinciden?:', usuarioActual.fkclinica === referido.fkclinica);
-    
-    // ✅ El usuario debe estar asignado a la clínica destino
+
+    // El usuario debe estar asignado a la clínica destino
     return usuarioActual.fkclinica === referido.fkclinica;
   }
 

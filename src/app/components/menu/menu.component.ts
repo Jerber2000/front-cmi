@@ -110,7 +110,6 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
     this.perfilSubscription = this.perfilService.perfil$.subscribe((usuario) => {
       if (usuario) {
         this.userInfo = this.perfilService.obtenerInfoSidebar();
-        console.log('✅ UserInfo actualizado desde perfil$:', this.userInfo);
       }
     });
     
@@ -249,8 +248,7 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
         this.dashboardData = data;
         this.cargando = false;
       },
-      error: (error) => {
-        console.error('Error al cargar dashboard:', error);
+      error: () => {
         this.cargando = false;
       }
     });
@@ -267,18 +265,15 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
         this.usuarioActual = JSON.parse(usuarioData);
         
         if (this.usuarioActual) {
-          // Generar mensaje de bienvenida personalizado
           this.mensajeBienvenida = this.generarMensajeBienvenida(
             this.usuarioActual.fkrol, 
             this.usuarioActual.nombres
           );
           
-          // Obtener módulos recomendados según rol
           this.modulosRecomendados = this.obtenerModulosRecomendados(this.usuarioActual.fkrol);
         }
       }
     } catch (error) {
-      console.error('Error al cargar datos personalizados:', error);
     }
   }
 
@@ -655,28 +650,22 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
   loadUserInfo(): void {
     try {
       const usuarioData = localStorage.getItem('usuario');
-      console.log('📦 Usuario desde localStorage:', usuarioData);
       
       if (usuarioData) {
         const usuario = JSON.parse(usuarioData);
-        console.log('👤 Usuario parseado:', usuario);
-        console.log('🖼️ Ruta foto perfil:', usuario.rutafotoperfil);
         
         let avatarUrl = null;
         if (usuario.rutafotoperfil) {
           avatarUrl = this.archivoService.obtenerUrlPublica(usuario.rutafotoperfil);
-          console.log('🌐 URL pública generada:', avatarUrl);
         }
         
         this.userInfo = {
           name: `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim(),
           avatar: avatarUrl
         };
-
-        console.log('✅ UserInfo final:', this.userInfo);
       } 
     } catch (error) {
-      console.error('❌ Error al cargar información del usuario:', error);
+      console.error('Error al cargar información del usuario:', error);
       this.userInfo = {
         name: 'Usuario',
         avatar: null
