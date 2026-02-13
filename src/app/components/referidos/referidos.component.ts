@@ -465,18 +465,42 @@ export class ReferidosComponent implements OnInit, AfterViewInit, OnDestroy {
     const idPaciente = this.referidoForm.get('fkpaciente')?.value;
     
     if (idPaciente) {
-      const paciente = this.pacientes.find(p => p.idpaciente === parseInt(idPaciente));
-      this.expedientesDisponibles = paciente?.expedientes || [];
-      
-      //Auto-seleccionar el primer expediente si existe
+      const idPacienteNum = parseInt(idPaciente);
+      const pacienteLista = this.pacientes.find(p => p.idpaciente === idPacienteNum);
+      const pacienteActual = this.pacienteSeleccionado || pacienteLista || null;
+      this.expedientesDisponibles = pacienteActual?.expedientes || [];
+
+      // Auto-seleccionar el primer expediente si existe
       if (this.expedientesDisponibles.length > 0) {
-        this.referidoForm.patchValue({ 
-          fkexpediente: this.expedientesDisponibles[0].idexpediente 
+        this.referidoForm.patchValue({
+          fkexpediente: this.expedientesDisponibles[0].idexpediente
         });
-      } else {
-        this.alerta.alertaPreventiva('Este paciente no tiene expedientes disponibles');
-        this.referidoForm.patchValue({ fkexpediente: '' });
+        return;
       }
+
+      // Fallback: cargar detalle del paciente si el listado no trae expedientes
+      this.servicioPaciente.obtenerPacientePorId(idPacienteNum).subscribe({
+        next: (response: any) => {
+          const datos = response?.datos;
+          const pacienteDetalle = Array.isArray(datos) ? datos[0] : datos;
+          const expedientes = pacienteDetalle?.expedientes || [];
+
+          this.expedientesDisponibles = expedientes;
+          if (this.expedientesDisponibles.length > 0) {
+            this.referidoForm.patchValue({
+              fkexpediente: this.expedientesDisponibles[0].idexpediente
+            });
+          } else {
+            this.alerta.alertaPreventiva('Este paciente no tiene expedientes disponibles');
+            this.referidoForm.patchValue({ fkexpediente: '' });
+          }
+        },
+        error: () => {
+          this.alerta.alertaPreventiva('No se pudieron cargar los expedientes del paciente');
+          this.expedientesDisponibles = [];
+          this.referidoForm.patchValue({ fkexpediente: '' });
+        }
+      });
     } else {
       this.expedientesDisponibles = [];
       this.referidoForm.patchValue({ fkexpediente: '' });
