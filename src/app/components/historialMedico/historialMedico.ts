@@ -359,6 +359,7 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
             fechaapertura: exp.fechaapertura || exp.FECHAAPERTURA || new Date().toISOString().split('T')[0]
           };
         });
+
         this.infoPaciente = {
           idpaciente: datosFromPacientes.idpaciente,
           nombres: datosFromPacientes.nombres,
@@ -372,11 +373,13 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
         if (datosFromPacientes.rutafotoperfil) {
           this.fotoPacienteUrl = this.archivoService.obtenerUrlPublica(datosFromPacientes.rutafotoperfil);
         }
-        
-        this.loading = false;
-        this.cargarHistorial();
-        return;
-        
+
+        // Si el listado no trae expedientes, continuar con fallback al backend
+        if (expedientesFormateados.length > 0) {
+          this.loading = false;
+          this.cargarHistorial();
+          return;
+        }
       } catch (error) {
       }
     }
