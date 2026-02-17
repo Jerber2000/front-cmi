@@ -88,13 +88,28 @@ export class SidebarComponent implements OnInit, OnDestroy, OnChanges {
     // Cargar userInfo desde localStorage como valor inicial
     this.cargarInfoDelStorage();
 
+    // Refrescar perfil desde backend al abrir sidebar
+    this.perfilService.refrescarPerfil().subscribe({
+      next: (usuario) => {
+        const updatedInfo = this.perfilService.obtenerInfoSidebar();
+        if (updatedInfo && updatedInfo.name) {
+          this.userInfo = {
+            name: updatedInfo.name,
+            avatar: updatedInfo.avatar || undefined
+          };
+        }
+      },
+      error: () => {
+        // Si falla, usar datos locales
+        this.cargarInfoDelStorage();
+      }
+    });
+
     // Suscribirse a cambios de perfil para actualizar avatar en tiempo real
     this.perfilSubscription = this.perfilService.perfil$.subscribe((usuario) => {
       if (usuario) {
         const updatedInfo = this.perfilService.obtenerInfoSidebar();
-        // Solo actualizar si recibimos datos válidos
         if (updatedInfo && updatedInfo.name) {
-          // Convertir null a undefined si es necesario
           this.userInfo = {
             name: updatedInfo.name,
             avatar: updatedInfo.avatar || undefined
@@ -103,7 +118,7 @@ export class SidebarComponent implements OnInit, OnDestroy, OnChanges {
       }
     });
 
-    // NUEVO: Suscribirse a cambios de usuario logueado (para detectar cambios de login)
+    // Suscribirse a cambios de usuario logueado (para detectar cambios de login)
     this.userInfoSubscription = this.authService.userInfo$.subscribe((userInfo) => {
       if (userInfo && userInfo.name) {
         this.userInfo = {

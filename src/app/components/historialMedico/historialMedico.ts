@@ -243,16 +243,10 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
           this.userInfo = this.perfilService.obtenerInfoSidebar();
         }
       },
-      error: (error) => {
-      }
+      error: (error) => {}
     });
 
-    // Cargar el perfil desde el backend para inicializar
-    this.perfilService.obtenerPerfilDesdeBackend().subscribe({
-      error: (error) => {
-      }
-    });
-
+    // Refrescar expediente y datos del paciente siempre al abrir historial clínico
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
       if (id) {
@@ -260,6 +254,7 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
         // Leer el número de expediente si viene como query param
         this.route.queryParamMap.subscribe(qparams => {
           const numeroexpediente = qparams.get('numeroexpediente');
+          // Siempre consultar backend para obtener expedientes actualizados
           this.cargarDatosPaciente(numeroexpediente ?? undefined);
         });
       }
