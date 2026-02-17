@@ -20,7 +20,7 @@ import { PerfilService } from '../../services/perfil.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AlertaService } from '../../services/alerta.service';
 import { ArchivoService } from '../../services/archivo.service';
-import { Paciente } from '../../services/paciente.service';
+import { Paciente, ServicioPaciente } from '../../services/paciente.service';
 import { ReferidosComponent } from '../referidos/referidos.component';
 import { FormularioPsicologiaComponent } from './formularioPsicologia/formulario-psicologia.component'; 
 import { HasRoleDirective } from '../../directives/has-role.directive';
@@ -74,7 +74,8 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
     private alerta: AlertaService,
     private http: HttpClient,
     private authService: AuthService,
-    private perfilService: PerfilService
+    private perfilService: PerfilService,
+    private pacienteService: ServicioPaciente
   ) {
     this.sesionForm = this.fb.group({
       motivoconsulta: ['', [Validators.required, Validators.minLength(10)]],
@@ -256,7 +257,11 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
       const id = params.get('id');
       if (id) {
         this.idPaciente = parseInt(id);
-        this.cargarDatosPaciente();
+        // Leer el número de expediente si viene como query param
+        this.route.queryParamMap.subscribe(qparams => {
+          const numeroexpediente = qparams.get('numeroexpediente');
+          this.cargarDatosPaciente(numeroexpediente ?? undefined);
+        });
       }
     });
     this.cargarClinicas();
@@ -340,70 +345,72 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
   // MÉTODO MEJORADO - cargarDatosPaciente CON TYPE SAFETY
   // ============================================================================
   
-  cargarDatosPaciente(): void {
+  cargarDatosPaciente(numeroexpedienteParam?: string): void {
     this.loading = true;
-    
-    const datosPacienteStr = sessionStorage.getItem('datosPacienteHistorial');
-    
-    if (datosPacienteStr) {
-      try {
-        const datosFromPacientes = JSON.parse(datosPacienteStr);
-
-        // FORMATEAR expedientes con type safety
-        const expedientesFormateados: ExpedienteInfo[] = (datosFromPacientes.expedientes || []).map((exp: any): ExpedienteInfo => {
-          return {
-            idexpediente: exp.idexpediente || exp.IDEXPEDIENTE || 0,
-            numeroexpediente: exp.numeroexpediente || exp.NUMEROEXPEDIENTE || '',
-            fkpaciente: exp.fkpaciente || exp.FKPACIENTE || datosFromPacientes.idpaciente,
-            fkclinica: exp.fkclinica || exp.FKCLINICA || datosFromPacientes.fkclinica,
-            fechaapertura: exp.fechaapertura || exp.FECHAAPERTURA || new Date().toISOString().split('T')[0]
-          };
-        });
-
-        this.infoPaciente = {
-          idpaciente: datosFromPacientes.idpaciente,
-          nombres: datosFromPacientes.nombres,
-          apellidos: datosFromPacientes.apellidos,
-          fkclinica: datosFromPacientes.fkclinica,
-          cui: datosFromPacientes.cui,
-          genero: datosFromPacientes.genero,
-          fechanacimiento: datosFromPacientes.fechanacimiento,
-          expedientes: expedientesFormateados
-        };
-        if (datosFromPacientes.rutafotoperfil) {
-          this.fotoPacienteUrl = this.archivoService.obtenerUrlPublica(datosFromPacientes.rutafotoperfil);
-        }
-
-        // Si el listado no trae expedientes, continuar con fallback al backend
-        if (expedientesFormateados.length > 0) {
-          this.loading = false;
-          this.cargarHistorial();
-          return;
-        }
-      } catch (error) {
-      }
-    }
-    
-    // Fallback: cargar del backend
+    // Siempre consulta al backend para asegurar expedientes completos y actualizados
     this.historialService.obtenerInfoPaciente(this.idPaciente).subscribe({
       next: (info: InfoPaciente) => {
-        // VALIDAR Y FORMATEAR expedientes del backend también
+        let expedientes: ExpedienteInfo[] = [];
         if (info.expedientes && info.expedientes.length > 0) {
-          info.expedientes = info.expedientes.map((exp: any): ExpedienteInfo => ({
+          expedientes = info.expedientes.map((exp: any): ExpedienteInfo => ({
             idexpediente: exp.idexpediente || exp.IDEXPEDIENTE || 0,
             numeroexpediente: exp.numeroexpediente || exp.NUMEROEXPEDIENTE || '',
             fkpaciente: exp.fkpaciente || exp.FKPACIENTE || info.idpaciente,
             fkclinica: exp.fkclinica || exp.FKCLINICA || info.fkclinica,
             fechaapertura: exp.fechaapertura || exp.FECHAAPERTURA || new Date().toISOString().split('T')[0]
           }));
+          // Si se recibe numeroexpedienteParam, filtrar el expediente principal
+          if (numeroexpedienteParam) {
+            expedientes = expedientes.filter(e => e.numeroexpediente === numeroexpedienteParam);
+          }
         }
-        
-        this.infoPaciente = info;
-        if (info.rutafotoperfil) {
-          this.fotoPacienteUrl = this.archivoService.obtenerUrlPublica(info.rutafotoperfil);
+        // Si no hay expediente válido, consulta explícitamente el expediente del paciente
+        const expedienteValido = expedientes.find(e => e.idexpediente > 0);
+        if (!expedienteValido) {
+          // Consulta ServicioPaciente para obtener el expediente único
+          this.pacienteService.obtenerPacientePorId(this.idPaciente).subscribe({
+            next: (resp: any) => {
+              let exp = [];
+              if (resp && resp.exito && resp.datos && resp.datos.expedientes && resp.datos.expedientes.length > 0) {
+                exp = resp.datos.expedientes.map((e: any) => ({
+                  idexpediente: e.idexpediente || e.IDEXPEDIENTE || 0,
+                  numeroexpediente: e.numeroexpediente || e.NUMEROEXPEDIENTE || '',
+                  fkpaciente: e.fkpaciente || e.FKPACIENTE || info.idpaciente,
+                  fkclinica: e.fkclinica || e.FKCLINICA || info.fkclinica,
+                  fechaapertura: e.fechaapertura || e.FECHAAPERTURA || new Date().toISOString().split('T')[0]
+                }));
+                // Si se recibe numeroexpedienteParam, filtrar el expediente principal
+                if (numeroexpedienteParam) {
+                  exp = exp.filter((e: any) => e.numeroexpediente === numeroexpedienteParam);
+                }
+              }
+              this.infoPaciente = {
+                ...info,
+                expedientes: exp
+              };
+              if (info.rutafotoperfil) {
+                this.fotoPacienteUrl = this.archivoService.obtenerUrlPublica(info.rutafotoperfil);
+              }
+              this.cargarHistorial();
+            },
+            error: () => {
+              this.infoPaciente = {
+                ...info,
+                expedientes: []
+              };
+              this.cargarHistorial();
+            }
+          });
+        } else {
+          this.infoPaciente = {
+            ...info,
+            expedientes
+          };
+          if (info.rutafotoperfil) {
+            this.fotoPacienteUrl = this.archivoService.obtenerUrlPublica(info.rutafotoperfil);
+          }
+          this.cargarHistorial();
         }
-        
-        this.cargarHistorial();
       },
       error: (error: any) => {
         this.loading = false;

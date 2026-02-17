@@ -101,18 +101,33 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
   ) {}
 
   ngOnInit() {
-    this.loadUserInfo();
-    this.cargarDatosPersonalizados();
-    this.cargarDashboard();
-    this.inicializarModulosPrincipales();
-    
+    // Siempre refrescar el perfil desde el backend al iniciar el menú
+    this.perfilService.refrescarPerfil().subscribe({
+      next: (usuario) => {
+        // Actualizar localStorage y userInfo
+        localStorage.setItem('usuario', JSON.stringify(usuario));
+        this.userInfo = this.perfilService.obtenerInfoSidebar();
+        this.usuarioActual = usuario;
+        this.cargarDatosPersonalizados();
+        this.cargarDashboard();
+        this.inicializarModulosPrincipales();
+      },
+      error: () => {
+        // Si falla, usar datos locales pero limpiar foto
+        this.loadUserInfo();
+        this.cargarDatosPersonalizados();
+        this.cargarDashboard();
+        this.inicializarModulosPrincipales();
+      }
+    });
+
     // Suscribirse a cambios del perfil
     this.perfilSubscription = this.perfilService.perfil$.subscribe((usuario) => {
       if (usuario) {
         this.userInfo = this.perfilService.obtenerInfoSidebar();
       }
     });
-    
+
     this.welcomeSubscription = this.authService.showWelcome$.subscribe(() => {
       this.showWelcomeMessage = true;
       setTimeout(() => {

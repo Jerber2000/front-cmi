@@ -281,7 +281,21 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   verHistorialClinico(paciente: any): void {
-    if (paciente.idpaciente) {
+    // Buscar el paciente completo en el array local para obtener expedientes
+    const pacienteCompleto = this.paciente.find(p => p.idpaciente === (paciente.idpaciente || paciente.fkpaciente));
+    if (pacienteCompleto && pacienteCompleto.idpaciente) {
+      // Si tiene expedientes, pasar el número de expediente como query param
+      const expediente = pacienteCompleto.expedientes && pacienteCompleto.expedientes.length > 0
+        ? pacienteCompleto.expedientes[0].numeroexpediente
+        : null;
+      this.router.navigate([
+        '/historial',
+        pacienteCompleto.idpaciente
+      ], {
+        queryParams: expediente ? { numeroexpediente: expediente } : {}
+      });
+    } else if (paciente.idpaciente) {
+      // Fallback si no está en el array local
       this.router.navigate(['/historial', paciente.idpaciente]);
     }
   }
