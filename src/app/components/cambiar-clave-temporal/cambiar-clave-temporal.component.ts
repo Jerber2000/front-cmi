@@ -101,7 +101,7 @@ export class CambiarClaveTemporalComponent implements OnInit {
           if (response.success) {
             this.alertaService.alertaExito(response.message);
             
-            // ✅ Redirigir después de cambiar la contraseña exitosamente
+            // Redirigir después de cambiar la contraseña exitosamente
             setTimeout(() => {
               // Actualizar el estado del usuario en el servicio
               this.authService.actualizarEstadoCambioClave();

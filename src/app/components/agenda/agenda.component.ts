@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -16,6 +16,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ArchivoService } from '../../services/archivo.service';
+import { PerfilService } from '../../services/perfil.service';
 import { UsuarioService, Usuario } from '../../services/usuario.service';
 import { AlertaService } from '../../services/alerta.service';
 import { Paciente, ServicioPaciente } from '../../services/paciente.service';
@@ -24,6 +25,7 @@ import { PdfExcelReporteriaService } from '../../services/pdf-excel-reporteria.s
 import { HasRoleDirective } from '../../directives/has-role.directive';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 // Interfaces
 export interface Cita {
@@ -71,9 +73,10 @@ export interface ApiResponse<T> {
   templateUrl: './agenda.component.html',
   styleUrls: ['./agenda.component.css']
 })
-export class AgendaComponent implements OnInit, AfterViewInit {
+export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild('calendar') calendarComponent!: FullCalendarComponent;
+  private perfilSubscription?: Subscription;
   
   // Configuración del calendario
   calendarOptions: CalendarOptions = {
@@ -83,13 +86,10 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     locale: 'es',
     firstDay: 1,
     
-    // CAMBIAR ESTAS LÍNEAS:
     height: 'auto',
     contentHeight: 'auto',
-    // ELIMINAR aspectRatio o cambiarlo a un valor más grande
-    // aspectRatio: 1.5,
+  
     
-    // AGREGAR ESTAS OPCIONES:
     expandRows: true,
     handleWindowResize: true,
     windowResizeDelay: 100,
@@ -131,7 +131,7 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     slotMaxTime: '18:00:00',
     slotDuration: '01:00:00',
     
-    // AGREGAR: Forzar que muestre todas las semanas del mes
+    // Forzar que muestre todas las semanas del mes
     fixedWeekCount: false,
     showNonCurrentDates: true
   };
@@ -211,7 +211,8 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     private fb: FormBuilder,
     private agendaService: AgendaService,
     private pdfExcelService: PdfExcelReporteriaService,
-    private router: Router
+    private router: Router,
+    private perfilService: PerfilService
   ) {
     this.initForm();
     this.fechaActual = new Date().toLocaleDateString('es-ES');
@@ -219,6 +220,16 @@ export class AgendaComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
+    this.perfilSubscription = this.perfilService.perfil$.subscribe({
+      next: (usuario) => {
+        if (usuario) {
+          this.userInfo = this.perfilService.obtenerInfoSidebar();
+        }
+      }
+    });
+
+    this.perfilService.obtenerPerfilDesdeBackend().subscribe();
+
     this.currentUserId = this.getCurrentUserId();
     this.configurarFiltroAutomatico();
     this.cargarCitas();
@@ -233,31 +244,20 @@ export class AgendaComponent implements OnInit, AfterViewInit {
       const usuarioData = localStorage.getItem('usuario');
       if (usuarioData) {
         const usuario = JSON.parse(usuarioData);
-        
-        console.log('Configurando filtro para usuario:', usuario); // Para debug
-        
-        // Verificar si es administrador o profesional
-        // Ajusta según tu estructura - estas son las opciones más comunes:
         const esAdministrador = usuario.rol === 'administrador' || 
                               usuario.rol === 'admin' ||
                               usuario.fkrol === 1 ||
-                              usuario.idusuario === 1; // Si el ID 1 es siempre admin
+                              usuario.idusuario === 1;
         
         if (!esAdministrador && usuario.idusuario) {
-          // Es profesional - filtrar automáticamente por su ID
           this.selectedMedico = usuario.idusuario.toString();
           this.isSelectDisabled = true;
-          console.log('Usuario profesional detectado. Filtrando por ID:', this.selectedMedico);
         } else {
-          // Es administrador - mostrar todos los profesionales
           this.selectedMedico = '';
           this.isSelectDisabled = false;
-          console.log('Usuario administrador detectado. Mostrando todos los profesionales.');
         }
       }
     } catch (error) {
-      console.error('Error al configurar filtro automático:', error);
-      // Por defecto, no filtrar
       this.selectedMedico = '';
       this.isSelectDisabled = false;
     }
@@ -267,21 +267,35 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     setTimeout(() => {
       this.detectSidebarState();
       
-      // AGREGAR: Forzar render inicial del calendario
+      // Forzar render inicial del calendario
       if (this.calendarComponent) {
         const api = this.calendarComponent.getApi();
         api.render();
         api.updateSize();
       }
-      
-      setTimeout(() => {
-        this.resizeCalendar();
-      }, 500);
     }, 100);
   }
 
+  ngOnDestroy(): void {
+    this.perfilSubscription?.unsubscribe();
+  }
+
   verHistorialClinico(paciente: any): void {
-    if (paciente.idpaciente) {
+    // Buscar el paciente completo en el array local para obtener expedientes
+    const pacienteCompleto = this.paciente.find(p => p.idpaciente === (paciente.idpaciente || paciente.fkpaciente));
+    if (pacienteCompleto && pacienteCompleto.idpaciente) {
+      // Si tiene expedientes, pasar el número de expediente como query param
+      const expediente = pacienteCompleto.expedientes && pacienteCompleto.expedientes.length > 0
+        ? pacienteCompleto.expedientes[0].numeroexpediente
+        : null;
+      this.router.navigate([
+        '/historial',
+        pacienteCompleto.idpaciente
+      ], {
+        queryParams: expediente ? { numeroexpediente: expediente } : {}
+      });
+    } else if (paciente.idpaciente) {
+      // Fallback si no está en el array local
       this.router.navigate(['/historial', paciente.idpaciente]);
     }
   }
@@ -315,7 +329,6 @@ export class AgendaComponent implements OnInit, AfterViewInit {
         }
       }
     } catch (error) {
-      console.error('Error al obtener el ID del usuario desde localStorage:', error);
     }
     
     return '1';
@@ -328,176 +341,10 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     return null;
   }
 
-  // cargarUsuariosPorRol(): void {
-  //   const usuarioData = localStorage.getItem('usuario');
-
-  //   if (!usuarioData) {
-  //     console.error('No hay datos de usuario en localStorage');
-  //     return;
-  //   }
-
-  //   const usuario = JSON.parse(usuarioData);
-  //   const usuarioRol = usuario.fkrol;
-
-  //   if(usuarioRol == 2 || usuarioRol == 6 || usuarioRol == 7 || usuarioRol == 12 || usuarioRol == 13 || usuarioRol == 15){
-  //     const currentUserId = this.getCurrentUserId();
-  //     this.selectedMedico = currentUserId;
-
-  //     // Cargar todos los usuarios por rol primero
-  //     this.UsuarioService.obtenerUsuariosPorRol('2,6,7,12,13,15').subscribe({
-  //       next: (response) => {
-  //         if (response.success && response.data) {
-  //           this.usuario = response.data;
-            
-  //           // Asegurar que el usuario actual esté seleccionado
-  //           // Si no está en la lista, lo agregamos al inicio
-  //           const usuarioActualEnLista = this.usuario.find(u => u.idusuario == parseInt(currentUserId));
-            
-  //           if (!usuarioActualEnLista) {
-  //             // Si el usuario actual no está en la lista, lo buscamos y agregamos
-  //             this.UsuarioService.obtenerUsuarioPorId(parseInt(currentUserId)).subscribe({
-  //               next: (responseUsuario) => {
-  //                 if (responseUsuario.success && responseUsuario.data) {
-  //                   this.usuario.unshift(responseUsuario.data); // Agregar al inicio
-  //                   this.filtrarPorMedico();
-  //                 }
-  //               },
-  //               error: (error) => {
-  //                 if(error.status !== 403){
-  //                   this.alerta.alertaError('Error al cargar el usuario actual');
-  //                 }
-  //               }
-  //             });
-  //           } else {
-  //             this.filtrarPorMedico();
-  //           }
-  //         } else {
-  //           this.usuario = [];
-  //           this.alerta.alertaInfo(response.message || 'No se encontraron usuarios');
-  //         }
-  //       },
-  //       error: (error) => {
-  //         if (error.status !== 403) {
-  //           this.alerta.alertaError('Error al cargar los usuarios por roles');
-  //         }
-  //       }
-  //     });
-  //   } else {
-  //     // Usuario con otro rol - mostrar todos los profesionales
-  //     this.UsuarioService.obtenerUsuariosPorRol('2,6,7,12,13,15').subscribe({
-  //       next: (response) => {
-  //         if (response.success && response.data) {
-  //           this.usuario = response.data;
-  //         } else {
-  //           this.usuario = [];
-  //           this.alerta.alertaInfo(response.message || 'No se encontraron usuarios');
-  //         }
-  //       },
-  //       error: (error) => {
-  //         if (error.status !== 403) {
-  //           this.alerta.alertaError('Error al cargar los usuarios por roles');
-  //         }
-  //       }
-  //     });
-  //   }
-  // }
-
-  // cargarUsuariosPorRol(): void {
-  //   const usuarioData = localStorage.getItem('usuario');
-
-  //   if (!usuarioData) {
-  //     console.error('No hay datos de usuario en localStorage');
-  //     return;
-  //   }
-
-  //   const usuario = JSON.parse(usuarioData);
-  //   const usuarioRol = usuario.fkrol;
-
-  //   this.loadingUsuarios = true; // ← AGREGAR
-
-  //   if(usuarioRol == 2 || usuarioRol == 6 || usuarioRol == 7 || usuarioRol == 12 || usuarioRol == 13 || usuarioRol == 15){
-  //     const currentUserId = this.getCurrentUserId();
-  //     this.selectedMedico = currentUserId;
-
-  //     this.UsuarioService.obtenerUsuariosPorRol('5,6,10,12,13,15').subscribe({
-  //       next: (response) => {
-  //         if (response.success && response.data) {
-  //           // MODIFICAR ESTA LÍNEA:
-  //           this.usuario = response.data.map(usr => ({
-  //             ...usr,
-  //             nombreCompleto: `Dr. ${usr.nombres} ${usr.apellidos}`.trim()
-  //           }));
-            
-  //           const usuarioActualEnLista = this.usuario.find(u => u.idusuario == parseInt(currentUserId));
-            
-  //           if (!usuarioActualEnLista) {
-  //             this.UsuarioService.obtenerUsuarioPorId(parseInt(currentUserId)).subscribe({
-  //               next: (responseUsuario) => {
-  //                 if (responseUsuario.success && responseUsuario.data) {
-  //                   // MODIFICAR ESTA PARTE:
-  //                   const usuarioConNombre = {
-  //                     ...responseUsuario.data,
-  //                     nombreCompleto: `Dr. ${responseUsuario.data.nombres} ${responseUsuario.data.apellidos}`.trim()
-  //                   };
-  //                   this.usuario.unshift(usuarioConNombre);
-  //                   this.filtrarPorMedico();
-  //                   this.loadingUsuarios = false; // ← AGREGAR
-  //                 }
-  //               },
-  //               error: (error) => {
-  //                 if(error.status !== 403){
-  //                   this.alerta.alertaError('Error al cargar el usuario actual');
-  //                 }
-  //                 this.loadingUsuarios = false; // ← AGREGAR
-  //               }
-  //             });
-  //           } else {
-  //             this.filtrarPorMedico();
-  //             this.loadingUsuarios = false; // ← AGREGAR
-  //           }
-  //         } else {
-  //           this.usuario = [];
-  //           this.alerta.alertaInfo(response.message || 'No se encontraron usuarios');
-  //           this.loadingUsuarios = false; // ← AGREGAR
-  //         }
-  //       },
-  //       error: (error) => {
-  //         if (error.status !== 403) {
-  //           this.alerta.alertaError('Error al cargar los usuarios por roles');
-  //         }
-  //         this.loadingUsuarios = false; // ← AGREGAR
-  //       }
-  //     });
-  //   } else {
-  //     this.UsuarioService.obtenerUsuariosPorRol('5,6,10,12,13,15').subscribe({
-  //       next: (response) => {
-  //         if (response.success && response.data) {
-  //           // MODIFICAR ESTA LÍNEA:
-  //           this.usuario = response.data.map(usr => ({
-  //             ...usr,
-  //             nombreCompleto: `Dr. ${usr.nombres} ${usr.apellidos}`.trim()
-  //           }));
-  //         } else {
-  //           this.usuario = [];
-  //           this.alerta.alertaInfo(response.message || 'No se encontraron usuarios');
-  //         }
-  //         this.loadingUsuarios = false; // ← AGREGAR
-  //       },
-  //       error: (error) => {
-  //         if (error.status !== 403) {
-  //           this.alerta.alertaError('Error al cargar los usuarios por roles');
-  //         }
-  //         this.loadingUsuarios = false; // ← AGREGAR
-  //       }
-  //     });
-  //   }
-  // }
-
   cargarUsuariosPorRol(): void {
     const usuarioData = localStorage.getItem('usuario');
 
     if (!usuarioData) {
-      console.error('No hay datos de usuario en localStorage');
       return;
     }
 
@@ -506,17 +353,14 @@ export class AgendaComponent implements OnInit, AfterViewInit {
 
     this.loadingUsuarios = true;
 
-    // Roles de médicos/fisioterapeutas/profesionales
     if(usuarioRol == 2 || usuarioRol == 6 || usuarioRol == 7 || usuarioRol == 12 || usuarioRol == 13 || usuarioRol == 15){
       const currentUserId = this.getCurrentUserId();
       this.selectedMedico = currentUserId;
 
-      // IMPORTANTE: Pre-seleccionar el usuario en el formulario también
       this.citaForm.patchValue({
         fkusuario: parseInt(currentUserId)
       });
 
-      // IMPORTANTE: Deshabilitar el select para que no pueda cambiar
       this.citaForm.get('fkusuario')?.disable();
       this.isSelectDisabled = true;
 
@@ -542,13 +386,14 @@ export class AgendaComponent implements OnInit, AfterViewInit {
                     this.filtrarPorMedico();
                     this.loadingUsuarios = false;
                     
-                    // IMPORTANTE: Asegurar que siga seleccionado después de cargar
+                    //Asegurar que siga seleccionado después de cargar
                     this.citaForm.patchValue({
                       fkusuario: parseInt(currentUserId)
                     });
                   }
                 },
                 error: (error) => {
+                  console.error('Error al cargar usuario actual:', error);
                   if(error.status !== 403){
                     this.alerta.alertaError('Error al cargar el usuario actual');
                   }
@@ -566,6 +411,7 @@ export class AgendaComponent implements OnInit, AfterViewInit {
           }
         },
         error: (error) => {
+          console.error('Error al obtener usuarios por rol:', error);
           if (error.status === 403) {
             this.alerta.alertaError('Error al cargar los usuarios por roles');
           }
@@ -591,6 +437,7 @@ export class AgendaComponent implements OnInit, AfterViewInit {
           this.loadingUsuarios = false;
         },
         error: (error) => {
+          console.error('Error al obtener usuarios por rol (admin):', error);
           if (error.status === 403) {
             this.alerta.alertaError('Error al cargar los usuarios por roles');
           }
@@ -613,6 +460,7 @@ export class AgendaComponent implements OnInit, AfterViewInit {
         this.loadingPacientes = false;
       },
       error: (error) => {
+        console.error('Error al cargar pacientes:', error);
         this.loadingPacientes = false;
         if (error.status === 403) {
           return;
@@ -647,7 +495,6 @@ export class AgendaComponent implements OnInit, AfterViewInit {
     }
   }
 
-  // AGREGAR este nuevo método
   onPacienteSeleccionadoNgSelect(pacienteSeleccionado: any): void {
     if (!pacienteSeleccionado) {
       this.citaForm.patchValue({
@@ -725,13 +572,11 @@ export class AgendaComponent implements OnInit, AfterViewInit {
         const api = this.calendarComponent.getApi();
         api.updateSize();
         
-        // AGREGAR: Forzar re-render
         api.render();
         return;
       }
       window.dispatchEvent(new Event('resize'));
     } catch (error) {
-      console.error('Error resizing calendar:', error);
     }
   }
 
@@ -857,11 +702,11 @@ export class AgendaComponent implements OnInit, AfterViewInit {
           // Forzar actualización del calendario
           this.calendarOptions = { ...this.calendarOptions };
           
-          // AGREGAR: Forzar re-render después de un delay
+          //  Forzar re-render después de un delay
           setTimeout(() => {
             this.resizeCalendar();
             
-            // AGREGAR: Forzar render adicional
+            // Forzar render adicional
             if (this.calendarComponent) {
               const api = this.calendarComponent.getApi();
               api.render();
@@ -871,6 +716,7 @@ export class AgendaComponent implements OnInit, AfterViewInit {
           this.loading = false;
         },
         error: (error) => {
+          console.error('Error al cargar las citas:', error);
           this.loading = false;
           if (error.status === 403) {
             return;
@@ -883,38 +729,6 @@ export class AgendaComponent implements OnInit, AfterViewInit {
       this.loading = false;
     }
   }
-
-  // handleDateSelect(selectInfo: DateSelectArg): void {
-  //   // Extraer la fecha seleccionada
-  //   const fechaSeleccionada = selectInfo.startStr.split('T')[0];
-
-  //   // Configurar el modo y la fecha
-  //   this.selectedDate = fechaSeleccionada;
-  //   this.modalMode = 'create';
-  //   this.selectedCita = null;
-
-  //   // Resetear completamente el formulario con valores por defecto
-  //   this.citaForm.reset({
-  //     fkpaciente: '',              // ← Valor vacío
-  //     fkusuario: '',               // ← Valor vacío
-  //     fechaatencion: fechaSeleccionada,
-  //     horaatencion: '',            // ← Valor vacío
-  //     comentario: '',
-  //     transporte: 0,
-  //     fechatransporte: fechaSeleccionada,
-  //     horariotransporte: '',
-  //     direccion: '',
-  //     nombreEncargado: '',
-  //     contactoEncargado: ''
-  //   });
-
-  //   // Abrir el modal
-  //   this.showModal = true;
-
-  //   // Deseleccionar en el calendario
-  //   const calendarApi = selectInfo.view.calendar;
-  //   calendarApi.unselect();
-  // }
 
   handleDateSelect(selectInfo: DateSelectArg): void {
     const fechaSeleccionada = selectInfo.startStr.split('T')[0];
@@ -1014,61 +828,31 @@ export class AgendaComponent implements OnInit, AfterViewInit {
           this.mostrandoCitaRecurrente = true;
         }
       },
-      error: (error) => {
-        console.error('Error al cargar detalles de serie:', error);
+      error: () => {
         this.mostrandoCitaRecurrente = false;
       }
     });
   }
 
-  // abrirModalNuevaCita(): void {
-  //   const fechaHoy = format(new Date(), 'yyyy-MM-dd');
-    
-  //   this.selectedDate = fechaHoy;
-  //   this.modalMode = 'create';
-  //   this.selectedCita = null;
-    
-  //   // Resetear completamente el formulario con valores por defecto
-  //   this.citaForm.reset({
-  //     fkpaciente: '',              // ← Valor vacío
-  //     fkusuario: '',               // ← Valor vacío
-  //     fechaatencion: fechaHoy,
-  //     horaatencion: '',            // ← Valor vacío
-  //     comentario: '',
-  //     transporte: 0,
-  //     fechatransporte: fechaHoy,
-  //     horariotransporte: '',
-  //     direccion: '',
-  //     nombreEncargado: '',
-  //     contactoEncargado: ''
-  //   });
-    
-  //   this.showModal = true;
-  // }
-
   abrirModalNuevaCita(): void {
-    //const fechaHoy = format(new Date(), 'yyyy-MM-dd');
     const fechaHoy = this.fechaMinima;
     
     this.selectedDate = fechaHoy;
     this.modalMode = 'create';
     this.selectedCita = null;
     
-    // Obtener el usuario actual
     const usuarioData = localStorage.getItem('usuario');
     const usuario = usuarioData ? JSON.parse(usuarioData) : null;
     const usuarioRol = usuario?.fkrol;
     
-    // Determinar si debe pre-seleccionar usuario
     let usuarioPreseleccionado = '';
     if (usuarioRol == 2 || usuarioRol == 6 || usuarioRol == 7 || usuarioRol == 12 || usuarioRol == 13 || usuarioRol == 15) {
       usuarioPreseleccionado = this.getCurrentUserId();
     }
     
-    // Resetear formulario con o sin usuario pre-seleccionado
     this.citaForm.reset({
       fkpaciente: '',
-      fkusuario: usuarioPreseleccionado, // Pre-seleccionar si es médico
+      fkusuario: usuarioPreseleccionado,
       fechaatencion: fechaHoy,
       horaatencion: '',
       comentario: '',
@@ -1119,136 +903,6 @@ export class AgendaComponent implements OnInit, AfterViewInit {
       contactoEncargado: ''
     });
   }
-
-  // editarCita(): void {
-  //   if (this.selectedCita) {
-      
-  //     this.modalMode = 'edit';
-      
-  //     // Cargar los datos de la cita en el formulario
-  //     this.citaForm.patchValue({
-  //       fkpaciente: this.selectedCita.fkpaciente,
-  //       fkusuario: this.selectedCita.fkusuario,
-  //       fechaatencion: this.selectedCita.fechaatencion,
-  //       horaatencion: this.selectedCita.horaatencion,
-  //       comentario: this.selectedCita.comentario || '',
-  //       transporte: this.selectedCita.transporte || 0,
-  //       fechatransporte: this.selectedCita.fechatransporte || '',
-  //       horariotransporte: this.selectedCita.horariotransporte || '',
-  //       direccion: this.selectedCita.direccion || ''
-  //     });
-
-  //     // Si hay paciente seleccionado, cargar sus datos
-  //     if (this.selectedCita.fkpaciente) {
-  //       const pacienteSeleccionado = this.paciente.find(
-  //         p => p.idpaciente === this.selectedCita!.fkpaciente
-  //       );
-
-  //       if (pacienteSeleccionado) {
-  //         this.citaForm.patchValue({
-  //           nombreEncargado: pacienteSeleccionado.nombreencargado || '',
-  //           contactoEncargado: pacienteSeleccionado.telefonoencargado || '',
-  //           direccion: pacienteSeleccionado.municipio + ', ' + pacienteSeleccionado.aldea + ', ' + pacienteSeleccionado.direccion || '',
-  //         });
-  //       }
-  //     }
-  //   }
-  // }
-
-  // guardarCita(): void {
-  //   if (this.citaForm.invalid) {
-  //     this.alerta.alertaError('Por favor complete todos los campos requeridos');
-  //     return;
-  //   }
-
-  //   this.loading = true;
-  //   const currentUserId = this.getCurrentUserId();
-
-  //   const horaSeleccionada = this.citaForm.get('horaatencion')?.value;
-  //   const horaFormateada = horaSeleccionada.includes(':00:00') 
-  //     ? horaSeleccionada 
-  //     : horaSeleccionada.length === 5 
-  //       ? `${horaSeleccionada}:00` 
-  //       : horaSeleccionada;
-
-  //   const transporteValue = this.citaForm.get('transporte')?.value;
-  //   const transporteNumero = transporteValue ? 1 : 0;
-
-  //   if (transporteNumero === 1) {
-  //     const fechaTransporte = this.citaForm.get('fechatransporte')?.value;
-  //     const horarioTransporte = this.citaForm.get('horariotransporte')?.value;
-  //     const direccion = this.citaForm.get('direccion')?.value;
-
-  //     if (!fechaTransporte || !horarioTransporte || !direccion || direccion.trim() === '') {
-  //       this.alerta.alertaError('Cuando se solicita transporte, debe completar la fecha, hora y dirección del transporte');
-  //       this.loading = false;
-  //       return;
-  //     }
-  //   }
-    
-  //   const datosCita: CitaRequest = {
-  //     fkusuario:         parseInt(this.citaForm.get('fkusuario')?.value),
-  //     fkpaciente:        parseInt(this.citaForm.get('fkpaciente')?.value),
-  //     fechaatencion:     this.citaForm.get('fechaatencion')?.value,
-  //     horaatencion:      horaFormateada,
-  //     comentario:        this.citaForm.get('comentario')?.value || '',
-  //     transporte:        transporteNumero,
-  //     fechatransporte:   transporteNumero ? this.citaForm.get('fechatransporte')?.value : null,
-  //     horariotransporte: transporteNumero ? this.citaForm.get('horariotransporte')?.value : null,
-  //     direccion:         transporteNumero ? this.citaForm.get('direccion')?.value : '',
-  //     usuariocreacion:   currentUserId,
-  //     usuariomodificacion:currentUserId,
-  //     estado:            1
-  //   };
-
-  //   if (this.modalMode === 'create') {
-  //     this.agendaService.crearCita(datosCita).subscribe({
-  //       next: (response) => {
-  //         this.loading = false;
-  //         if (response.success) {
-  //           this.alerta.alertaExito(response.message || 'Cita creada exitosamente');
-  //           this.cargarCitas();
-  //           this.cerrarModal();
-  //         } else {
-  //           this.alerta.alertaInfo(response.message || 'No se pudo crear la cita');
-  //         }
-  //       },
-  //       error: (error) => {
-  //         this.loading = false;
-  //         if (error.status === 403) {
-  //           return;
-  //         }
-  //         this.alerta.alertaError('Error al crear cita. Intenta nuevamente.');
-  //       }
-  //     });
-  //   } else if (this.modalMode === 'edit' && this.selectedCita) {
-  //     if (!this.selectedCita.idagenda) {
-  //       this.alerta.alertaError('Error: No se encontró el ID de la cita');
-  //       this.loading = false;
-  //       return;
-  //     }
-
-  //     this.agendaService.actualizarCita(this.selectedCita.idagenda, datosCita).subscribe({
-  //       next: (response) => {
-  //         this.loading = false;
-  //         if (response.success) {
-  //           this.alerta.alertaExito(response.message || 'Cita actualizada exitosamente');
-  //           this.cargarCitas();
-  //           this.cerrarModal();
-  //         } else {
-  //           this.alerta.alertaInfo(response.message || 'No se pudo actualizar la cita');
-  //         }
-  //       },
-  //       error: (error) => {
-  //         this.loading = false;
-  //         if (error.status === 403) {
-  //           return;
-  //         }
-  //         this.alerta.alertaError('Error al actualizar cita. Intenta nuevamente.');
-  //       }
-  //     });
-  //   }
-  // }
 
   editarCita(): void {
     if (this.selectedCita) {
@@ -1369,12 +1023,12 @@ export class AgendaComponent implements OnInit, AfterViewInit {
         usuariocreacion: currentUserId
       };
 
-      // Agregar días de semana si es recurrencia semanal
+      // Agrega días de semana si es recurrencia semanal
       if (this.tipoRecurrencia === 'semanal') {
         datosRecurrentes.dias_semana = this.obtenerDiasSeleccionadosNumeros();
       }
 
-      // Agregar fecha fin o número de ocurrencias
+      // Agrega fecha fin o número de ocurrencias
       if (this.usarFechaFin) {
         datosRecurrentes.fecha_fin = this.fechaFinRecurrencia;
       } else {
@@ -1400,6 +1054,7 @@ export class AgendaComponent implements OnInit, AfterViewInit {
           }
         },
         error: (error) => {
+          console.error('Error al crear citas recurrentes:', error);
           this.loading = false;
           if (error.status === 403) {
             return;
@@ -1440,6 +1095,7 @@ export class AgendaComponent implements OnInit, AfterViewInit {
           }
         },
         error: (error) => {
+          console.error('Error al crear cita:', error);
           this.loading = false;
           if (error.status === 403) {
             return;
@@ -1466,6 +1122,7 @@ export class AgendaComponent implements OnInit, AfterViewInit {
           }
         },
         error: (error) => {
+          console.error('Error al actualizar cita:', error);
           this.loading = false;
           if (error.status === 403) {
             return;
@@ -1475,47 +1132,6 @@ export class AgendaComponent implements OnInit, AfterViewInit {
       });
     }
   }
-
-  // async eliminarCita(): Promise<void> {
-  //   if (!this.selectedCita || !this.selectedCita.idagenda) {
-  //     this.alerta.alertaError('No se puede eliminar la cita');
-  //     return;
-  //   }
-    
-  //   const confirmacion = await this.alerta.alertaConfirmacion(
-  //     '¿Estás seguro de que deseas eliminar esta cita?',
-  //     '',
-  //     'Sí, eliminar',
-  //     'No, cancelar'
-  //   );
-    
-  //   if (!confirmacion) {
-  //     return;
-  //   }
-    
-  //   this.loading = true;
-  //   const currentUserId = this.getCurrentUserId();
-    
-  //   this.agendaService.eliminarCita(this.selectedCita.idagenda, currentUserId).subscribe({
-  //     next: (response) => {
-  //       if (response.success) {
-  //         this.alerta.alertaExito('Cita eliminada exitosamente');
-  //         this.cargarCitas(); 
-  //         this.cerrarModal();
-  //       } else {
-  //         this.alerta.alertaError(response.message || 'Error al eliminar la cita');
-  //       }
-  //       this.loading = false;
-  //     },
-  //     error: (error) => {
-  //       this.loading = false;
-  //       if (error.status === 403) {
-  //         return;
-  //       }
-  //       this.alerta.alertaError('Error al eliminar la cita');
-  //     }
-  //   });
-  // }
 
   async eliminarCita(): Promise<void> {
     if (!this.selectedCita || !this.selectedCita.idagenda) {
@@ -1556,6 +1172,7 @@ export class AgendaComponent implements OnInit, AfterViewInit {
             this.loading = false;
           },
           error: (error) => {
+            console.error('Error al eliminar la serie:', error);
             this.loading = false;
             if (error.status === 403) {
               return;
@@ -1580,17 +1197,16 @@ export class AgendaComponent implements OnInit, AfterViewInit {
             this.loading = false;
           },
           error: (error) => {
+            console.error('Error al cancelar cita recurrente:', error);
             this.loading = false;
             if (error.status === 403) {
               return;
             }
-            console.error('Error completo:', error); // ← AGREGAR PARA DEBUG
             this.alerta.alertaError('Error al eliminar la cita');
           }
         });
       }
     } else {
-      // Cita normal (no recurrente)
       const confirmacion = await this.alerta.alertaConfirmacion(
         '¿Estás seguro de que deseas cancelar esta cita?',
         '',
@@ -1604,9 +1220,6 @@ export class AgendaComponent implements OnInit, AfterViewInit {
       
       this.loading = true;
       const currentUserId = this.getCurrentUserId();
-
-      console.log('Eliminando cita ID:', this.selectedCita.idagenda); // ← DEBUG
-      console.log('Usuario:', currentUserId); // ← DEBUG
       
       this.agendaService.eliminarCita(this.selectedCita.idagenda, currentUserId).subscribe({
         next: (response) => {
@@ -1620,12 +1233,8 @@ export class AgendaComponent implements OnInit, AfterViewInit {
           this.loading = false;
         },
         error: (error) => {
+          console.error('Error al eliminar cita directa:', error);
           this.loading = false;
-
-          console.error('Error completo al eliminar cita:', error); // ← DEBUG COMPLETO
-          console.error('Error status:', error.status); // ← DEBUG
-          console.error('Error message:', error.message); // ← DEBUG
-          console.error('Error body:', error.error); // ← DEBUG
 
           if (error.status === 403) {
             return;
@@ -1675,7 +1284,6 @@ export class AgendaComponent implements OnInit, AfterViewInit {
 
   navegarMes(direccion: 'prev' | 'next'): void {
     if (!this.calendarComponent) {
-      console.error('Componente de calendario no disponible');
       return;
     }
     
@@ -1700,7 +1308,6 @@ export class AgendaComponent implements OnInit, AfterViewInit {
   }
 
   buscarCitas(): void {
-    console.log('Buscando:', this.searchTerm);
   }
 
   abrirModalReporte(): void {
@@ -1740,6 +1347,7 @@ export class AgendaComponent implements OnInit, AfterViewInit {
         this.loadingReporte = false;
       },
       error: (error) => {
+        console.error('Error al generar reporte de transportes:', error);
         this.loadingReporte = false;
         if (error.status === 403) {
           return;
@@ -1759,7 +1367,6 @@ export class AgendaComponent implements OnInit, AfterViewInit {
       await this.pdfExcelService.generarPDF('transporte', this.reporteTransportes);
       this.alerta.alertaExito('PDF generado exitosamente');
     } catch (error) {
-      console.error('Error al generar PDF:', error);
       this.alerta.alertaError('Error al generar el PDF');
     }
   }
@@ -1774,7 +1381,6 @@ export class AgendaComponent implements OnInit, AfterViewInit {
       this.pdfExcelService.generarExcel('transporte', this.reporteTransportes);
       this.alerta.alertaExito('Excel generado exitosamente');
     } catch (error) {
-      console.error('Error al generar Excel:', error);
       this.alerta.alertaError('Error al generar el Excel');
     }
   }

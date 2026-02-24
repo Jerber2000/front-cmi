@@ -99,7 +99,6 @@ export class UsuarioService{
             }),
             catchError(error => {
                 if (error.status === 0) {
-                    console.error('Sin conexión al servidor');
                 }
                 throw error;
             })
@@ -110,12 +109,8 @@ export class UsuarioService{
         const ruta = `${this.apiUrl}/buscarPorRol/${rol}`;
         return this.http.get<ApiResponse<Usuario[]>>(ruta).pipe(
             tap(response => {
-                console.log('Usuarios por rol:', response);
             }),
-            // ✅ REMOVIDO el map que estaba causando el problema
             catchError(error => {
-                console.error('Error al obtener usuarios por rol:', error);
-                // ✅ Retornar un ApiResponse vacío en lugar de un array vacío
                 return of({
                     success: false,
                     data: [],
@@ -147,7 +142,6 @@ export class UsuarioService{
             }),
             catchError(error => {
                 if (error.status === 0) {
-                    console.error('Sin conexión al servidor');
                 }
                 
                 throw error;
@@ -166,7 +160,6 @@ export class UsuarioService{
                 }
                 
                 if (error.status === 0) {
-                    console.error('Sin conexión al servidor');
                 }
                 
                 // Relanzar el error para que llegue al error: del componente

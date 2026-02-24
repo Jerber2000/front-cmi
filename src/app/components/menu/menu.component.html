@@ -110,39 +110,12 @@
         </div>
       </div>
 
-      <!-- ✅ Módulos Recomendados CON PERMISOS -->
-      <div class="recommended-section" *ngIf="modulosRecomendados.length > 0">
-        <h2 class="section-title">
-          <i class="fas fa-star"></i> Módulos Recomendados Para Ti
-        </h2>
-        
-        <div class="recommended-grid">
-          <!-- ✅ Usar directiva appHasRole -->
-          <ng-container *ngFor="let modulo of modulosRecomendados">
-            <div class="recommended-card" 
-                 *appHasRole="modulo.roles"
-                 (click)="navegarA(modulo.ruta)">
-              <div class="recommended-icon" [style.background]="modulo.color">
-                <i [class]="modulo.icono"></i>
-              </div>
-              <div class="recommended-info">
-                <h3>{{ modulo.titulo }}</h3>
-                <p>{{ modulo.descripcion }}</p>
-              </div>
-              <div class="recommended-action">
-                <i class="fas fa-chevron-right"></i>
-              </div>
-            </div>
-          </ng-container>
-        </div>
-      </div>
-
-      <!-- ✅ Módulos Principales CON PERMISOS -->
+      <!-- Módulos Principales CON PERMISOS -->
       <div class="modules-section">
         <h2 class="section-title">Todos los Módulos del Sistema</h2>
         
         <div class="modules-grid">
-          <!-- ✅ Usar directiva appHasRole -->
+          <!-- Usar directiva appHasRole -->
           <ng-container *ngFor="let modulo of modulosPrincipales">
             <div class="module-card" 
                  *appHasRole="modulo.roles"

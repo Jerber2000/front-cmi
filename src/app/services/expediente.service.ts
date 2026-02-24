@@ -64,7 +64,7 @@ export interface Expediente {
   fechamodificacion?: string;
   estado?: number;
   
-  // ✅ ACTUALIZADO: Relación con paciente (incluye clínica)
+  //  Relación con paciente (incluye clínica)
 paciente?: {
   idpaciente: number;
   nombres: string;
@@ -77,8 +77,6 @@ paciente?: {
   };
 };
   
-  // ⚠️ OPCIONAL: Solo si usas el sistema de referencias entre clínicas
-  // Puedes dejarlo comentado o eliminarlo si no lo usas
   detallereferirpaciente?: Array<{
     idrefpaciente: number;
     comentario: string;
@@ -121,7 +119,6 @@ export interface RespuestaListaExpedientes {
     totalPaginas: number;
   };
 }
-
 
 /**
  * Respuesta genérica para expedientes
@@ -196,7 +193,7 @@ export class ServicioExpediente {
       parametros = parametros.set('busqueda', busqueda);
     }
 
-    // ✅ NUEVO: Agregar filtro de clínica
+    // Agregar filtro de clínica
     if (fkclinica && fkclinica > 0) {
       parametros = parametros.set('fkclinica', fkclinica.toString());
     }
@@ -221,21 +218,16 @@ export class ServicioExpediente {
     return this.http.post<RespuestaCreacionExpediente>(this.urlApi, datosFormateados);
   }
 
-  // TAMBIÉN AGREGAR: Método para actualizar expediente con mejor logging
+  // Método para actualizar expediente con mejor logging
   /**
    * Actualiza un expediente existente - VERSION MEJORADA
    * @param id - ID del expediente a actualizar
    * @param expediente - Datos actualizados del expediente
    */
   actualizarExpediente(id: number, expediente: Partial<Expediente>): Observable<RespuestaExpediente> {
-    console.log('🔄 Servicio: Actualizando expediente', id);
-    console.log('📝 Datos recibidos en servicio:', expediente);
-    
+
     const datosFormateados = this.formatearParaBackend(expediente);
-    
-    console.log('🚀 Enviando PUT a:', `${this.urlApi}/${id}`);
-    console.log('📦 Datos finales a enviar:', datosFormateados);
-    
+
     return this.http.put<RespuestaExpediente>(`${this.urlApi}/${id}`, datosFormateados);
   }
 
@@ -244,7 +236,6 @@ export class ServicioExpediente {
    * @param id - ID del expediente a eliminar
    */
   eliminarExpediente(id: number): Observable<RespuestaExpediente> {
-    console.log('🗑️ Servicio: Eliminando expediente', id);
     return this.http.delete<RespuestaExpediente>(`${this.urlApi}/${id}`);
   }
 
@@ -352,12 +343,10 @@ export class ServicioExpediente {
  * @param expediente - Datos del expediente a formatear
  */
 formatearParaBackend(expediente: Partial<Expediente>): any {
-  console.log('🔧 Formateando datos para backend...');
-  console.log('📥 Datos originales:', expediente);
-  
+
   const formateado = { ...expediente };
 
-  // 🚫 REMOVER campos que no deben enviarse al backend
+  // Remover campos que no deben enviarse al backend
   delete (formateado as any).generarAutomatico;
 
   // Convertir strings vacíos a null PRIMERO
@@ -390,7 +379,6 @@ formatearParaBackend(expediente: Partial<Expediente>): any {
       if (!isNaN(numeroConvertido)) {
         (formateado as any)[campo] = numeroConvertido;
       } else {
-        console.warn(`⚠️ No se pudo convertir ${campo} a entero:`, valor);
         (formateado as any)[campo] = null;
       }
     } else {
@@ -409,7 +397,6 @@ formatearParaBackend(expediente: Partial<Expediente>): any {
       if (!isNaN(numeroConvertido)) {
         (formateado as any)[campo] = numeroConvertido;
       } else {
-        console.warn(`⚠️ No se pudo convertir ${campo} a decimal:`, valor);
         (formateado as any)[campo] = null;
       }
     } else {
@@ -426,16 +413,12 @@ formatearParaBackend(expediente: Partial<Expediente>): any {
         // Enviar solo la fecha en formato YYYY-MM-DD
         formateado.gineobsfur = fecha.toISOString().split('T')[0];
       } else {
-        console.warn('⚠️ Fecha FUR inválida, estableciendo a null');
         (formateado as any).gineobsfur = null;
       }
     } catch (error) {
-      console.warn('⚠️ Error al procesar fecha FUR:', error);
       (formateado as any).gineobsfur = null;
     }
   }
-
-  console.log('📤 Datos formateados para backend:', formateado);
   return formateado;
 }
 
@@ -540,10 +523,9 @@ formatearParaBackend(expediente: Partial<Expediente>): any {
     
     return resumen.join(' | ') || 'Sin información adicional';
   }
-  
 
   /**
-   * ✅ NUEVO: Obtiene lista de clínicas para el filtro
+   * Obtener lista de clínicas para el filtro
    */
   obtenerClinicas(): Observable<{ exito: boolean; datos: Clinica[] }> {
     return this.http.get<{ exito: boolean; datos: Clinica[] }>(`${this.urlApi}/clinicas`);

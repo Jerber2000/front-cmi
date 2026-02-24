@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
-// ✅ INTERFAZ COMPLETA DE EXPEDIENTE
+// INTERFAZ COMPLETA DE EXPEDIENTE
 export interface ExpedienteInfo {
   idexpediente: number;
   numeroexpediente: string;
@@ -49,7 +49,7 @@ export interface HistorialMedico {
   };
 }
 
-// ✅ INTERFAZ ACTUALIZADA CON ExpedienteInfo COMPLETO
+// INTERFAZ ACTUALIZADA CON ExpedienteInfo COMPLETO
 export interface InfoPaciente {
   idpaciente: number;
   nombres: string;
@@ -61,7 +61,7 @@ export interface InfoPaciente {
   telefono?: string;
   email?: string;
   fechanacimiento?: string;
-  expedientes?: ExpedienteInfo[];  // ✅ CAMBIO: Ahora usa ExpedienteInfo completo
+  expedientes?: ExpedienteInfo[];  
 }
 
 export interface CrearSesionRequest {

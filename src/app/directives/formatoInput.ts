@@ -116,13 +116,13 @@ export class formatoInputDirective {
     this.styleErrorMessages();
   }
 
-  @HostListener('blur', ['$event'])
+  @HostListener('blur')
   onBlur(): void {
     this.applyValidationStyles();
     this.styleErrorMessages();
   }
 
-  @HostListener('focus', ['$event'])
+  @HostListener('focus')
   onFocus(): void {
     // Remover estilos de error al enfocar (para ambos inputs y selects)
     this.renderer.removeClass(this.el.nativeElement, 'invalid');

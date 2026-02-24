@@ -28,7 +28,7 @@
         <button class="btn-add" (click)="showForm()" *ngIf="currentView === 'list'" title="Nuevo Documento">
           <i class="fas fa-plus"></i>
         </button>
-        <!-- ← AGREGAR SELECT DE CLÍNICA -->
+
         <select 
           class="clinica-filter" 
           [(ngModel)]="selectedClinicaFilter"
@@ -57,7 +57,7 @@
         <thead>
           <tr>
             <th>Nombre del Documento</th>
-            <th>Clínica</th> <!-- ← AGREGAR ESTA COLUMNA -->
+            <th>Clínica</th> 
             <th>Descripción</th>
             <th>Fecha Creación</th>
             <th>Estado</th>
@@ -71,7 +71,6 @@
             <td class="user-name">
               {{ documento.nombredocumento }}
             </td>
-            <!-- ← AGREGAR ESTA CELDA -->
             <td>
               <span class="clinica-badge">
                 {{ documento.clinica?.nombreclinica || 'Sin clínica' }}
@@ -235,7 +234,6 @@
                 </div>
               </div>
 
-              <!-- ← AGREGAR ESTE CAMPO DE CLÍNICA -->
               <div class="form-group full-width">
                 <label>Clínica *</label>
                 <select 

@@ -1,7 +1,9 @@
 // src/app/components/reporteria/reporteria.component.ts - ACTUALIZADO
 
-import { Component, OnInit, AfterViewInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PerfilService } from '../../services/perfil.service';
+import { Subscription } from 'rxjs';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -15,7 +17,7 @@ import {
   FiltrosReferencias,
   FiltrosSalidas 
 } from '../../services/reporteria.service';
-import { PdfExcelReporteriaService } from '../../services/pdf-excel-reporteria.service'; // 🆕 NUEVO
+import { PdfExcelReporteriaService } from '../../services/pdf-excel-reporteria.service';
 import { ArchivoService } from '../../services/archivo.service';
 import { AlertaService } from '../../services/alerta.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
@@ -28,7 +30,8 @@ import { HasRoleDirective } from '../../directives/has-role.directive';
   templateUrl: './reporteria.component.html',
   styleUrls: ['./reporteria.component.scss']
 })
-export class ReporteriaComponent implements OnInit, AfterViewInit {
+export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
+  private perfilSubscription?: Subscription;
   
   sidebarExpanded = true;
   loading = false;
@@ -87,7 +90,8 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
     public reporteriaService: ReporteriaService,
     private pdfExcelService: PdfExcelReporteriaService,
     private archivoService: ArchivoService,
-    private alerta: AlertaService
+    private alerta: AlertaService,
+    private perfilService: PerfilService
   ) {
     this.filtrosPacientesForm = this.fb.group({
       desde: [''],
@@ -134,7 +138,23 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
   }
   
   ngOnInit(): void {
-    this.loadUserInfo();
+    // Suscribirse al perfil para que el sidebar se actualice reactivamente
+    this.perfilSubscription = this.perfilService.perfil$.subscribe({
+      next: (usuario) => {
+        if (usuario) {
+          this.userInfo = this.perfilService.obtenerInfoSidebar();
+        }
+      },
+      error: (error) => {
+      }
+    });
+
+    // Cargar el perfil desde el backend para inicializar
+    this.perfilService.obtenerPerfilDesdeBackend().subscribe({
+      error: (error) => {
+      }
+    });
+
     this.generarAniosDisponibles();
     this.cargarMedicos();
     if (this.tipoReporteActivo === 'dashboard') {
@@ -144,6 +164,10 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
     
   ngAfterViewInit(): void {
     this.detectSidebarState();
+  }
+
+  ngOnDestroy(): void {
+    this.perfilSubscription?.unsubscribe();
   }
   
   loadUserInfo(): void {
@@ -158,7 +182,6 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
         };
       }
     } catch (error) {
-      console.error('Error al cargar usuario:', error);
     }
   }
   
@@ -180,7 +203,6 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
         this.medicosDisponibles = Array.from(medicosMap.values());
       },
       error: (error) => {
-        console.error('Error al cargar médicos:', error);
       }
     });
   }
@@ -229,11 +251,10 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
       this.cargarReporteAgenda();
     } else if (tipo === 'referencias') {
       this.cargarReporteReferencias();
-    } else if (tipo === 'salidas') {  // 🆕 AGREGAR ESTE BLOQUE
+    } else if (tipo === 'salidas') { 
       this.cargarReporteSalidas();
     }
   }
-
 
   aplicarFiltros(): void {
     this.resetearPaginacion();
@@ -248,12 +269,11 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
       this.cargarReporteAgenda();
     } else if (this.tipoReporteActivo === 'referencias') {
       this.cargarReporteReferencias();
-    } else if (this.tipoReporteActivo === 'salidas') {  // 🆕 AGREGAR ESTE BLOQUE
+    } else if (this.tipoReporteActivo === 'salidas') {  
       this.cargarReporteSalidas();
     }
   }
 
-  
   cargarDashboard(): void {
     this.loading = true;
     
@@ -292,7 +312,7 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
       case 'referencias':
         this.cargarReporteReferencias();
         break;
-      case 'salidas':  // 🆕 AGREGAR ESTE CASE
+      case 'salidas':  
         this.cargarReporteSalidas();
         break;
       default:
@@ -425,7 +445,6 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
         this.loadingReporte = false;
       },
       error: (error) => {
-        console.error('Error al cargar reporte de salidas:', error);
         this.alerta.alertaError('Error al cargar reporte de salidas');
         this.loadingReporte = false;
       }
@@ -434,7 +453,7 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
     
   limpiarFiltros(): void {
     if (this.tipoReporteActivo === 'pacientes') {
-      this.filtrosPacientesForm.reset();  // ✅ Usa .reset() en los FormGroups
+      this.filtrosPacientesForm.reset();  
       this.cargarReportePacientes();
     } else if (this.tipoReporteActivo === 'consultas') {
       this.filtrosConsultasForm.reset();
@@ -449,7 +468,6 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
       this.filtrosReferenciasForm.reset();
       this.cargarReporteReferencias();
     } else if (this.tipoReporteActivo === 'salidas') {
-      // ✅ Para salidas SÍ usamos objeto directo porque no es FormGroup
       this.filtrosSalidas = { page: 1, limit: 10 };
       this.cargarReporteSalidas();
     }
@@ -529,7 +547,7 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
   }
   
   // ==========================================
-  // 🆕 EXPORTAR PDF - ACTUALIZADO
+  // EXPORTAR PDF - ACTUALIZADO
   // ==========================================
   async exportarPDF(): Promise<void> {
     if (this.generandoPDF) return;
@@ -550,9 +568,6 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
         this.generandoPDF = false;
         return;
       }
-
-      console.log('Exportando PDF:', this.tipoReporteActivo, 'Registros:', this.datosReporte.length);
-
       // Generar PDF
       await this.pdfExcelService.generarPDF(
         this.tipoReporteActivo,
@@ -562,7 +577,6 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
       this.alerta.alertaExito('PDF generado exitosamente');
 
     } catch (error) {
-      console.error('Error al generar PDF:', error);
       this.alerta.alertaError('Error al generar PDF: ' + error);
     } finally {
       this.generandoPDF = false;
@@ -570,7 +584,7 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
   }
   
   // ==========================================
-  // 🆕 EXPORTAR EXCEL - ACTUALIZADO
+  // EXPORTAR EXCEL - ACTUALIZADO
   // ==========================================
   exportarExcel(): void {
     if (this.generandoExcel) return;
@@ -591,9 +605,6 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
         this.generandoExcel = false;
         return;
       }
-
-      console.log('Exportando Excel:', this.tipoReporteActivo, 'Registros:', this.datosReporte.length);
-
       // Generar Excel
       this.pdfExcelService.generarExcel(
         this.tipoReporteActivo,
@@ -603,7 +614,6 @@ export class ReporteriaComponent implements OnInit, AfterViewInit {
       this.alerta.alertaExito('Excel generado exitosamente');
 
     } catch (error) {
-      console.error('Error al generar Excel:', error);
       this.alerta.alertaError('Error al generar Excel: ' + error);
     } finally {
       this.generandoExcel = false;

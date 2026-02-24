@@ -13,7 +13,6 @@ export class ArchivoService {
   constructor(private http: HttpClient) {}
 
   /**
-   * MÉTODO PRINCIPAL GENÉRICO - Funciona para cualquier entidad
    * @param entidad - 'usuarios', 'pacientes', 'productos', etc.
    * @param entityId - ID de la entidad
    * @param archivos - { foto?: File, documento?: File }
@@ -67,7 +66,7 @@ export class ArchivoService {
 //services/archivo.service.ts
 
 /**
- * ✅ MÉTODO PRINCIPAL - Solo foto (CON ELIMINACIÓN AUTOMÁTICA)
+ *  MÉTODO PRINCIPAL - Solo foto (CON ELIMINACIÓN AUTOMÁTICA)
  * @param entidad - 'usuarios', 'pacientes', 'productos', etc.
  * @param entityId - ID de la entidad
  * @param foto - Archivo de foto
@@ -78,7 +77,7 @@ async subirFoto(
   entidad: string, 
   entityId: number, 
   foto: File,
-  rutaAnterior?: string  // ✅ NUEVO PARÁMETRO OPCIONAL
+  rutaAnterior?: string  //  NUEVO PARÁMETRO OPCIONAL
 ): Promise<string> {
   try {
     if (!foto.type.startsWith('image/')) {
@@ -93,7 +92,7 @@ async subirFoto(
     formData.append('foto', foto);
     formData.append('entityId', entityId.toString());
     
-    // ✅ Enviar ruta anterior si existe (para que el backend la elimine)
+    // Enviar ruta anterior si existe (para que el backend la elimine)
     if (rutaAnterior && rutaAnterior.trim() !== '') {
       formData.append('rutaAnterior', rutaAnterior);
     }
@@ -122,7 +121,7 @@ async subirFoto(
    */
 
 /**
- * ✅ DOCUMENTO - Con eliminación automática
+ * DOCUMENTO - Con eliminación automática
  */
 async subirDocumento(
   entidad: string, 
@@ -143,7 +142,7 @@ async subirDocumento(
     formData.append('documento', documento);
     formData.append('entityId', entityId.toString());
     
-    // ✅ AGREGAR ESTO (igual que en subirFoto):
+    // AGREGAR ESTO (igual que en subirFoto):
     if (rutaAnterior && rutaAnterior.trim() !== '') {
       formData.append('rutaAnterior', rutaAnterior);
     }

@@ -23,7 +23,6 @@ app.use((req, res, next) => {
       !req.url.startsWith('/api') && 
       req.url !== '/health') {
     
-    console.log(`SPA Route: ${req.url}`);
     return res.sendFile(path.join(__dirname, 'dist/cmi-front/index.html'));
   }
   next();
@@ -31,11 +30,10 @@ app.use((req, res, next) => {
 
 // Manejo de errores
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
   res.status(500).json({ error: 'Error interno del servidor' });
 });
 
 const port = process.env.PORT || 4200;
 app.listen(port, '0.0.0.0', () => {
-  console.log(`Frontend running on port ${port}`);
+  // Frontend servidor iniciado
 });

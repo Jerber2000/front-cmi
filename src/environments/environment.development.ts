@@ -1,13 +1,7 @@
-//environments/environment.development.ts
+// Usado por: ng serve (desarrollo local)
 export const environment = {
-    production: false,
+    production: false,  // ✅ CORRECCIÓN: Cambié a false
     apiUrl: 'http://localhost:3000/api',
-    appName: 'Mi App - Desarrollo',
+    appName: 'CMI - Desarrollo',
     enableLogging: true
 };
-
-
-//export const environment = {
-//  production: true,  // Cambiar a true
-//  apiUrl: 'https://back-production-280a.up.railway.app/api'  // URL de producción
-//};

@@ -37,8 +37,22 @@ export class PerfilService {
     private archivoService: ArchivoService,
     private http: HttpClient
   ) {
-    // NO cargar desde localStorage al inicializar
-    // Los datos siempre deben venir del backend
+    // ✅ Cargar desde localStorage al inicializar para que el avatar esté disponible inmediatamente
+    this.cargarPerfilDesdeLocalStorage();
+  }
+
+  /**
+   * Carga el perfil desde localStorage para disponibilidad inmediata
+   */
+  private cargarPerfilDesdeLocalStorage(): void {
+    try {
+      const usuarioData = localStorage.getItem('usuario');
+      if (usuarioData) {
+        const usuario = JSON.parse(usuarioData);
+        this.perfilSubject.next(usuario);
+      }
+    } catch (error) {
+    }
   }
 
   /**
@@ -52,21 +66,6 @@ export class PerfilService {
     });
   }
 
-  /**
-   * Obtiene el ID del usuario logueado desde localStorage
-   */
-  // private getCurrentUserId(): number {
-  //   try {
-  //     const usuarioData = localStorage.getItem('usuario');
-  //     if (usuarioData) {
-  //       const usuario = JSON.parse(usuarioData);
-  //       return usuario.idusuario;
-  //     }
-  //   } catch (error) {
-  //     console.error('Error al obtener el ID del usuario desde localStorage:', error);
-  //   }
-  //   return 1; // Valor por defecto
-  // }
 
   private getCurrentUserId(): number {
     try {
@@ -79,7 +78,6 @@ export class PerfilService {
           : parseInt(usuario.idusuario);
       }
     } catch (error) {
-      console.error('Error al obtener el ID del usuario desde localStorage:', error);
     }
     return 1; // Valor por defecto
   }
@@ -230,7 +228,7 @@ export class PerfilService {
 
     let rutaFoto = usuarioActual.rutafotoperfil || '';
 
-    // ✅ Subir nueva foto si se proporcionó (elimina automáticamente la anterior)
+    // Subir nueva foto si se proporcionó (elimina automáticamente la anterior)
     if (nuevaFoto) {
       try {
         // Obtener ruta anterior para que el backend la elimine
@@ -241,12 +239,9 @@ export class PerfilService {
           'usuarios',
           usuarioId,
           nuevaFoto,
-          rutaAnterior  // ✅ Backend eliminará esta automáticamente
+          rutaAnterior  // Backend eliminará esta automáticamente
         );
-        
-        console.log('✅ Foto de perfil actualizada:', rutaFoto);
       } catch (error) {
-        console.error('Error al subir foto:', error);
         throw new Error('Error al subir la foto de perfil');
       }
     }
@@ -296,7 +291,7 @@ export class PerfilService {
       this.usuarioService.actualizarUsuario(usuarioId, updateData).subscribe({
         next: (response) => {
           if (response.success) {
-            // Actualizar perfil solo en memoria (BehaviorSubject)
+            // Actualizar perfil en memoria (BehaviorSubject)
             const perfilActualizado: Usuario = {
               ...usuarioActual,
               correo: formData.correo,
@@ -306,15 +301,16 @@ export class PerfilService {
               rutafotoperfil: rutaFoto
             };
 
-            // SOLO actualizar BehaviorSubject - NO localStorage
+            // Actualizar tanto BehaviorSubject como localStorage para persistencia
             this.perfilSubject.next(perfilActualizado);
+            localStorage.setItem('usuario', JSON.stringify(perfilActualizado));
+            
             resolve(response);
           } else {
             reject(new Error(response.message || 'Error al actualizar el perfil'));
           }
         },
         error: (error) => {
-          console.error('Error al actualizar perfil en backend:', error);
           reject(new Error(this.procesarErrorHttp(error)));
         }
       });

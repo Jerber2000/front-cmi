@@ -341,7 +341,7 @@
           </div>
         </div>
 
-        <!-- ✅ SOLO CLÍNICA (SIN MÉDICO DESTINO) -->
+        <!-- SOLO CLÍNICA (SIN MÉDICO DESTINO) -->
         <div class="form-group">
           <label class="form-label">Clínica Destino *</label>
           <select 
@@ -573,7 +573,7 @@
         <!-- Documento Final -->
         <div class="documento-card" *ngIf="referidoSeleccionado.confirmacion3 === 1">
           <div class="documento-header">
-            <h5>✅ Documento de Aceptación Final</h5>
+            <h5> Documento de Aceptación Final</h5>
           </div>
           
           <!-- SI YA EXISTE EL DOCUMENTO -->
@@ -616,7 +616,7 @@
               {{ archivoDocumentoFinal ? archivoDocumentoFinal.name : 'Seleccionar Documento Final' }}
             </label>
             
-            <!-- ✅ NUEVO MENSAJE DE AYUDA -->
+            <!--  MENSAJE DE AYUDA -->
             <small class="form-help" *ngIf="archivoDocumentoFinal">
               <i class="fas fa-info-circle"></i>
               El documento se subirá automáticamente al aprobar

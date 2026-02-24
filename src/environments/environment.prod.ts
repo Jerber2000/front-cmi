@@ -1,8 +1,8 @@
-//environments/environment.prod.ts
+// Usado por: ng build --configuration production
 export const environment = {
   production: true,
-  // ✅ USAR LA URL CORRECTA DEL BACKEND EN RAILWAY
-  apiUrl: 'https://back-production-280a.up.railway.app/api',
-   appName: 'CMI - Producción',
+  apiUrl: '/api',  // 🔹 Si backend está en mismo servidor, usar '/api'
+                   // 🔹 Si backend está en otro dominio, usar: 'https://tudominio.com/api'
+  appName: 'CMI - Producción',
   enableLogging: false
 };

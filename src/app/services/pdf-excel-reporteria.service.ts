@@ -74,13 +74,11 @@ export class PdfExcelReporteriaService {
           this.generarTablaSalidasPDF(doc, datos, membretes, yPos);
           break;
     }
-      
 
       const nombreArchivo = `reporte_${tipoReporte}_${Date.now()}.pdf`;
       doc.save(nombreArchivo);
 
     } catch (error) {
-      console.error('Error al generar PDF:', error);
       throw error;
     }
   }
@@ -132,7 +130,6 @@ export class PdfExcelReporteriaService {
       doc.save(nombreArchivo);
 
     } catch (error) {
-      console.error('Error al generar PDF de expediente:', error);
       throw error;
     }
   }
@@ -170,7 +167,7 @@ export class PdfExcelReporteriaService {
     ['Número de Expediente:', expediente.numeroexpediente || 'N/A']
   ];
 
-    // ✅ AGREGAR DATOS DEL PACIENTE SI EXISTEN
+    // AGREGAR DATOS DEL PACIENTE SI EXISTEN
   if (paciente) {
     datosBasicos.push(['Nombre del Paciente:', `${paciente.nombres || ''} ${paciente.apellidos || ''}`]);
     datosBasicos.push(['CUI:', paciente.cui || 'N/A']);
@@ -192,8 +189,8 @@ export class PdfExcelReporteriaService {
       cellPadding: 3
     },
     columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: 60 },  // ✅ Aumentado de 50 a 60
-      1: { cellWidth: 110 }  // ✅ Aumentado de 120 a 110
+      0: { fontStyle: 'bold', cellWidth: 60 }, 
+      1: { cellWidth: 110 } 
     },
     margin: { left: 20 }
   });
@@ -605,10 +602,10 @@ export class PdfExcelReporteriaService {
         case 'transporte':
           worksheet = this.generarHojaTransporte(datos);
           break;
-        case 'salidas':  // ✅ ANTES DEL DEFAULT
+        case 'salidas':  
           worksheet = this.generarHojaSalidas(datos);
           break;
-        default:  // ✅ DEFAULT AL FINAL
+        default:  
           throw new Error('Tipo de reporte no válido');
       }
 
@@ -618,7 +615,6 @@ export class PdfExcelReporteriaService {
       XLSX.writeFile(workbook, nombreArchivo);
 
     } catch (error) {
-      console.error('Error al generar Excel:', error);
       throw error;
     }
   }

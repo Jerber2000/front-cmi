@@ -38,7 +38,6 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
             
             // Detectar cuando el backend responde que debe cambiar contraseña
             if (body && body.cambiarClave === true && body.success === false) {
-              console.log('🔐 Backend indica: debe cambiar contraseña');
               authService.manejarCambioObligatorio();
             }
           }
@@ -83,7 +82,6 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         }
         
         if (error.status === 500) {
-          console.error('❌ Error 500: Error interno del servidor', error);
           alerta.alertaError('Error interno del servidor. Por favor, intenta más tarde.');
           return throwError(() => error);
         }

@@ -75,8 +75,7 @@ export class ServicioPaciente {
 
   constructor(private http: HttpClient) {}
 
-  // ❌ NO INCLUIR subirFoto() ni subirDocumento() AQUÍ
-  // ✅ Esos métodos van en archivo.service.ts
+  // Esos métodos van en archivo.service.ts
 
   obtenerClinicas(): Observable<Clinica[]> {
     return this.http.get<RespuestaClinicas>(`${this.urlApi}/clinicas`).pipe(
@@ -87,7 +86,6 @@ export class ServicioPaciente {
         return [];
       }),
       catchError(error => {
-        console.error('Error al obtener clínicas:', error);
         return of([]);
       })
     );
@@ -126,7 +124,6 @@ export class ServicioPaciente {
         return [];
       }),
       catchError(error => {
-        console.error('Error al obtener listado de pacientes:', error);
         return of([]);
       })
     );

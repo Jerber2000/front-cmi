@@ -1,11 +1,14 @@
 <!-- sidebar.component.html -->
 <div class="sidebar-container" [class.expanded]="isExpanded" [class.collapsed]="!isExpanded">
   <div class="sidebar-header">
+    <!-- Avatar solo visible cuando está expandido -->
+    <div class="user-avatar-header" *ngIf="isExpanded" title="{{ userInfo.name }}">
+      <img *ngIf="userInfo.avatar" [src]="userInfo.avatar" [alt]="userInfo.name" class="avatar-img">
+      <i *ngIf="!userInfo.avatar" class="fas fa-user-circle avatar-icon"></i>
+    </div>
+
+    <!-- Nombre solo cuando está expandido -->
     <div class="user-info" *ngIf="isExpanded">
-      <div class="user-avatar">
-        <img *ngIf="userInfo.avatar" [src]="userInfo.avatar" [alt]="userInfo.name">
-        <i *ngIf="!userInfo.avatar" class="fas fa-user-circle"></i>
-      </div>
       <div class="user-name" (click)="onUserNameClick()" style="cursor: pointer;">
         {{ userInfo.name }}
       </div>
