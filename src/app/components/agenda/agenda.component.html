@@ -30,7 +30,7 @@
             class="form-select form-select-sm"
             [(ngModel)]="selectedMedico"
             (change)="filtrarPorMedico()"
-            [disabled]="isSelectDisabled"
+            
             title="Filtrar por médico">
             <option value="">Todos los profesionales</option>
             <option *ngFor="let medico of usuario" [value]="medico.idusuario">
@@ -530,14 +530,14 @@
                 <div class="col-md-6 mb-2">
                   <small>
                     <i class="fas fa-calendar-check me-2"></i>
-                    <strong>Inicio:</strong> {{ detallesSerieRecurrente.fecha_inicio | date: 'dd/MM/yyyy' }}
+                    <strong>Inicio:</strong> {{ detallesSerieRecurrente.fecha_inicio | date: 'dd/MM/yyyy' : 'UTC' }}
                   </small>
                 </div>
                 <div class="col-md-6 mb-2">
                   <small>
                     <i class="fas fa-calendar-times me-2"></i>
                     <strong>Fin:</strong> 
-                    {{ detallesSerieRecurrente.fecha_fin ? (detallesSerieRecurrente.fecha_fin | date: 'dd/MM/yyyy') : 'Sin fecha límite' }}
+                    {{ detallesSerieRecurrente.fecha_fin ? (detallesSerieRecurrente.fecha_fin | date: 'dd/MM/yyyy' : 'UTC' ) : 'Sin fecha límite' }}
                   </small>
                 </div>
               </div>

@@ -154,6 +154,7 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
   usuario: Usuario[] = [];
   paciente: Paciente[] = [];
   private calendarApi: any = null;
+  private readonly ROLES_PROFESIONAL: number[] = [5, 6, 10, 12, 13, 15];
 
   showModalReporte = false;
   reporteTransportes: any[] = [];
@@ -361,8 +362,8 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
         fkusuario: parseInt(currentUserId)
       });
 
-      this.citaForm.get('fkusuario')?.disable();
-      this.isSelectDisabled = true;
+      // this.citaForm.get('fkusuario')?.disable();
+      // this.isSelectDisabled = true;
 
       this.UsuarioService.obtenerUsuariosPorRol('5,6,10,12,13,15').subscribe({
         next: (response) => {
@@ -758,8 +759,8 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Resetear formulario con o sin usuario pre-seleccionado
     this.citaForm.reset({
-      fkpaciente: '',
-      fkusuario: usuarioPreseleccionado, // Pre-seleccionar si es médico
+      fkpaciente: null,
+      fkusuario: null,
       fechaatencion: fechaSeleccionada,
       horaatencion: '',
       comentario: '',
@@ -771,10 +772,24 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
       contactoEncargado: ''
     });
 
-    // Si es médico, deshabilitar el select
-    if (usuarioPreseleccionado) {
-      this.citaForm.get('fkusuario')?.disable();
+    if (this.ROLES_PROFESIONAL.includes(usuarioRol)) {
+      const currentUserId = parseInt(this.getCurrentUserId());
+      if (this.usuario.length > 0) {
+        this.citaForm.get('fkusuario')?.setValue(currentUserId);
+      } else {
+        const interval = setInterval(() => {
+          if (this.usuario.length > 0) {
+            this.citaForm.get('fkusuario')?.setValue(currentUserId);
+            clearInterval(interval);
+          }
+        }, 100);
+      }
     }
+
+    // Si es médico, deshabilitar el select
+    // if (usuarioPreseleccionado) {
+    //   this.citaForm.get('fkusuario')?.disable();
+    // }
 
     this.showModal = true;
 
@@ -840,19 +855,17 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.selectedDate = fechaHoy;
     this.modalMode = 'create';
     this.selectedCita = null;
-    
+
+    // Limpiar ng-select de paciente manualmente
+    this.citaForm.get('fkpaciente')?.setValue(null);
+
     const usuarioData = localStorage.getItem('usuario');
     const usuario = usuarioData ? JSON.parse(usuarioData) : null;
     const usuarioRol = usuario?.fkrol;
-    
-    let usuarioPreseleccionado = '';
-    if (usuarioRol == 2 || usuarioRol == 6 || usuarioRol == 7 || usuarioRol == 12 || usuarioRol == 13 || usuarioRol == 15) {
-      usuarioPreseleccionado = this.getCurrentUserId();
-    }
-    
+
     this.citaForm.reset({
-      fkpaciente: '',
-      fkusuario: usuarioPreseleccionado,
+      fkpaciente: null,        // null en lugar de '' para ng-select
+      fkusuario: null,
       fechaatencion: fechaHoy,
       horaatencion: '',
       comentario: '',
@@ -863,12 +876,25 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
       nombreEncargado: '',
       contactoEncargado: ''
     });
-    
-    // Si es médico, deshabilitar el select
-    if (usuarioPreseleccionado) {
-      this.citaForm.get('fkusuario')?.disable();
+
+    // Preseleccionar profesional si el rol corresponde
+    if (this.ROLES_PROFESIONAL.includes(usuarioRol)) {
+      const currentUserId = parseInt(this.getCurrentUserId());
+
+      // Si la lista ya cargó, setear directo
+      if (this.usuario.length > 0) {
+        this.citaForm.get('fkusuario')?.setValue(currentUserId);
+      } else {
+        // Esperar a que cargue la lista
+        const interval = setInterval(() => {
+          if (this.usuario.length > 0) {
+            this.citaForm.get('fkusuario')?.setValue(currentUserId);
+            clearInterval(interval);
+          }
+        }, 100);
+      }
     }
-    
+
     this.showModal = true;
   }
 
@@ -1047,7 +1073,7 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
               const conflictosMsg = response.conflictos
                 .map(c => `${c.fecha}: ${c.mensaje}`)
                 .join('\n');
-              this.alerta.alertaError(`Conflictos encontrados:\n${conflictosMsg}`);
+              this.alerta.alertaError(`Para alguna fecha seleccionada ya tiene cita agendada`);
             } else {
               this.alerta.alertaInfo(response.message || 'No se pudieron crear las citas');
             }
