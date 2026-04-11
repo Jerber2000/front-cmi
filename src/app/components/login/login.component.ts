@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
+import { TokenExpiryService } from '../../services/token-expiry.service';
 import { Router } from '@angular/router';
 
 // ✅ AGREGAR esta interfaz
@@ -22,6 +23,12 @@ interface Notification {
   styleUrls: ['./login.component.scss']
 })
 export class LoginComponent {
+  constructor(
+    private authService: AuthService,
+    private tokenExpiry: TokenExpiryService,
+    private router: Router
+  ) {}
+
   modoOlvidoClave = false;
   usuario = '';
   clave = '';
@@ -36,7 +43,7 @@ export class LoginComponent {
     show: false
   };
 
-  constructor(private authService: AuthService, private router: Router) {}
+  
 
   togglePasswordVisibility(): void {
     this.showPassword = !this.showPassword;
@@ -83,6 +90,7 @@ export class LoginComponent {
           
           setTimeout(() => {
             this.authService.handleLoginResponse(res);
+            this.tokenExpiry.schedule();
           }, 1500);
           
         } else {

@@ -41,6 +41,11 @@
         <p class="patient-gender" *ngIf="infoPaciente.cui">
           Género: {{ obtenerGenero() }}
         </p>
+        <div class="programas-paciente" *ngIf="infoPaciente.expedientes?.[0]?.programas?.length">
+          <span class="programa-badge" *ngFor="let ep of infoPaciente.expedientes![0].programas!">
+            {{ ep.programa.nombre }}
+          </span>
+        </div>
       </div>
       <button class="btn-back" (click)="volver()">
         <i class="fas fa-arrow-left"></i> Volver
@@ -282,7 +287,7 @@
               <label for="archivos-nueva-sesion" class="file-upload-label">
                 <i class="fas fa-cloud-upload-alt"></i>
                 <span>Seleccionar archivos</span>
-                <small>PDF, Word, Excel, Imágenes (máx. 15MB cada uno)</small>
+                <small>PDF, Imágenes (máx. 10MB cada uno)</small>
               </label>
               
               <!-- Lista de archivos seleccionados -->

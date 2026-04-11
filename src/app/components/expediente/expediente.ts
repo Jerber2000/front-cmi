@@ -14,6 +14,7 @@ import Swal from 'sweetalert2';
 import { NgxPaginationModule } from 'ngx-pagination';
 import { PdfExcelReporteriaService } from '../../services/pdf-excel-reporteria.service';
 import { ArchivoService } from '../../services/archivo.service';
+import { ProgramaService, Programa } from '../../services/programa.service';
 
 @Component({
   selector: 'app-expediente-lista',
@@ -23,6 +24,10 @@ import { ArchivoService } from '../../services/archivo.service';
   styleUrls: ['./expediente.scss']
 })
 export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestroy {
+
+  // Programas
+  listaProgramas: Programa[] = [];
+  programasSeleccionados: number[] = [];
   
   @Input() mostrarComoModal: boolean = false;
   @Input() datosPaciente: any = null;
@@ -82,12 +87,14 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
     private pdfExcelService: PdfExcelReporteriaService,
     private authService: AuthService,
     private perfilService: PerfilService
+    , private programaService: ProgramaService
   ) {
     this.formularioExpediente = this.crearFormulario();
     this.configurarBusqueda();
   }
 
   ngOnInit(): void {
+    this.cargarProgramas();
     // Suscribirse al perfil para que el sidebar se actualice reactivamente
     this.perfilSubscription = this.perfilService.perfil$.subscribe({
       next: (usuario) => {
@@ -135,6 +142,17 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
     this.destruir$.next();
     this.destruir$.complete();
     this.perfilSubscription?.unsubscribe();
+  }
+
+  cargarProgramas(): void {
+    this.programaService.obtenerProgramas().subscribe({
+      next: (programas) => {
+        this.listaProgramas = programas;
+      },
+      error: () => {
+        this.listaProgramas = [];
+      }
+    });
   }
 
   // ==========================================
@@ -565,6 +583,9 @@ cargarExpedientes(): void {
    */
   private prepararDatosParaEnvio(valoresFormulario: any): any {
     const datos = { ...valoresFormulario };
+
+    // Incluir programas seleccionados
+    datos.programas = this.programasSeleccionados;
     
     // Configurar número de expediente según modo
     if (datos.generarAutomatico === true) {
@@ -892,6 +913,9 @@ llenarFormulario(expediente: Expediente): void {
     examenfisimc: expediente.examenfisimc ?? '',
     examenfisgmt: expediente.examenfisgmt ?? ''
   });
+
+  // Restaurar programas seleccionados al editar
+  this.programasSeleccionados = (expediente as any).programas?.map((ep: any) => ep.idprograma) ?? [];
 }
 
   /**
@@ -1136,6 +1160,15 @@ obtenerNombreClinica(expediente: Expediente): string {
     return expediente.paciente.clinica.nombreclinica;
   }
   return 'Sin clínica asignada';
+}
+
+togglePrograma(id: number): void {
+  const idx = this.programasSeleccionados.indexOf(id);
+  if (idx === -1) {
+    this.programasSeleccionados = [...this.programasSeleccionados, id];
+  } else {
+    this.programasSeleccionados = this.programasSeleccionados.filter(p => p !== id);
+  }
 }
   
 }

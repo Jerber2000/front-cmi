@@ -11,7 +11,7 @@ import {
   HistorialMedicoService, 
   HistorialMedico, 
   InfoPaciente,
-  ExpedienteInfo,  // ✅ IMPORTAR ExpedienteInfo
+  ExpedienteInfo,
   CrearSesionRequest,
   ActualizarSesionRequest 
 } from '../../services/historialMedico.service';
@@ -352,7 +352,8 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
             numeroexpediente: exp.numeroexpediente || exp.NUMEROEXPEDIENTE || '',
             fkpaciente: exp.fkpaciente || exp.FKPACIENTE || info.idpaciente,
             fkclinica: exp.fkclinica || exp.FKCLINICA || info.fkclinica,
-            fechaapertura: exp.fechaapertura || exp.FECHAAPERTURA || new Date().toISOString().split('T')[0]
+            fechaapertura: exp.fechaapertura || exp.FECHAAPERTURA || new Date().toISOString().split('T')[0],
+            programas: exp.programas
           }));
           // Si se recibe numeroexpedienteParam, filtrar el expediente principal
           if (numeroexpedienteParam) {
@@ -372,7 +373,8 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
                   numeroexpediente: e.numeroexpediente || e.NUMEROEXPEDIENTE || '',
                   fkpaciente: e.fkpaciente || e.FKPACIENTE || info.idpaciente,
                   fkclinica: e.fkclinica || e.FKCLINICA || info.fkclinica,
-                  fechaapertura: e.fechaapertura || e.FECHAAPERTURA || new Date().toISOString().split('T')[0]
+                  fechaapertura: e.fechaapertura || e.FECHAAPERTURA || new Date().toISOString().split('T')[0],
+                  programas: e.programas
                 }));
                 // Si se recibe numeroexpedienteParam, filtrar el expediente principal
                 if (numeroexpedienteParam) {
