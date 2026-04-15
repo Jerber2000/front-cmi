@@ -928,3 +928,130 @@ html {
 ::ng-deep .ng-select .ng-value-container {
   padding: 4px 8px;
 }
+
+/* ===== ASISTENCIA ===== */
+.asistencia-card {
+  border-left: 3px solid #0d6efd;
+  border-radius: 0;
+}
+
+.asistencia-botones {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-asistencia {
+  flex: 1;
+  min-width: 160px;
+  padding: 8px 12px;
+  font-size: 13px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-confirmar {
+  border: 1px solid #1a8a5c;
+  color: #1a8a5c;
+  background: transparent;
+}
+
+.btn-confirmar.activo {
+  background: #1a8a5c;
+  color: white;
+}
+
+.btn-confirmar:hover:not(.activo) {
+  background: #d4edda;
+  color: #155724;
+}
+
+.btn-no-presenta {
+  border: 1px solid #c0392b;
+  color: #c0392b;
+  background: transparent;
+}
+
+.btn-no-presenta.activo {
+  background: #c0392b;
+  color: white;
+}
+
+.btn-no-presenta:hover:not(.activo) {
+  background: #fde8e8;
+  color: #7b1c1c;
+}
+
+.asistencia-panel {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  animation: fadeIn 0.2s ease;
+}
+
+.panel-confirmar {
+  background: #f0faf5;
+  border: 1px solid #a8d5be;
+}
+
+.panel-no-presenta {
+  background: #fef5f5;
+  border: 1px solid #f5c6c6;
+}
+
+.panel-texto {
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.panel-acciones {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* ===== ESTADO YA REGISTRADO ===== */
+.estado-confirmado {
+  border-left: 3px solid #1a8a5c;
+  background: #f0faf5;
+  border-radius: 0;
+}
+
+.estado-no-presento {
+  border-left: 3px solid #c0392b;
+  background: #fef5f5;
+  border-radius: 0;
+}
+
+/* ===== BADGE DE ESTADO EN HEADER ===== */
+.badge-estado {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 20px;
+  vertical-align: middle;
+  display: inline-block;
+}
+
+.badge-pendiente {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.badge-confirmado {
+  background: #d4edda;
+  color: #155724;
+}
+
+.badge-no-presento {
+  background: #fde8e8;
+  color: #7b1c1c;
+}
+
+/* ===== ANIMACIÓN ===== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

@@ -4,7 +4,6 @@ import { catchError, map, Observable, of, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { response } from 'express';
 
-// Interfaz para crear/actualizar citas (sin datos anidados)
 export interface CitaRequest {
   idagenda?: number;
   fkusuario: number;
@@ -18,7 +17,7 @@ export interface CitaRequest {
   direccion?: string;
   usuariocreacion?: string;
   usuariomodificacion?: string;
-  estado?: number;
+  estado?: number | null;
   fkagenda_recurrente?: number | null;
   es_recurrente?: boolean;
   usuario?: {
@@ -35,7 +34,6 @@ export interface CitaRequest {
   };
 }
 
-// Interfaz completa de Cita (como viene del backend)
 export interface Cita {
   idagenda: number;
   fkusuario: number;
@@ -67,7 +65,6 @@ export interface ApiResponse<T> {
   mensaje?: string;
 }
 
-// Agregar estas interfaces después de las existentes
 export interface CitaRecurrenteRequest {
   fkusuario: number;
   fkpaciente: number;
@@ -77,7 +74,7 @@ export interface CitaRecurrenteRequest {
   direccion?: string;
   tipo_recurrencia: 'diaria' | 'semanal' | 'mensual';
   intervalo: number;
-  dias_semana?: string; // "1,3,5" para lun,mie,vie
+  dias_semana?: string; 
   fecha_inicio: string;
   fecha_fin?: string;
   numero_ocurrencias?: number;
@@ -103,7 +100,6 @@ export class AgendaService {
 
   constructor(private http: HttpClient) { }
 
-  // Obtener citas con filtros
   getCitas(filtros?: any): Observable<ApiResponse<Cita[]>> {
     let params = new HttpParams();
     
@@ -144,7 +140,6 @@ export class AgendaService {
     )
   }
 
-  // Actualizar cita - USA CitaRequest
   actualizarCita(id: number, cita: CitaRequest): Observable<any> {
     return this.http.put<any>(`${this.apiUrl}/actualizarCita/${id}`, cita).pipe(
       tap(response => {
@@ -179,7 +174,6 @@ export class AgendaService {
     });
   }
 
-  // agenda.service.ts - Agregar este método
   obtenerReporteFormateado(fecha: string): Observable<any> {
     return this.obtenerCitasConTransporte(fecha).pipe(
       map(response => {
@@ -264,7 +258,6 @@ export class AgendaService {
     return hora.substring(0, 5); // HH:mm
   }
 
-  // Agregar este método después de cancelarSerieCompleta()
   obtenerDetallesSerieRecurrente(idagendaRecurrente: number): Observable<any> {
     return this.http.get<any>(
       `${this.apiUrl}/detallesSerieRecurrente/${idagendaRecurrente}`
@@ -279,4 +272,20 @@ export class AgendaService {
       })
     );
   }
+
+  actualizarEstadoCita(idagenda: number, estado: number, comentario: string, usuariomodificacion: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/actualizarEstado/${idagenda}`, {
+      estado,
+      comentario,
+      usuariomodificacion
+    }).pipe(
+      catchError((error: HttpErrorResponse) => {
+        if ((error.status === 400 || error.status === 422) && error.error) {
+          return of(error.error);
+        }
+        throw error;
+      })
+    );
+  }
+
 }
