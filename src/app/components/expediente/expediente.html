@@ -300,6 +300,7 @@
                   placeholder="Describa la historia de enfermedad del paciente..."
                 ></textarea>
               </div>
+
             </div>
           </div>
 
@@ -655,6 +656,39 @@
                   rows="4"
                   placeholder="Descripción detallada del examen físico general del paciente..."
                 ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Programas -->
+          <div class="seccion-formulario">
+            <h4 class="titulo-seccion">
+              <i class="fas fa-clipboard-list"></i> Programas
+            </h4>
+            <div class="grilla-formulario">
+              <div class="grupo-formulario ancho-completo">
+                <label class="label-programas">Seleccione uno o más programas</label>
+                <div class="programas-grid">
+                  <label
+                    *ngFor="let programa of listaProgramas"
+                    class="programa-check-item"
+                    [class.activo]="programasSeleccionados.includes(programa.idprograma)"
+                  >
+                    <input
+                      type="checkbox"
+                      [checked]="programasSeleccionados.includes(programa.idprograma)"
+                      (change)="togglePrograma(programa.idprograma)"
+                    >
+                    <span class="check-box">
+                      <i class="fas fa-check"></i>
+                    </span>
+                    <span class="check-label">{{ programa.nombre }}</span>
+                  </label>
+                </div>
+                <small class="hint-programas" *ngIf="programasSeleccionados.length > 0">
+                  <i class="fas fa-info-circle"></i>
+                  {{ programasSeleccionados.length }} programa(s) seleccionado(s)
+                </small>
               </div>
             </div>
           </div>

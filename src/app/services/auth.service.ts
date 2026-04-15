@@ -42,6 +42,28 @@ export class AuthService {
   }
 
   /**
+   * Renovar token (emite uno nuevo con expiración fresca)
+   */
+  refreshToken(): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/refresh`, {});
+  }
+
+  /**
+   * Obtiene el timestamp de expiración (en ms) del token almacenado.
+   * Devuelve null si no hay token o no tiene campo exp.
+   */
+  getTokenExpiry(): number | null {
+    const token = this.getToken();
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.exp ? payload.exp * 1000 : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Resetear contraseña
    */
   resetearPassword(correo: string): Observable<any> {

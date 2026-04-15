@@ -15,6 +15,7 @@ export interface ExpedienteInfo {
   fechaapertura?: string;
   fechacreacion?: string;
   historiaenfermedad?: string;
+  programas?: { idprograma: number; programa: { nombre: string } }[];
 }
 
 export interface HistorialMedico {
