@@ -77,29 +77,26 @@ export class LoginComponent {
   }
 
 
-  onSubmitLogin() {
+  onSubmitLogin(): void {
     if (!this.usuario || !this.clave) {
       this.showNotification('error', 'Debe ingresar usuario y contraseña');
       return;
     }
 
     this.authService.login(this.usuario, this.clave).subscribe({
-      next: (res) => {        
+      next: (res: any) => {
         if (res.success) {
           this.showNotification('success', '¡Inicio de sesión exitoso!');
-          
           setTimeout(() => {
             this.authService.handleLoginResponse(res);
             this.tokenExpiry.schedule();
           }, 1500);
-          
         } else {
           this.showNotification('error', res.message || 'Error desconocido');
         }
       },
-      error: (err) => {
+      error: (err: any) => {
         if (err.status === 409 && err.error?.sessionActiva) {
-          // Mostrar solo el mensaje del backend
           this.showNotification('error', err.error.message);
         } else if (err.error?.message) {
           this.showNotification('error', err.error.message);
@@ -123,7 +120,7 @@ export class LoginComponent {
     }
 
     this.authService.resetearPassword(this.correoRecuperacion).subscribe({
-      next: (res) => {
+      next: (res: any) => {
         if (res.success) {
           this.showNotification('success', 'Se ha enviado una contraseña temporal a tu correo electrónico');
           setTimeout(() => {
@@ -133,9 +130,8 @@ export class LoginComponent {
           this.showNotification('error', res.message || 'Error al enviar el correo');
         }
       },
-      error: (err) => {
+      error: (err: any) => {
         let mensaje = 'Error al enviar el correo de recuperación';
-        
         // Manejo especial para error 429 (Too Many Requests)
         if (err.status === 429) {
           if (err.error?.detalles) {
@@ -155,7 +151,6 @@ export class LoginComponent {
             mensaje = err.error.message;
           }
         }
-        
         this.showNotification('error', mensaje);
       }
     });
