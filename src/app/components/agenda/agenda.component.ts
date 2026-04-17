@@ -146,6 +146,9 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
   isSelectDisabled: boolean = false;
   currentView: string = 'dayGridMonth';
   loading = false;
+  estadoSeleccionado: 'confirmada' | 'no-presentara' | null = null;
+  comentarioNoAsistencia: string = '';
+  loadingEstado: boolean = false;
   searchTerm: string = '';
   fechaActual: string = '';
   tituloCalendario: string = '';
@@ -786,11 +789,6 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    // Si es médico, deshabilitar el select
-    // if (usuarioPreseleccionado) {
-    //   this.citaForm.get('fkusuario')?.disable();
-    // }
-
     this.showModal = true;
 
     const calendarApi = selectInfo.view.calendar;
@@ -810,6 +808,8 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     
     this.showModal = true;
+    this.estadoSeleccionado = null;
+    this.comentarioNoAsistencia = '';
   }
 
   handleEvents(events: any[]): void {
@@ -820,7 +820,7 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     // Obtener la fecha actual de la vista del calendario
     const api = this.getCalendarApi();
     if (api) {
-      const currentDate = api.getDate(); // Esta es la fecha real del calendario
+      const currentDate = api.getDate(); 
       this.tituloCalendario = format(currentDate, 'MMMM yyyy', { locale: es });
     }
     
@@ -913,8 +913,10 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.fechaFinRecurrencia = '';
     this.numeroOcurrencias = null;
     this.usarFechaFin = true;
+    this.estadoSeleccionado = null;
+    this.comentarioNoAsistencia = '';
+    this.loadingEstado = false;
     
-    // Resetear completamente el formulario
     this.citaForm.reset({
       fkpaciente: '',
       fkusuario: '',
@@ -1165,24 +1167,22 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     
-    // Si es cita recurrente, preguntar si quiere eliminar solo esta o toda la serie
     if (this.selectedCita.es_recurrente && this.selectedCita.fkagenda_recurrente) {
       const opcion = await this.alerta.alertaConfirmacionConOpciones(
-        '¿Qué deseas cancelar?',
+        '¿Qué deseas eliminar?',
         'Esta cita forma parte de una serie recurrente',
         'Solo esta cita',
         'Toda la serie'
       );
       
       if (opcion === null) {
-        return; // Usuario canceló
+        return; 
       }
       
       this.loading = true;
       const currentUserId = this.getCurrentUserId();
       
       if (opcion === 'serie') {
-        // Eliminar toda la serie
         this.agendaService.cancelarSerieCompleta(
           this.selectedCita.fkagenda_recurrente, 
           currentUserId
@@ -1207,7 +1207,6 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         });
       } else {
-        // Eliminar solo esta cita
         this.agendaService.cancelarCitaRecurrente(
           this.selectedCita.idagenda, 
           currentUserId
@@ -1234,9 +1233,9 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     } else {
       const confirmacion = await this.alerta.alertaConfirmacion(
-        '¿Estás seguro de que deseas cancelar esta cita?',
+        '¿Estás seguro de que deseas eliminar este registro?',
         '',
-        'Sí, Cancelar',
+        'Sí, Eliminar',
         'No, Cerrar'
       );
       
@@ -1465,5 +1464,59 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
         });
       }
     }, 100);
+  }
+
+  seleccionarEstado(estado: 'confirmada' | 'no-presentara'): void {
+    if (this.estadoSeleccionado === estado) {
+      this.estadoSeleccionado = null;
+      this.comentarioNoAsistencia = '';
+    } else {
+      this.estadoSeleccionado = estado;
+      this.comentarioNoAsistencia = '';
+    }
+  }
+
+  guardarEstadoCita(): void {
+    if (!this.selectedCita?.idagenda) return;
+
+    if (this.estadoSeleccionado === 'no-presentara' && !this.comentarioNoAsistencia.trim()) {
+      this.alerta.alertaError('Debe ingresar un comentario para registrar la inasistencia');
+      return;
+    }
+
+    const estadoNumero = this.estadoSeleccionado === 'confirmada' ? 2 : 3;
+    const comentario = this.estadoSeleccionado === 'confirmada'
+      ? 'Asistencia confirmada'
+      : this.comentarioNoAsistencia.trim();
+
+    this.loadingEstado = true;
+    const currentUserId = this.getCurrentUserId();
+
+    this.agendaService.actualizarEstadoCita(
+      this.selectedCita.idagenda,
+      estadoNumero,
+      comentario,
+      currentUserId
+    ).subscribe({
+      next: (response) => {
+        this.loadingEstado = false;
+        if (response.success) {
+          this.selectedCita!.estado = estadoNumero;
+          const msg = this.estadoSeleccionado === 'confirmada'
+            ? 'Asistencia confirmada correctamente'
+            : 'Inasistencia registrada correctamente';
+          this.alerta.alertaExito(msg);
+          this.cargarCitas();
+        } else {
+          this.alerta.alertaError(response.message || 'Error al actualizar el estado');
+        }
+      },
+      error: (error) => {
+        this.loadingEstado = false;
+        if (error.status !== 403) {
+          this.alerta.alertaError('Error al actualizar el estado de la cita');
+        }
+      }
+    });
   }
 }

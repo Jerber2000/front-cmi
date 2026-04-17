@@ -151,6 +151,18 @@
           <span *ngIf="modalMode === 'create'"> Nueva Cita</span>
           <span *ngIf="modalMode === 'edit'"> Editar Cita</span>
           <span *ngIf="modalMode === 'view'"> Detalles de la Cita</span>
+          <ng-container *ngIf="modalMode === 'view' && selectedCita">
+            <span class="badge-estado ms-2"
+              [ngClass]="{
+                'badge-pendiente': !selectedCita!.estado || selectedCita!.estado === 1,
+                'badge-confirmado': selectedCita!.estado === 2,
+                'badge-no-presento': selectedCita!.estado === 3
+              }">
+              <ng-container *ngIf="!selectedCita!.estado || selectedCita!.estado === 1">Pendiente</ng-container>
+              <ng-container *ngIf="selectedCita!.estado === 2">Confirmada</ng-container>
+              <ng-container *ngIf="selectedCita!.estado === 3">No se presentó</ng-container>
+            </span>
+          </ng-container>
         </h5>
         <button 
           type="button" 
@@ -642,6 +654,105 @@
               </div>
             </div>
           </div>
+
+          <ng-container *ngIf="selectedCita as cita">
+            <!-- Sección de confirmación de asistencia -->
+            <div class="row mb-4" *ngIf="!cita.estado || cita.estado === 1">
+              <div class="col-12">
+                <div class="info-card asistencia-card">
+                  <h6 class="info-label">
+                    <i class="fas fa-user-check text-primary me-2"></i>Confirmar asistencia
+                  </h6>
+
+                  <div class="asistencia-botones">
+                    <button
+                      type="button"
+                      class="btn btn-asistencia btn-confirmar"
+                      [class.activo]="estadoSeleccionado === 'confirmada'"
+                      (click)="seleccionarEstado('confirmada')">
+                      <i class="fas fa-check me-2"></i>Confirmar asistencia
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-asistencia btn-no-presenta"
+                      [class.activo]="estadoSeleccionado === 'no-presentara'"
+                      (click)="seleccionarEstado('no-presentara')">
+                      <i class="fas fa-times me-2"></i>No se presentará
+                    </button>
+                  </div>
+
+                  <!-- Panel confirmar -->
+                  <div class="asistencia-panel panel-confirmar" *ngIf="estadoSeleccionado === 'confirmada'">
+                    <p class="panel-texto">
+                      <i class="fas fa-info-circle me-2"></i>
+                      ¿Confirmar la asistencia de
+                      <strong>{{ cita.paciente?.nombres }} {{ cita.paciente?.apellidos }}</strong>?
+                    </p>
+                    <div class="panel-acciones">
+                      <button type="button" class="btn btn-sm btn-secondary" (click)="seleccionarEstado('confirmada')">
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-success"
+                        [disabled]="loadingEstado"
+                        (click)="guardarEstadoCita()">
+                        <i class="fas fa-check me-1"></i>
+                        {{ loadingEstado ? 'Guardando...' : 'Sí, confirmar' }}
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Panel no se presentará -->
+                  <div class="asistencia-panel panel-no-presenta" *ngIf="estadoSeleccionado === 'no-presentara'">
+                    <label class="form-label panel-texto">
+                      Motivo o comentario <span class="text-danger">*</span>
+                    </label>
+                    <textarea
+                      class="form-control form-control-sm mb-2"
+                      rows="2"
+                      placeholder="Ej: El paciente llamó para avisar que no puede asistir..."
+                      [(ngModel)]="comentarioNoAsistencia"
+                      [ngModelOptions]="{standalone: true}">
+                    </textarea>
+                    <div class="panel-acciones">
+                      <button type="button" class="btn btn-sm btn-secondary" (click)="seleccionarEstado('no-presentara')">
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-danger"
+                        [disabled]="loadingEstado || !comentarioNoAsistencia.trim()"
+                        (click)="guardarEstadoCita()">
+                        <i class="fas fa-save me-1"></i>
+                        {{ loadingEstado ? 'Guardando...' : 'Guardar' }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Estado ya registrado -->
+            <div class="row mb-4" *ngIf="cita.estado === 2 || cita.estado === 3">
+              <div class="col-12">
+                <div class="info-card"
+                  [ngClass]="cita.estado === 2 ? 'estado-confirmado' : 'estado-no-presento'">
+                  <h6 class="info-label">
+                    <i class="fas me-2"
+                      [ngClass]="cita.estado === 2 ? 'fa-check-circle text-success' : 'fa-times-circle text-danger'">
+                    </i>
+                    {{ cita.estado === 2 ? 'Asistencia confirmada' : 'No se presentó' }}
+                  </h6>
+                  <p class="mb-0 small text-muted" *ngIf="cita.comentario && cita.estado === 3">
+                    <i class="fas fa-comment-alt me-1"></i>{{ cita.comentario }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+          </ng-container>
+
         </div>
       </div>
       
@@ -678,7 +789,7 @@
             class="btn btn-danger"
             (click)="eliminarCita()">
             <i class="fas fa-trash me-1"></i>
-            Cancelar Cita
+            Eliminar Registro
           </button>
         </div>
         
