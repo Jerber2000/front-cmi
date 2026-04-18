@@ -80,6 +80,8 @@ export class InventarioComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.loadUserInfo();
+
     this.perfilSubscription = this.perfilService.perfil$.subscribe({
       next: (usuario) => {
         if (usuario) {
@@ -285,6 +287,11 @@ export class InventarioComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    if (!this.usuarioActual) {
+      this.alerta.alertaError('No se pudo obtener la información del usuario');
+      return;
+    }
+
     this.guardando = true;
     
     const datos: CrearMedicamentoRequest = {
@@ -343,6 +350,11 @@ export class InventarioComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.medicamentoForm.valid || !this.medicamentoSeleccionado) {
       this.marcarFormularioComoTocado();
       this.alerta.alertaError('Por favor complete todos los campos requeridos');
+      return;
+    }
+
+    if (!this.usuarioActual) {
+      this.alerta.alertaError('No se pudo obtener la información del usuario');
       return;
     }
 

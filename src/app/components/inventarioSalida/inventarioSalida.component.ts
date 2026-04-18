@@ -66,6 +66,11 @@ export class InventarioSalidaComponent implements OnInit, AfterViewInit, OnDestr
   stockResultante: number = 0;
   salidasHistorial: Salida[] = [];
   
+  // Autocomplete medicamento
+  medicamentoBusqueda: string = '';
+  medicamentosFiltrados: Medicamento[] = [];
+  mostrarDropdownMed: boolean = false;
+  
   Math = Math;
   
   constructor(
@@ -87,6 +92,8 @@ export class InventarioSalidaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   ngOnInit(): void {
+    this.loadUserInfo();
+
     this.perfilSubscription = this.perfilService.perfil$.subscribe({
       next: (usuario) => {
         if (usuario) {
@@ -319,6 +326,8 @@ export class InventarioSalidaComponent implements OnInit, AfterViewInit, OnDestr
     });
     this.medicamentoSeleccionado = null;
     this.stockResultante = 0;
+    this.medicamentoBusqueda = '';
+    this.mostrarDropdownMed = false;
     this.mostrarModalNueva = true;
   }
 
@@ -327,6 +336,8 @@ export class InventarioSalidaComponent implements OnInit, AfterViewInit, OnDestr
     this.salidaForm.reset();
     this.medicamentoSeleccionado = null;
     this.stockResultante = 0;
+    this.medicamentoBusqueda = '';
+    this.mostrarDropdownMed = false;
   }
 
   onMedicamentoChange(idmedicina: any): void { 
@@ -361,10 +372,56 @@ export class InventarioSalidaComponent implements OnInit, AfterViewInit, OnDestr
     );
   }
 
+  // AUTOCOMPLETE MEDICAMENTO
+  onBusquedaMedicamento(): void {
+    const texto = this.medicamentoBusqueda.toLowerCase().trim();
+    if (!texto) {
+      this.medicamentosFiltrados = this.medicamentos.slice(0, 8);
+    } else {
+      this.medicamentosFiltrados = this.medicamentos
+        .filter(m =>
+          m.nombre.toLowerCase().includes(texto) ||
+          (m.codigoproducto || '').toLowerCase().includes(texto)
+        )
+        .slice(0, 8);
+    }
+    this.mostrarDropdownMed = true;
+  }
+
+  abrirDropdownMed(): void {
+    this.medicamentosFiltrados = this.medicamentos.slice(0, 8);
+    this.mostrarDropdownMed = true;
+  }
+
+  seleccionarMedicamentoDesdeDropdown(med: Medicamento): void {
+    this.medicamentoBusqueda = med.nombre;
+    this.mostrarDropdownMed = false;
+    this.salidaForm.patchValue({ fkmedicina: med.idmedicina });
+    this.onMedicamentoChange(med.idmedicina);
+  }
+
+  cerrarDropdownMed(): void {
+    // Pequeño delay para permitir el click en la opción antes de cerrar
+    setTimeout(() => { this.mostrarDropdownMed = false; }, 150);
+  }
+
+  limpiarSeleccionMedicamento(): void {
+    this.medicamentoBusqueda = '';
+    this.medicamentoSeleccionado = null;
+    this.stockResultante = 0;
+    this.salidaForm.patchValue({ fkmedicina: '' });
+    this.mostrarDropdownMed = false;
+  }
+
 guardarSalida(): void {
   if (!this.salidaForm.valid) {
     this.marcarFormularioComoTocado();
     this.alerta.alertaError('Por favor complete todos los campos requeridos');
+    return;
+  }
+
+  if (!this.usuarioActual) {
+    this.alerta.alertaError('No se pudo obtener la información del usuario');
     return;
   }
 

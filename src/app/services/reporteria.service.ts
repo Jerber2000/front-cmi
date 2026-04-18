@@ -151,10 +151,11 @@ export interface FiltrosPacientes {
 }
 
 export interface FiltrosConsultas {
+  nombrePaciente?: string;
+  cuiPaciente?: string;
   desde?: string;
   hasta?: string;
   medico?: number;
-  paciente?: number;
   diagnostico?: string;
   page?: number;
   limit?: number;
@@ -170,12 +171,13 @@ export interface FiltrosInventario {
 }
 
 export interface FiltrosAgenda {
+  nombrePaciente?: string;
+  cuiPaciente?: string;
   desde?: string;
   hasta?: string;
   medico?: number;
-  mes?: number;
-  anio?: number;
   transporte?: number;
+  estado?: string;
   page?: number;
   limit?: number;
 }
@@ -227,8 +229,18 @@ export class ReporteriaService {
     Object.keys(filtros).forEach(key => {
       const value = filtros[key];
       if (value !== undefined && value !== null && value !== '') {
-        params = params.set(key, value.toString());
-        hasParams = true;
+        // Si es array, hacer append para cada elemento (permite múltiples valores)
+        if (Array.isArray(value)) {
+          value.forEach(v => {
+            if (v !== undefined && v !== null && v !== '') {
+              params = params.append(key, v.toString());
+              hasParams = true;
+            }
+          });
+        } else {
+          params = params.set(key, value.toString());
+          hasParams = true;
+        }
       }
     });
     
@@ -245,6 +257,15 @@ export class ReporteriaService {
       { headers: this.getHeaders() }
     ).pipe(
       map(response => response.data!)
+    );
+  }
+
+  obtenerMedicosDisponibles(): Observable<any[]> {
+    return this.http.get<ApiResponse<any[]>>(
+      `${this.apiUrl}/medicos`,
+      { headers: this.getHeaders() }
+    ).pipe(
+      map(response => response.data || [])
     );
   }
 
@@ -351,6 +372,15 @@ export class ReporteriaService {
 
   formatearFecha(fecha: string | Date): string {
     if (!fecha) return '';
+    // Fechas tipo @db.Date llegan como 'YYYY-MM-DD' o como ISO con T00:00:00Z.
+    // Convertirlas con new Date() en browser UTC-6 desplaza un día atrás.
+    // Por eso: si es string de solo fecha, formateamos directo sin Date.
+    const str = typeof fecha === 'string' ? fecha : (fecha as Date).toISOString();
+    const datePart = str.split('T')[0]; // '2026-04-16'
+    if (datePart && /^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+      const [year, month, day] = datePart.split('-');
+      return `${day}/${month}/${year}`;
+    }
     const date = new Date(fecha);
     return date.toLocaleDateString('es-GT', {
       day: '2-digit',
