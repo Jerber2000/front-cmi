@@ -277,20 +277,63 @@
                 Seleccionar Medicamento 
                 <span class="text-danger">*</span>
               </label>
-              <select 
-                formControlName="fkmedicina"
-                class="form-control"
-                [class.is-invalid]="isFieldInvalid('fkmedicina')"
-              >
-                <option value="">-- Seleccionar Medicamento --</option>
-                <option 
-                  *ngFor="let med of medicamentos" 
-                  [value]="med.idmedicina"
-                >
-                  {{ med.nombre }} - {{ med.codigoproducto }} - Stock: {{ med.unidades }} unidades
-                </option>
-              </select>
-              <div class="invalid-feedback" *ngIf="isFieldInvalid('fkmedicina')">
+
+              <!-- Autocomplete -->
+              <div class="autocomplete-wrapper">
+                <div class="autocomplete-input-row">
+                  <i class="fas fa-search autocomplete-icon"></i>
+                  <input
+                    type="text"
+                    class="form-control autocomplete-input"
+                    [class.is-invalid]="isFieldInvalid('fkmedicina')"
+                    placeholder="Escribe el nombre o código del medicamento..."
+                    [(ngModel)]="medicamentoBusqueda"
+                    [ngModelOptions]="{standalone: true}"
+                    (input)="onBusquedaMedicamento()"
+                    (focus)="abrirDropdownMed()"
+                    (blur)="cerrarDropdownMed()"
+                    autocomplete="off"
+                  >
+                  <button
+                    *ngIf="medicamentoBusqueda"
+                    type="button"
+                    class="autocomplete-clear"
+                    (click)="limpiarSeleccionMedicamento()"
+                    title="Limpiar"
+                  >
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+
+                <!-- Dropdown de resultados -->
+                <div class="autocomplete-dropdown" *ngIf="mostrarDropdownMed">
+                  <div *ngIf="medicamentosFiltrados.length === 0" class="autocomplete-empty">
+                    <i class="fas fa-search"></i> Sin resultados para "{{ medicamentoBusqueda }}"
+                  </div>
+                  <div
+                    *ngFor="let med of medicamentosFiltrados"
+                    class="autocomplete-option"
+                    (mousedown)="seleccionarMedicamentoDesdeDropdown(med)"
+                  >
+                    <div class="option-info">
+                      <span class="option-nombre">{{ med.nombre }}</span>
+                      <span class="option-codigo" *ngIf="med.codigoproducto">{{ med.codigoproducto }}</span>
+                    </div>
+                    <span
+                      class="option-stock"
+                      [class.stock-ok]="med.unidades >= 10"
+                      [class.stock-low]="med.unidades > 0 && med.unidades < 10"
+                      [class.stock-none]="med.unidades <= 0"
+                    >
+                      {{ med.unidades }} uds
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Campo oculto para validación reactiva -->
+              <input type="hidden" formControlName="fkmedicina">
+              <div class="invalid-feedback d-block" *ngIf="isFieldInvalid('fkmedicina')">
                 {{ getFieldError('fkmedicina') }}
               </div>
             </div>

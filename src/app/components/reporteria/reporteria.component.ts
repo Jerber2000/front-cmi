@@ -7,6 +7,7 @@ import { Subscription } from 'rxjs';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { 
   ReporteriaService,
   DashboardData,
@@ -26,7 +27,7 @@ import { HasRoleDirective } from '../../directives/has-role.directive';
 @Component({
   selector: 'app-reporteria',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, HasRoleDirective, SidebarComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, HasRoleDirective, SidebarComponent, NgSelectModule],
   templateUrl: './reporteria.component.html',
   styleUrls: ['./reporteria.component.scss']
 })
@@ -67,6 +68,12 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
   
   medicosDisponibles: any[] = [];
   aniosDisponibles: number[] = [];
+  estadosAgenda = [
+    { valor: 0, nombre: 'Eliminada' },
+    { valor: 1, nombre: 'Activo' },
+    { valor: 2, nombre: 'Confirmada' },
+    { valor: 3, nombre: 'Cancelada' }
+  ];
   mesesDisponibles = [
     { valor: 1, nombre: 'Enero' },
     { valor: 2, nombre: 'Febrero' },
@@ -94,6 +101,8 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
     private perfilService: PerfilService
   ) {
     this.filtrosPacientesForm = this.fb.group({
+      nombre: [''],
+      cui: [''],
       desde: [''],
       hasta: [''],
       genero: [''],
@@ -104,10 +113,11 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
     });
     
     this.filtrosConsultasForm = this.fb.group({
+      nombrePaciente: [''],
+      cuiPaciente: [''],
       desde: [''],
       hasta: [''],
       medico: [''],
-      paciente: [''],
       diagnostico: ['']
     });
     
@@ -119,12 +129,13 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
     });
     
     this.filtrosAgendaForm = this.fb.group({
+      nombrePaciente: [''],
+      cuiPaciente: [''],
       desde: [''],
       hasta: [''],
       medico: [''],
-      mes: [''],
-      anio: [''],
-      transporte: ['']
+      transporte: [''],
+      estado: [[]]
     });
     
     this.filtrosReferenciasForm = this.fb.group({
@@ -186,23 +197,12 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   
   cargarMedicos(): void {
-    this.reporteriaService.obtenerReporteConsultas({ page: 1, limit: 1000 }).subscribe({
-      next: (response) => {
-        // Extraer médicos únicos de las consultas
-        const medicosMap = new Map();
-        response.data.forEach((consulta: any) => {
-          if (consulta.usuario) {
-            const medico = consulta.usuario;
-            medicosMap.set(medico.idusuario, {
-              idusuario: medico.idusuario,
-              nombres: medico.nombres,
-              apellidos: medico.apellidos
-            });
-          }
-        });
-        this.medicosDisponibles = Array.from(medicosMap.values());
+    this.reporteriaService.obtenerMedicosDisponibles().subscribe({
+      next: (medicos: any[]) => {
+        this.medicosDisponibles = medicos;
       },
       error: (error) => {
+        console.error('Error al cargar médicos:', error);
       }
     });
   }
@@ -663,5 +663,15 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     
     return edad;
+  }
+  
+  obtenerNombreEstado(estado: number): string {
+    const estadoObj = this.estadosAgenda.find(e => e.valor === estado);
+    return estadoObj ? estadoObj.nombre : 'Desconocido';
+  }
+  
+  isEstadoSelected(valor: number): boolean {
+    const estadosSeleccionados = this.filtrosAgendaForm.get('estado')?.value || [];
+    return estadosSeleccionados.includes(valor);
   }
 }

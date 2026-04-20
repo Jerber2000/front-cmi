@@ -131,10 +131,11 @@ export class AuthService {
     return localStorage.getItem('token');
   }
 
+
   /**
    * Obtener usuario actual del localStorage
    */
-  getCurrentUser(): any {
+  public getCurrentUser(): any {
     const usuario = localStorage.getItem('usuario');
     return usuario ? JSON.parse(usuario) : null;
   }
@@ -159,6 +160,27 @@ export class AuthService {
   navigateToMenu(): void {
     this.showWelcomeSubject.next(true);
     this.router.navigate(['/menu']);
+  }
+
+  /**
+   * Logout síncrono para liberar sesión al cerrar pestaña
+   */
+  logoutSync(): void {
+    const token = this.getToken();
+    if (token) {
+      const url = `${this.apiUrl}/logout`;
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        keepalive: true
+      }).catch((error) => {
+        console.log('Logout al cerrar pestaña:', error);
+      });
+    }
+    this.clearLocalData();
   }
 
   /**

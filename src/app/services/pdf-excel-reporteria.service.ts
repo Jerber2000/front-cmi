@@ -18,8 +18,17 @@ export class PdfExcelReporteriaService {
   constructor(private membreteService: MembreteService) { }
 
   // ==========================================
-  // GENERAR PDF
+  // MÉTODOS AUXILIARES
   // ==========================================
+  private obtenerNombreEstadoAgenda(estado: number): string {
+    const estadosMap: { [key: number]: string } = {
+      0: 'Eliminada',
+      1: 'Activo',
+      2: 'Confirmada',
+      3: 'Cancelada'
+    };
+    return estadosMap[estado] || 'Desconocido';
+  }
   async generarPDF(
     tipoReporte: string,
     datos: any[]
@@ -851,8 +860,9 @@ export class PdfExcelReporteriaService {
   ): void {
     
     const columnas = [
-      { header: 'Fecha', dataKey: 'fecha' },
+      { header: 'Fecha Atención', dataKey: 'fecha' },
       { header: 'Hora', dataKey: 'hora' },
+      { header: 'Estado', dataKey: 'estado' },
       { header: 'Paciente', dataKey: 'paciente' },
       { header: 'Médico', dataKey: 'medico' },
       { header: 'Trans', dataKey: 'transporte' },
@@ -862,6 +872,7 @@ export class PdfExcelReporteriaService {
     const filas = datos.map(item => ({
       fecha: this.formatearFecha(item.fechaatencion),
       hora: item.horaatencion || '',
+      estado: this.obtenerNombreEstadoAgenda(item.estado),
       paciente: `${item.paciente?.nombres} ${item.paciente?.apellidos}`,
       medico: `${item.usuario?.nombres} ${item.usuario?.apellidos}`,
       transporte: item.transporte === 1 ? 'Sí' : 'No',
@@ -1195,8 +1206,9 @@ export class PdfExcelReporteriaService {
   // ==========================================
   private generarHojaAgenda(datos: any[]): XLSX.WorkSheet {
     const datosExcel = datos.map(item => ({
-      'Fecha': this.formatearFecha(item.fechaatencion),
+      'Fecha Atención': this.formatearFecha(item.fechaatencion),
       'Hora': item.horaatencion || '',
+      'Estado': this.obtenerNombreEstadoAgenda(item.estado),
       'Paciente': `${item.paciente?.nombres} ${item.paciente?.apellidos}`,
       'Médico': `${item.usuario?.nombres} ${item.usuario?.apellidos}`,
       'Transporte': item.transporte === 1 ? 'Sí' : 'No',
@@ -1317,8 +1329,15 @@ export class PdfExcelReporteriaService {
 
   private formatearFecha(fecha: string | Date): string {
     if (!fecha) return 'N/A';
-    
     try {
+      // Para campos @db.Date que llegan como 'YYYY-MM-DD', formateamos directo
+      // para evitar el desplazamiento de zona horaria UTC-6.
+      const str = typeof fecha === 'string' ? fecha : (fecha as Date).toISOString();
+      const datePart = str.split('T')[0];
+      if (datePart && /^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+        const [year, month, day] = datePart.split('-');
+        return `${day}/${month}/${year}`;
+      }
       const date = typeof fecha === 'string' ? new Date(fecha) : fecha;
       return date.toLocaleDateString('es-GT', {
         day: '2-digit',

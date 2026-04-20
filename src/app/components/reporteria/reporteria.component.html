@@ -215,13 +215,23 @@
       <form [formGroup]="filtrosPacientesForm" class="filtros-form">
         <div class="form-row">
           <div class="form-group">
-            <label>Desde</label>
+            <label>Nombre</label>
+            <input type="text" formControlName="nombre" class="form-input" placeholder="Buscar por nombre...">
+          </div>
+          <div class="form-group">
+            <label>CUI</label>
+            <input type="text" formControlName="cui" class="form-input" placeholder="Buscar por CUI...">
+          </div>
+          <div class="form-group">
+            <label>Fecha Creación Desde</label>
             <input type="date" formControlName="desde" class="form-input">
           </div>
           <div class="form-group">
-            <label>Hasta</label>
+            <label>Fecha Creación Hasta</label>
             <input type="date" formControlName="hasta" class="form-input">
           </div>
+        </div>
+        <div class="form-row">
           <div class="form-group">
             <label>Género</label>
             <select formControlName="genero" class="form-select">
@@ -233,6 +243,14 @@
           <div class="form-group">
             <label>Municipio</label>
             <input type="text" formControlName="municipio" class="form-input" placeholder="Buscar municipio...">
+          </div>
+          <div class="form-group">
+            <label>Edad Mínima</label>
+            <input type="number" formControlName="edadMin" class="form-input" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label>Edad Máxima</label>
+            <input type="number" formControlName="edadMax" class="form-input" placeholder="100">
           </div>
         </div>
         <div class="filtros-actions">
@@ -366,6 +384,14 @@
       <form [formGroup]="filtrosConsultasForm" class="filtros-form">
         <div class="form-row">
           <div class="form-group">
+            <label>Nombre Paciente</label>
+            <input type="text" formControlName="nombrePaciente" class="form-input" placeholder="Buscar por nombre...">
+          </div>
+          <div class="form-group">
+            <label>CUI Paciente</label>
+            <input type="text" formControlName="cuiPaciente" class="form-input" placeholder="Buscar por CUI...">
+          </div>
+          <div class="form-group">
             <label>Desde</label>
             <input type="date" formControlName="desde" class="form-input">
           </div>
@@ -373,6 +399,8 @@
             <label>Hasta</label>
             <input type="date" formControlName="hasta" class="form-input">
           </div>
+        </div>
+        <div class="form-row">
           <div class="form-group">
             <label>Médico</label>
             <select formControlName="medico" class="form-select">
@@ -670,25 +698,28 @@
       <form [formGroup]="filtrosAgendaForm" class="filtros-form">
         <div class="form-row">
           <div class="form-group">
-            <label>Desde</label>
+            <label>Nombre del Paciente</label>
+            <input type="text" formControlName="nombrePaciente" class="form-input" placeholder="Buscar por nombre">
+          </div>
+          <div class="form-group">
+            <label>CUI del Paciente</label>
+            <input type="text" formControlName="cuiPaciente" class="form-input" placeholder="Buscar por CUI">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>F. Atención Desde</label>
             <input type="date" formControlName="desde" class="form-input">
           </div>
           <div class="form-group">
-            <label>Hasta</label>
+            <label>F. Atención Hasta</label>
             <input type="date" formControlName="hasta" class="form-input">
           </div>
           <div class="form-group">
-            <label>Mes</label>
-            <select formControlName="mes" class="form-select">
+            <label>Médico</label>
+            <select formControlName="medico" class="form-select">
               <option value="">Todos</option>
-              <option *ngFor="let mes of mesesDisponibles" [value]="mes.valor">{{ mes.nombre }}</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Año</label>
-            <select formControlName="anio" class="form-select">
-              <option value="">Todos</option>
-              <option *ngFor="let anio of aniosDisponibles" [value]="anio">{{ anio }}</option>
+              <option *ngFor="let doc of medicosDisponibles" [value]="doc.idusuario">{{ doc.nombres }} {{ doc.apellidos }}</option>
             </select>
           </div>
           <div class="form-group">
@@ -698,6 +729,35 @@
               <option value="1">Con transporte</option>
               <option value="0">Sin transporte</option>
             </select>
+          </div>
+          <div class="form-group">
+            <label>Estado</label>
+            <ng-select 
+              [items]="estadosAgenda"
+              bindLabel="nombre"
+              bindValue="valor"
+              formControlName="estado"
+              placeholder="Seleccionar estados..."
+              [multiple]="true"
+              [clearable]="true"
+              [searchable]="true"
+              notFoundText="Sin resultados">
+              <ng-template ng-label-tmp let-item="item" let-clear="clear">
+                <div class="ng-value-label">
+                  <span>{{ item.nombre }}</span>
+                </div>
+              </ng-template>
+              <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+                <div class="custom-option">
+                  <input 
+                    type="checkbox" 
+                    [checked]="isEstadoSelected(item.valor)"
+                    (change)="$event.stopPropagation()"
+                    class="estado-checkbox">
+                  <span class="estado-nombre">{{ item.nombre }}</span>
+                </div>
+              </ng-template>
+            </ng-select>
           </div>
         </div>
         <div class="filtros-actions">
@@ -732,8 +792,9 @@
       <table class="reporte-table">
         <thead>
           <tr>
-            <th>Fecha</th>
+            <th>Fecha Atención</th>
             <th>Hora</th>
+            <th>Estado</th>
             <th>Paciente</th>
             <th>Médico</th>
             <th>Transporte</th>
@@ -744,6 +805,11 @@
           <tr *ngFor="let item of datosPaginados">
             <td>{{ reporteriaService.formatearFecha(item.fechaatencion) }}</td>
             <td>{{ item.horaatencion }}</td>
+            <td>
+              <span class="badge-estado" [ngClass]="'estado-' + item.estado">
+                {{ obtenerNombreEstado(item.estado) }}
+              </span>
+            </td>
             <td>{{ item.paciente?.nombres }} {{ item.paciente?.apellidos }}</td>
             <td>{{ item.usuario?.nombres }} {{ item.usuario?.apellidos }}</td>
             <td>
@@ -754,7 +820,7 @@
             <td>{{ item.comentario || 'N/A' }}</td>
           </tr>
           <tr *ngIf="datosPaginados.length === 0">
-            <td colspan="6" class="empty-state">
+            <td colspan="7" class="empty-state">
               <i class="fas fa-folder-open"></i>
               <p>No hay datos para mostrar</p>
             </td>

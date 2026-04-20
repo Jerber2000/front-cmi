@@ -629,6 +629,31 @@
     color: #155724;
     border: 1px solid #c3e6cb;
   }
+  
+  // Estados de Agenda
+  &.estado-0 {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+  
+  &.estado-1 {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+  
+  &.estado-2 {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+  }
+  
+  &.estado-3 {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+  }
 }
 
 .badge-expediente {
@@ -875,5 +900,125 @@
 
   .stat-details {
     align-items: center;
+  }
+}
+
+/* ====================================
+   NG-SELECT PERSONALIZADO
+   ==================================== */
+::ng-deep {
+  .ng-select-container {
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    min-height: 38px;
+  }
+
+  .ng-select-focused .ng-select-container {
+    border-color: #2c6662;
+    box-shadow: 0 0 0 0.2rem rgba(44, 102, 98, 0.25);
+  }
+
+  .ng-select.ng-select-multiple .ng-select-container {
+    padding: 3px 6px;
+  }
+
+  .ng-option {
+    padding: 8px 12px;
+    
+    &:hover {
+      background: #f0f0f0;
+    }
+
+    &.ng-option-marked {
+      background: #f0f0f0;
+    }
+
+    &.ng-option-selected {
+      background: #e8f5e9;
+      color: #155724;
+    }
+  }
+
+  .ng-option-group-label {
+    font-weight: 600;
+    padding-left: 12px;
+  }
+
+  .ng-input {
+    padding: 0 5px;
+    
+    input {
+      font-size: 14px;
+    }
+  }
+
+  .ng-clear-zone {
+    padding-right: 5px;
+  }
+
+  .ng-dropdown-panel {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+  }
+
+  .ng-value-container {
+    padding: 4px 6px;
+  }
+
+  .ng-value {
+    background: #d1ecf1;
+    border-radius: 4px;
+    padding: 3px 8px;
+    margin: 2px 3px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    color: #0c5460;
+    
+    .ng-value-icon {
+      margin-right: 4px;
+      
+      &:hover {
+        background: rgba(44, 102, 98, 0.1);
+      }
+    }
+  }
+
+  // Checkbox personalizado en opciones
+  .custom-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    cursor: pointer;
+    width: 100%;
+
+    .estado-checkbox {
+      margin: 0;
+      cursor: pointer;
+      accent-color: #2c6662;
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+
+      &:hover {
+        transform: scale(1.1);
+      }
+    }
+
+    .estado-nombre {
+      flex: 1;
+      font-size: 14px;
+      user-select: none;
+    }
+
+    &:hover {
+      font-weight: 500;
+    }
+  }
+
+  .ng-value-label {
+    padding: 0 2px;
   }
 }

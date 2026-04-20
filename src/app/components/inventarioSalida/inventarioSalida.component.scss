@@ -1022,3 +1022,136 @@ textarea.form-control {
     justify-content: center;
   }
 }
+
+// ========================
+// AUTOCOMPLETE MEDICAMENTO
+// ========================
+.autocomplete-wrapper {
+  position: relative;
+}
+
+.autocomplete-input-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .autocomplete-icon {
+    position: absolute;
+    left: 12px;
+    color: #6c757d;
+    font-size: 13px;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .autocomplete-input {
+    padding-left: 34px;
+    padding-right: 36px;
+  }
+
+  .autocomplete-clear {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #9e9e9e;
+    cursor: pointer;
+    padding: 0 4px;
+    font-size: 13px;
+    line-height: 1;
+
+    &:hover {
+      color: #333;
+    }
+  }
+}
+
+.autocomplete-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  z-index: 1050;
+  max-height: 280px;
+  overflow-y: auto;
+
+  .autocomplete-empty {
+    padding: 14px 16px;
+    color: #6c757d;
+    font-size: 13px;
+    text-align: center;
+
+    i {
+      margin-right: 6px;
+      opacity: 0.5;
+    }
+  }
+
+  .autocomplete-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 1px solid #f0f0f0;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: #f0f7f5;
+    }
+
+    .option-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+
+      .option-nombre {
+        font-size: 14px;
+        font-weight: 500;
+        color: #1a3c3a;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .option-codigo {
+        font-size: 11px;
+        color: #6c757d;
+        font-family: monospace;
+      }
+    }
+
+    .option-stock {
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-left: 10px;
+
+      &.stock-ok {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      &.stock-low {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      &.stock-none {
+        background: #f8d7da;
+        color: #721c24;
+      }
+    }
+  }
+}
