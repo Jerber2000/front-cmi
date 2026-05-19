@@ -26,6 +26,15 @@
         <button class="btn-add" (click)="showForm()" *ngIf="currentView === 'list'">
           <i class="fas fa-plus"></i>
         </button>
+        <label class="toggle-switch" *ngIf="currentView === 'list'">
+          <input 
+            type="checkbox" 
+            [checked]="mostrarInactivos"
+            (change)="toggleInactivos()"
+          >
+          <span class="toggle-slider"></span>
+          <span class="toggle-label">Ver inactivos</span>
+        </label>
       </div>
       
       <!-- Título y fecha -->
@@ -54,7 +63,7 @@
         </thead>
         <tbody>
           <!-- 🆕 Cambiar filteredUsers por paginatedUsers -->
-          <tr *ngFor="let user of paginatedUsers" class="table-row">
+          <tr *ngFor="let user of paginatedUsers" class="table-row" [class.row-inactivo]="user.estado === 0">
             <td class="user-name" (click)="viewUser(user)">
               {{ user.nombres }} {{ user.apellidos}}
             </td>
@@ -65,7 +74,7 @@
             <td>{{ user.telinstitucional }}</td>
             <td>{{ user.extension }}</td>
             <td>
-              <span class="status-badge">
+              <span class="status-badge" [class.badge-activo]="user.estado === 1" [class.badge-inactivo]="user.estado === 0">
                 {{ user.estado == 1 ? 'Activo' : 'Inactivo' }}
               </span>
             </td>
@@ -583,6 +592,25 @@
               <div class="error-message" *ngIf="isFieldInvalid('status')">
                 {{ getFieldError('status') }}
               </div>
+            </div>
+
+            <div class="form-group">
+              <label>Sesión Grupal</label>
+              <div class="toggle-container">
+                <label class="toggle-switch">
+                  <input 
+                    type="checkbox" 
+                    formControlName="sesion_grupal"
+                  >
+                  <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label">
+                  {{ userForm.get('sesion_grupal')?.value ? 'Permite múltiples pacientes por horario' : 'Un paciente por horario' }}
+                </span>
+              </div>
+              <small class="text-muted">
+                Activar solo para profesionales que atienden sesiones grupales
+              </small>
             </div>
           </div>
         </div>

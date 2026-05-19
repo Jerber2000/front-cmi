@@ -119,17 +119,42 @@
 
     <!-- Leyenda de colores -->
     <div class="calendar-legend">
-      <h6>Profesionales:</h6>
-      <div class="legend-items">
-        <div class="legend-item" *ngFor="let medico of usuario">
-          <span class="color-box" [style.background-color]="getColorPorMedico(medico.idusuario)"></span>
-          <span>Dr. {{ medico.nombres }} {{ medico.apellidos }}</span>
+      <div class="legend-section">
+        <h6>Profesionales:</h6>
+        <div class="legend-items">
+          <div class="legend-item" *ngFor="let medico of usuario">
+            <span class="color-box" [style.background-color]="getColorPorMedico(medico.idusuario)"></span>
+            <span>Dr. {{ medico.nombres }} {{ medico.apellidos }}</span>
+            <span *ngIf="medico.sesion_grupal" 
+              class="badge-sesion-grupal ms-1"
+              title="Permite sesiones grupales">
+              <i class="fas fa-users"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="legend-section">
+        <h6>Estados:</h6>
+        <div class="legend-items">
+          <div class="legend-item">
+            <span class="color-box" style="background-color: #45B7D1"></span>
+            <span>Pendiente</span>
+          </div>
+          <div class="legend-item">
+            <span class="color-box" style="background-color: #1a8a5c"></span>
+            <span>Confirmada</span>
+          </div>
+          <div class="legend-item">
+            <span class="color-box" style="background-color: #95a5a6"></span>
+            <span>No se presentará</span>
+          </div>
         </div>
       </div>
     </div>
 
-  </div> <!-- Cerrar menu-container -->
-</div> <!-- Cerrar content-area -->
+  </div>
+</div>
 
 <!-- Modal para crear/editar/ver citas -->
 <div 
@@ -160,7 +185,7 @@
               }">
               <ng-container *ngIf="!selectedCita!.estado || selectedCita!.estado === 1">Pendiente</ng-container>
               <ng-container *ngIf="selectedCita!.estado === 2">Confirmada</ng-container>
-              <ng-container *ngIf="selectedCita!.estado === 3">No se presentó</ng-container>
+              <ng-container *ngIf="selectedCita!.estado === 3">No se presentará</ng-container>
             </span>
           </ng-container>
         </h5>
@@ -266,6 +291,11 @@
                       <div class="profesional-nombre">
                         <i class="fas fa-user-md me-2 text-success"></i>
                         <strong>Dr. {{ item.nombres }} {{ item.apellidos }}</strong>
+                        <span *ngIf="item.sesion_grupal" 
+                          class="badge-sesion-grupal ms-2"
+                          title="Permite sesiones grupales">
+                          <i class="fas fa-users"></i> Grupal
+                        </span>
                       </div>
                       <div class="profesional-detalles" *ngIf="item.profesion">
                         <small class="text-muted">
@@ -281,6 +311,11 @@
                     <div class="d-flex align-items-center">
                       <i class="fas fa-user-md me-2"></i>
                       Dr. {{ item.nombres }} {{ item.apellidos }}
+                      <span *ngIf="item.sesion_grupal" 
+                        class="badge-sesion-grupal ms-1"
+                        title="Este profesional permite sesiones grupales">
+                        <i class="fas fa-users"></i> Grupal
+                      </span>
                     </div>
                   </ng-template>
                 </ng-select>
@@ -742,7 +777,7 @@
                     <i class="fas me-2"
                       [ngClass]="cita.estado === 2 ? 'fa-check-circle text-success' : 'fa-times-circle text-danger'">
                     </i>
-                    {{ cita.estado === 2 ? 'Asistencia confirmada' : 'No se presentó' }}
+                    {{ cita.estado === 2 ? 'Asistencia confirmada' : 'No se presentará' }}
                   </h6>
                   <p class="mb-0 small text-muted" *ngIf="cita.comentario && cita.estado === 3">
                     <i class="fas fa-comment-alt me-1"></i>{{ cita.comentario }}

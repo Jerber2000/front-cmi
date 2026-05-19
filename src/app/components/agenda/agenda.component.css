@@ -929,7 +929,6 @@ html {
   padding: 4px 8px;
 }
 
-/* ===== ASISTENCIA ===== */
 .asistencia-card {
   border-left: 3px solid #0d6efd;
   border-radius: 0;
@@ -1012,7 +1011,6 @@ html {
   justify-content: flex-end;
 }
 
-/* ===== ESTADO YA REGISTRADO ===== */
 .estado-confirmado {
   border-left: 3px solid #1a8a5c;
   background: #f0faf5;
@@ -1025,7 +1023,6 @@ html {
   border-radius: 0;
 }
 
-/* ===== BADGE DE ESTADO EN HEADER ===== */
 .badge-estado {
   font-size: 11px;
   font-weight: 500;
@@ -1050,8 +1047,43 @@ html {
   color: #7b1c1c;
 }
 
-/* ===== ANIMACIÓN ===== */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+.calendar-legend {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.legend-section h6 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #555;
+}
+
+.legend-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.badge-sesion-grupal {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #e8f4fd;
+  color: #1565c0;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid #90caf9;
+}
+
+.badge-sesion-grupal i {
+  font-size: 10px;
 }

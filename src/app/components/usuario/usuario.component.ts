@@ -60,6 +60,8 @@ export class UsuarioComponent implements OnInit, AfterViewInit, OnDestroy {
   showPassword = false;
   showConfirmPassword = false;
 
+  mostrarInactivos = false;
+
   private currentUserId: string = '1';
   private perfilSubscription?: Subscription;
 
@@ -90,7 +92,8 @@ export class UsuarioComponent implements OnInit, AfterViewInit, OnDestroy {
       role: ['', [Validators.required]],
       observaciones: [''],
       status: ['', [Validators.required]],
-      clinica: ['', Validators.required]
+      clinica: ['', Validators.required],
+      sesion_grupal: [false]
     });
   }
 
@@ -433,7 +436,8 @@ export class UsuarioComponent implements OnInit, AfterViewInit, OnDestroy {
       role: user.fkrol?.toString() || '',
       observaciones: user.observaciones || '',
       status: user.estado?.toString() || '',
-      clinica: user.fkclinica ? user.fkclinica.toString() : ''
+      clinica: user.fkclinica ? user.fkclinica.toString() : '',
+      sesion_grupal: user.sesion_grupal || false
     });
 
     if (user.rutafotoperfil) {
@@ -529,7 +533,8 @@ export class UsuarioComponent implements OnInit, AfterViewInit, OnDestroy {
       role: user.fkrol?.toString() || '',
       observaciones: user.observaciones || '',
       status: user.estado?.toString() || '',
-      clinica: user.fkclinica ? user.fkclinica.toString() : ''
+      clinica: user.fkclinica ? user.fkclinica.toString() : '',
+      sesion_grupal: user.sesion_grupal || false
     });
     
     if (user.rutafotoperfil) {
@@ -539,6 +544,7 @@ export class UsuarioComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.userForm.enable();
+    this.userForm.get('usuario')?.disable();  
   }
 
   updatePasswordValidators(): void {
@@ -583,24 +589,23 @@ export class UsuarioComponent implements OnInit, AfterViewInit, OnDestroy {
   // OPERACIONES CRUD - Actualizado para incluir paginación
 
   loadUsers(): void {
-    this.loading = true;
-    this.UsuarioService.obtenerUsuarios().subscribe({
-      next: (users) => {
-        // Agregar URLs manualmente sin cambiar interface
-        this.users = users.map(user => ({
-          ...user,
-          fotoUrl: user.rutafotoperfil ? this.archivoService.obtenerUrlPublica(user.rutafotoperfil) : null
-          // documentoUrl: user.rutadocumento ? this.archivoService.obtenerUrlPublica(user.rutadocumento) : null
-        }));
-        
-        this.filteredUsers = [...this.users];
-        this.updatePagination();
-        this.loading = false;
-      },
-      error: (error) => {
-        this.loading = false;
-      }
-    });
+      this.loading = true;
+      this.UsuarioService.obtenerUsuarios(this.mostrarInactivos).subscribe({
+          next: (users) => {
+              this.users = users.map(user => ({
+                  ...user,
+                  fotoUrl: user.rutafotoperfil 
+                      ? this.archivoService.obtenerUrlPublica(user.rutafotoperfil) 
+                      : null
+              }));
+              this.filteredUsers = [...this.users];
+              this.updatePagination();
+              this.loading = false;
+          },
+          error: (error) => {
+              this.loading = false;
+          }
+      });
   }
 
   async deleteUser(id: number): Promise<void> {
@@ -672,6 +677,7 @@ export class UsuarioComponent implements OnInit, AfterViewInit, OnDestroy {
 
   resetForm(): void {
     this.userForm.reset();
+    this.userForm.get('usuario')?.enable();
     this.userForm.patchValue({ 
       status: '',
       role: '',
@@ -696,7 +702,7 @@ export class UsuarioComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.userForm.valid) {
       this.loading = true;
       
-      const formData = this.userForm.value;
+      const formData = this.userForm.getRawValue();
       
       // Tus validaciones existentes se mantienen igual
       if (!this.isEditMode || (formData.password && formData.password.trim() !== '')) {
@@ -757,7 +763,8 @@ export class UsuarioComponent implements OnInit, AfterViewInit, OnDestroy {
           observaciones: formData.observaciones || '',
           usuariocreacion: currentUserId,
           usuariomodificacion: currentUserId,
-          estado: parseInt(formData.status)
+          estado: parseInt(formData.status),
+          sesion_grupal: formData.sesion_grupal || false
         };
 
         const operation = this.isEditMode 
@@ -839,5 +846,10 @@ export class UsuarioComponent implements OnInit, AfterViewInit, OnDestroy {
     } else {
       this.alerta.alertaPreventiva('Completa todos los campos requeridos');
     }
+  }
+
+  toggleInactivos(): void {
+    this.mostrarInactivos = !this.mostrarInactivos;
+    this.loadUsers();
   }
 }

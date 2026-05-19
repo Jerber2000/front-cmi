@@ -28,6 +28,7 @@ export interface Usuario {
     estado:                   number;
     fkclinica:                number;
     nombreCompleto?:          string;
+    sesion_grupal?:           boolean;
 }
 
 export interface ApiResponse<T> {
@@ -61,8 +62,8 @@ export class UsuarioService{
         return userData ? JSON.parse(userData) : null;
     }
 
-    obtenerUsuarios(): Observable<Usuario[]>{
-        const ruta = `${this.apiUrl}/buscarUsuarios`;
+    obtenerUsuarios(includeInactive: boolean = false): Observable<Usuario[]>{
+        const ruta = `${this.apiUrl}/buscarUsuarios${includeInactive ? '?includeInactive=true' : ''}`;
         return this.http.get<any>(ruta).pipe(
             tap(response => {}),
             map(response => {

@@ -687,21 +687,26 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
             : citas;
           
           // Transformar las citas al formato de FullCalendar
-          this.calendarOptions.events = citasFiltradas.map((cita: CitaRequest) => ({
-            id: cita.idagenda?.toString() || '',
-            title: `${cita.paciente?.nombres} ${cita.paciente?.apellidos}`,
-            start: `${cita.fechaatencion}T${cita.horaatencion}`,
-            backgroundColor: this.getColorPorMedico(cita.fkusuario),
-            borderColor: this.getColorPorMedico(cita.fkusuario),
-            textColor: '#ffffff',
-            extendedProps: {
-              medico: `Dr. ${cita.usuario?.nombres} ${cita.usuario?.apellidos}`,
-              paciente: `${cita.paciente?.nombres} ${cita.paciente?.apellidos}`,
-              comentario: cita.comentario,
-              horaatencion: cita.horaatencion,
-              citaCompleta: cita
-            }
-          }));
+          this.calendarOptions.events = citasFiltradas.map((cita: CitaRequest) => {
+            const colorBase = this.getColorPorMedico(cita.fkusuario);
+            const { backgroundColor, borderColor, textColor } = this.getEstilosPorEstado(cita.estado, colorBase);
+
+            return {
+              id: cita.idagenda?.toString() || '',
+              title: `${cita.paciente?.nombres} ${cita.paciente?.apellidos}`,
+              start: `${cita.fechaatencion}T${cita.horaatencion}`,
+              backgroundColor,
+              borderColor,
+              textColor,
+              extendedProps: {
+                medico: `Dr. ${cita.usuario?.nombres} ${cita.usuario?.apellidos}`,
+                paciente: `${cita.paciente?.nombres} ${cita.paciente?.apellidos}`,
+                comentario: cita.comentario,
+                horaatencion: cita.horaatencion,
+                citaCompleta: cita
+              }
+            };
+          });
           
           // Forzar actualización del calendario
           this.calendarOptions = { ...this.calendarOptions };
@@ -833,6 +838,29 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
       '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
     ];
     return colores[medicoId % colores.length];
+  }
+
+  getEstilosPorEstado(estado: number | null | undefined, colorMedico: string): { backgroundColor: string, borderColor: string, textColor: string } {
+    switch (estado) {
+      case 2: // Confirmada
+        return {
+          backgroundColor: '#1a8a5c',
+          borderColor: '#146b47',
+          textColor: '#ffffff'
+        };
+      case 3: // No se presentó
+        return {
+          backgroundColor: '#95a5a6',
+          borderColor: '#7f8c8d',
+          textColor: '#ffffff'
+        };
+      default: // Pendiente
+        return {
+          backgroundColor: colorMedico,
+          borderColor: colorMedico,
+          textColor: '#ffffff'
+        };
+    }
   }
 
   cargarDetallesSerieRecurrente(idagendaRecurrente: number): void {
@@ -1170,7 +1198,7 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.selectedCita.es_recurrente && this.selectedCita.fkagenda_recurrente) {
       const opcion = await this.alerta.alertaConfirmacionConOpciones(
         '¿Qué deseas eliminar?',
-        'Esta cita forma parte de una serie recurrente',
+        'Esta cita forma parte de una serie recurrente, Usa esta opción solo si la cita fue creada por error',
         'Solo esta cita',
         'Toda la serie'
       );
@@ -1234,7 +1262,7 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     } else {
       const confirmacion = await this.alerta.alertaConfirmacion(
         '¿Estás seguro de que deseas eliminar este registro?',
-        '',
+        'Usa esta opción solo si la cita fue creada por error',
         'Sí, Eliminar',
         'No, Cerrar'
       );
