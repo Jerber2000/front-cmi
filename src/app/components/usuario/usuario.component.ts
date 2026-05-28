@@ -665,7 +665,7 @@ export class UsuarioComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       });
     }
-  }
+  } 
 
   closeModal(): void {
     this.currentView = 'list';

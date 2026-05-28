@@ -855,7 +855,7 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
           textColor: '#ffffff'
         };
       default: // Pendiente
-        return {
+        return { 
           backgroundColor: colorMedico,
           borderColor: colorMedico,
           textColor: '#ffffff'
