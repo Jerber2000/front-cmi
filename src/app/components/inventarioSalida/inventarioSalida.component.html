@@ -1,6 +1,9 @@
 <!-- src/app/components/inventarioSalida/inventarioSalida.component.html -->
 <div class="content-area" [class.sidebar-expanded]="sidebarExpanded">
-  <app-sidebar [userInfo]="userInfo"></app-sidebar>
+  <button class="mobile-menu-btn" (click)="toggleSidebarMobile()" [class.sidebar-open]="sidebarVisible">
+    <i class="fas" [class.fa-bars]="!sidebarVisible" [class.fa-times]="sidebarVisible"></i>
+  </button>
+  <app-sidebar [userInfo]="userInfo" [isExpanded]="sidebarVisible" (toggleSidebar)="onSidebarToggle($event)"></app-sidebar>
   
   <div class="menu-container">
     <header class="header">

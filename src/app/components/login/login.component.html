@@ -34,6 +34,20 @@
     </div>
 
     <div class="right-panel">
+
+      <!-- Bienvenida visible solo en móvil -->
+      <div class="mobile-welcome">
+        <img src="assets/img/LogoFraijanes.png" alt="Municipalidad de Fraijanes" class="mobile-fraijanes-logo fade-in">
+        <div *ngIf="!modoOlvidoClave" class="mobile-welcome-content fade-in">
+          <h2>¡Hola te damos la bienvenida!</h2>
+          <p class="subtitle">Accede a tu cuenta para continuar</p>
+        </div>
+        <div *ngIf="modoOlvidoClave" class="mobile-welcome-content fade-in">
+          <h2>Recuperar contraseña</h2>
+          <p class="subtitle">Te enviaremos una contraseña temporal a tu correo</p>
+        </div>
+      </div>
+
       <!-- FORMULARIO DE LOGIN -->
       <form *ngIf="!modoOlvidoClave" (ngSubmit)="onSubmitLogin()" class="form-container fade-in">
         
@@ -97,8 +111,8 @@
           </div>
         </div>
 
-        <h3>Recuperar contraseña</h3>
-        <p class="reset-description">Ingresa tu correo electrónico y te enviaremos una contraseña temporal</p>
+        <h3 class="desktop-only">Recuperar contraseña</h3>
+        <p class="reset-description desktop-only">Ingresa tu correo electrónico y te enviaremos una contraseña temporal</p>
         
         <input 
           type="email" 

@@ -99,15 +99,19 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     selectable: true,
     selectMirror: true,
     dayMaxEvents: 3,
-    
+    longPressDelay: 0,
+    selectLongPressDelay: 0,
+    eventLongPressDelay: 0,
+
     selectAllow: (selectInfo) => {
       const fechaSeleccionada = selectInfo.startStr.split('T')[0];
       const hoy = format(new Date(), 'yyyy-MM-dd');
-      return fechaSeleccionada >= hoy; // Solo permitir selección de hoy en adelante
+      return fechaSeleccionada >= hoy;
     },
 
     // Callbacks
     select: this.handleDateSelect.bind(this),
+    dateClick: this.handleDateClick.bind(this),
     eventClick: this.handleEventClick.bind(this),
     eventsSet: this.handleEvents.bind(this),
     datesSet: this.handleDatesSet.bind(this),
@@ -153,6 +157,7 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
   fechaActual: string = '';
   tituloCalendario: string = '';
   sidebarExpanded: boolean = false;
+  sidebarVisible = false;
   userInfo: any = {};
   usuario: Usuario[] = [];
   paciente: Paciente[] = [];
@@ -516,6 +521,14 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  toggleSidebarMobile(): void {
+    this.sidebarVisible = !this.sidebarVisible;
+  }
+
+  onSidebarToggle(isExpanded: boolean): void {
+    this.sidebarVisible = isExpanded;
+  }
+
   detectSidebarState(): void {
     const checkSidebar = () => {
       const sidebar = document.querySelector('.sidebar-container') || 
@@ -736,6 +749,22 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     } catch (error) {
       this.alerta.alertaError('Error al cargar las citas');
       this.loading = false;
+    }
+  }
+
+  handleDateClick(info: any): void {
+    const fechaSeleccionada = info.dateStr;
+    const hoy = format(new Date(), 'yyyy-MM-dd');
+    if (fechaSeleccionada < hoy) return;
+
+    // En móvil el select no siempre dispara, así que dateClick abre el modal directamente
+    if (window.innerWidth <= 768) {
+      this.selectedDate = fechaSeleccionada;
+      this.modalMode = 'create';
+      this.selectedCita = null;
+      this.citaForm.reset();
+      this.citaForm.patchValue({ fechaatencion: fechaSeleccionada });
+      this.showModal = true;
     }
   }
 

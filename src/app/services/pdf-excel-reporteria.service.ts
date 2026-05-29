@@ -133,7 +133,37 @@ export class PdfExcelReporteriaService {
       if (this.tieneExamenFisico(expediente)) {
         yPosition = await this.agregarExamenFisicoExpediente(doc, expediente, yPosition, membretes);
       }
-      
+
+      // PROGRAMAS ASIGNADOS — al final, igual que en el formulario de edición
+      const programas = expediente.programas;
+      if (Array.isArray(programas) && programas.length > 0) {
+        yPosition = await this.membreteService.verificarNuevaPagina(yPosition, 40, doc, membretes);
+
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(44, 102, 98);
+        doc.text('PROGRAMAS ASIGNADOS', 20, yPosition);
+        yPosition += 10;
+
+        const nombresProgramas = programas
+          .map((ep: any) => ep.programa?.nombre || ep.nombre || 'Programa')
+          .join(' • ');
+
+        autoTable(doc, {
+          startY: yPosition,
+          body: [['Programas:', nombresProgramas]],
+          theme: 'plain',
+          styles: { fontSize: 10, cellPadding: 3 },
+          columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 40 },
+            1: { cellWidth: 130 }
+          },
+          margin: { left: 20 }
+        });
+
+        yPosition = (doc as any).lastAutoTable.finalY + 15;
+      }
+
       // DESCARGAR PDF
       const nombreArchivo = `expediente_${expediente.numeroexpediente}_${this.formatearFecha(new Date()).replace(/\//g, '-')}.pdf`;
       doc.save(nombreArchivo);
@@ -212,7 +242,7 @@ export class PdfExcelReporteriaService {
     doc.setFont('helvetica', 'bold');
     doc.text('Historia de Enfermedad:', 20, yPosition);
     yPosition += 8;
-    
+
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     const lineas = doc.splitTextToSize(expediente.historiaenfermedad, 170);

@@ -1,10 +1,10 @@
 .header {
   background-color: #2c6662;
   color: white;
-  padding: 20px;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
-  position: relative; /* Para posicionamiento del logo */
+  position: relative;
   width: 100%;
   box-sizing: border-box;
 }
@@ -26,18 +26,17 @@
 }
 
 .title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
   margin: 0;
-  white-space: nowrap; /* Evita que se rompa en líneas */
 }
 
 .logo {
-  position: absolute; /* Posición fija en la esquina */
+  position: absolute;
   top: 50%;
-  right: 20px;
-  transform: translateY(-50%); /* Centrar verticalmente */
-  height: 60px;
+  right: 16px;
+  transform: translateY(-50%);
+  height: 44px;
   z-index: 10;
 }
 
@@ -58,9 +57,9 @@
 /* Tarjeta de controles superiores */
 .control-card {
   background: rgba(240, 240, 240, 0.95);
-  border-radius: 15px;
-  padding: 20px;
-  margin-bottom: 20px;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(10px);
 }
@@ -69,7 +68,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
@@ -78,7 +77,8 @@
   align-items: center;
   gap: 15px;
   flex: 1;
-  min-width: 300px;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .search-input {
@@ -137,7 +137,6 @@
   font-size: 18px;
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  white-space: nowrap;
 }
 
 .date-info {
@@ -147,7 +146,6 @@
   border-radius: 20px;
   font-size: 14px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  white-space: nowrap;
 }
 
 /* Logo en esquina derecha - NUEVO */
@@ -570,98 +568,223 @@
   width: 100%;
 }
 
+/* Botón hamburguesa — solo visible en móvil */
+.mobile-menu-btn {
+  display: none;
+}
+
 /* RESPONSIVE MEJORADO */
 @media (max-width: 1200px) {
   .search-controls {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
   }
-  
+
   .search-wrapper {
-    min-width: auto;
+    min-width: 0;
+    flex: 1;
   }
-  
+
   .header-info {
-    justify-content: center;
+    justify-content: flex-end;
+    flex-shrink: 0;
   }
 }
 
 @media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #2c6662;
+    color: white;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 1100;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  .mobile-menu-btn.sidebar-open {
+    background: #c0392b;
+    transform: rotate(90deg);
+  }
+
   .content-area {
-    padding: 15px;
+    padding: 10px;
     margin-left: 0 !important;
     width: 100% !important;
   }
-  
-  .control-card {
-    padding: 15px;
-  }
-  
-  .search-input {
-    max-width: none;
-  }
-  
-  .section-title,
-  .date-info {
-    font-size: 14px;
-    padding: 8px 16px;
-  }
-  
-  .main-card {
-    padding: 15px;
-  }
-  
-  .form-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  
-  .form-header {
-    flex-direction: column;
-    gap: 15px;
-    text-align: center;
-  }
-  
-  .data-table {
-    font-size: 12px;
-  }
-  
-  .data-table th,
-  .data-table td {
-    padding: 8px 6px;
-  }
-  
-  .action-btn {
-    padding: 6px 10px;
-    font-size: 10px;
-    min-width: 50px;
-  }
-  
-  .logo-corner {
-    position: relative;
-    top: auto;
-    right: auto;
-    margin-bottom: 10px;
-  }
-  
-  .logo-corner img {
-    max-width: 80px;
+
+  /* Header más compacto */
+  .header {
+    padding: 8px 12px;
   }
 
-  /* Responsive para el campo de contraseña */
-  .input-with-icon .form-input {
-    padding-right: 45px; /* Menos padding en móvil */
+  .title {
+    font-size: 16px;
   }
-  
+
+  .logo {
+    height: 34px;
+    right: 10px;
+  }
+
+  /* Control card compacta */
+  .control-card {
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+  }
+
+  .search-controls {
+    gap: 8px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .search-wrapper {
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .search-input {
+    max-width: none;
+    padding: 8px 12px;
+    font-size: 13px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .header-info {
+    justify-content: flex-end;
+    flex-shrink: 0;
+  }
+
+  .date-info {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  /* Main card */
+  .main-card {
+    padding: 10px;
+  }
+
+  .data-table {
+    font-size: 13px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 10px 8px;
+  }
+
+  /* Botones solo ícono en móvil */
+  .action-btn {
+    padding: 8px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .action-btn .btn-text {
+    display: none;
+  }
+
+  /* Formulario */
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .form-header {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+
+  /* Campo contraseña */
+  .input-with-icon .form-input {
+    padding-right: 45px;
+  }
+
   .toggle-password {
-    right: 12px; /* Posición más ajustada en móvil */
-    top: 12px; /* Ajuste para móviles */
+    right: 12px;
+    top: 12px;
     width: 24px;
     height: 24px;
   }
-  
+
   .toggle-password i {
     font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 14px;
+  }
+
+  .header {
+    padding: 7px 10px;
+  }
+
+  .logo {
+    height: 30px;
+    right: 8px;
+  }
+
+  .control-card {
+    padding: 7px 8px;
+  }
+
+  .search-input {
+    font-size: 12px;
+    padding: 7px 10px;
+  }
+
+  .date-info {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+
+  .data-table {
+    font-size: 12px;
+  }
+
+  .action-btn {
+    padding: 7px;
+    min-width: 32px;
+    min-height: 32px;
+    font-size: 12px;
+  }
+
+  .modal-header h3 {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 320px) {
+  .title {
+    font-size: 14px;
+  }
+
+  .control-card {
+    padding: 8px;
   }
 }
 
@@ -879,7 +1002,7 @@
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 20px;
   padding: 20px;
 }
@@ -1013,48 +1136,58 @@
 /* Responsive para modal */
 @media (max-width: 768px) {
   .modal-backdrop {
-    padding: 10px;
+    padding: 8px;
   }
-  
+
   .modal-content-large {
     max-width: 100%;
-    max-height: 95vh;
+    max-height: 97vh;
   }
-  
+
   .form-grid {
-    grid-template-columns: 1fr;
-    gap: 15px;
-    padding: 15px;
-  }
-  
-  .modal-header {
-    padding: 15px 20px;
-  }
-  
-  .modal-body-scroll {
-    padding: 15px;
-  }
-  
-  .modal-footer {
-    padding: 15px 20px;
-    flex-direction: column;
+    grid-template-columns: repeat(2, 1fr);
     gap: 10px;
+    padding: 12px;
   }
-  
+
+  .form-group label {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  .form-input,
+  .form-textarea {
+    padding: 9px 10px;
+    font-size: 13px;
+  }
+
+  .modal-header {
+    padding: 12px 16px;
+  }
+
+  .modal-body-scroll {
+    padding: 12px;
+  }
+
+  .modal-footer {
+    padding: 12px 16px;
+    gap: 8px;
+  }
+
   .modal-footer .btn-cancel,
   .modal-footer .btn-save {
-    width: 100%;
+    flex: 1;
     justify-content: center;
   }
-  
+
   .photo-preview {
-    width: 100px;
-    height: 100px;
+    width: 80px;
+    height: 80px;
   }
-  
+
   .section-title {
-    font-size: 14px;
-    padding: 12px 15px;
+    font-size: 13px;
+    padding: 10px 14px;
   }
 }
 
@@ -1176,16 +1309,16 @@
     gap: 15px;
     align-items: stretch;
   }
-  
+
   .pagination {
     justify-content: center;
     flex-wrap: wrap;
   }
-  
+
   .items-per-page {
     justify-content: center;
   }
-  
+
   .pagination-info {
     text-align: center;
   }
@@ -1197,11 +1330,12 @@
     height: 32px;
     font-size: 12px;
   }
-  
+
   .pagination-dots {
     padding: 0 4px;
   }
 }
+
 
 /* 🆕 ESTILOS ADICIONALES PARA CAMPOS DE FORMULARIO */
 

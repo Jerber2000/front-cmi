@@ -15,19 +15,27 @@ import { NgxPaginationModule } from 'ngx-pagination';
 import { PdfExcelReporteriaService } from '../../services/pdf-excel-reporteria.service';
 import { ArchivoService } from '../../services/archivo.service';
 import { ProgramaService, Programa } from '../../services/programa.service';
+import { HasRoleDirective } from '../../directives/has-role.directive';
 
 @Component({
   selector: 'app-expediente-lista',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent, HasRoleDirective],
   templateUrl: './expediente.html',
   styleUrls: ['./expediente.scss']
 })
 export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestroy {
 
-  // Programas
+  // Programas — lista general
   listaProgramas: Programa[] = [];
   programasSeleccionados: number[] = [];
+
+  // Gestión de programas (CRUD modal)
+  mostrarModalProgramas = false;
+  programaEnEdicion: Programa | null = null;
+  nombreProgramaForm = '';
+  descripcionProgramaForm = '';
+  guardandoPrograma = false;
   
   @Input() mostrarComoModal: boolean = false;
   @Input() datosPaciente: any = null;
@@ -72,6 +80,7 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
   // Interfaz de usuario
   fechaActual = new Date();
   barraLateralExpandida = true;
+  sidebarVisible = false;
   informacionUsuario: any = { name: 'Usuario', avatar: null };
   error = '';
 
@@ -151,6 +160,83 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
       },
       error: () => {
         this.listaProgramas = [];
+      }
+    });
+  }
+
+  // ==========================================
+  // GESTIÓN DE PROGRAMAS (CRUD)
+  // ==========================================
+
+  abrirGestionProgramas(): void {
+    this.mostrarModalProgramas = true;
+    this.cancelarEdicionPrograma();
+    this.cargarProgramas();
+  }
+
+  cerrarGestionProgramas(): void {
+    this.mostrarModalProgramas = false;
+    this.cancelarEdicionPrograma();
+  }
+
+  iniciarEdicionPrograma(programa: Programa): void {
+    this.programaEnEdicion = programa;
+    this.nombreProgramaForm = programa.nombre;
+    this.descripcionProgramaForm = programa.descripcion || '';
+  }
+
+  cancelarEdicionPrograma(): void {
+    this.programaEnEdicion = null;
+    this.nombreProgramaForm = '';
+    this.descripcionProgramaForm = '';
+  }
+
+  guardarProgramaGestion(): void {
+    const nombre = this.nombreProgramaForm.trim();
+    if (!nombre) {
+      this.servicioAlerta.alertaPreventiva('El nombre del programa es requerido');
+      return;
+    }
+
+    this.guardandoPrograma = true;
+    const datos = { nombre, descripcion: this.descripcionProgramaForm.trim() };
+
+    const operacion = this.programaEnEdicion
+      ? this.programaService.actualizarPrograma(this.programaEnEdicion.idprograma, datos)
+      : this.programaService.crearPrograma(datos);
+
+    operacion.subscribe({
+      next: () => {
+        this.servicioAlerta.alertaExito(
+          this.programaEnEdicion ? 'Programa actualizado' : 'Programa creado'
+        );
+        this.guardandoPrograma = false;
+        this.cancelarEdicionPrograma();
+        this.cargarProgramas();
+      },
+      error: () => {
+        this.servicioAlerta.alertaError('Error al guardar el programa');
+        this.guardandoPrograma = false;
+      }
+    });
+  }
+
+  async eliminarProgramaGestion(programa: Programa): Promise<void> {
+    const confirmado = await this.servicioAlerta.alertaConfirmacion(
+      `¿Eliminar el programa "${programa.nombre}"?`,
+      'Los expedientes que lo tengan asignado perderán esta asociación.',
+      'Sí, eliminar',
+      'Cancelar'
+    );
+    if (!confirmado) return;
+
+    this.programaService.eliminarPrograma(programa.idprograma).subscribe({
+      next: () => {
+        this.servicioAlerta.alertaExito('Programa eliminado');
+        this.cargarProgramas();
+      },
+      error: () => {
+        this.servicioAlerta.alertaError('Error al eliminar el programa');
       }
     });
   }
@@ -274,6 +360,14 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
   /**
    * Detecta el estado de la barra lateral
    */
+  toggleSidebarMobile(): void {
+    this.sidebarVisible = !this.sidebarVisible;
+  }
+
+  onSidebarToggle(isExpanded: boolean): void {
+    this.sidebarVisible = isExpanded;
+  }
+
   detectarEstadoBarraLateral(): void {
     const verificarBarraLateral = () => {
       const barraLateral = document.querySelector('.sidebar-container');
@@ -339,10 +433,14 @@ private verDetallesExpediente(expediente: Expediente): void {
 descargarPDFExpediente(expediente: Expediente): void {
   try {
     const expedienteSeguro: any = Object.fromEntries(
-      Object.entries(expediente).map(([k, v]) => [k, v ?? ''])
+      Object.entries(expediente).map(([k, v]) => {
+        // Preservar arrays tal cual (programas, etc.)
+        if (Array.isArray(v)) return [k, v];
+        return [k, v ?? ''];
+      })
     );
 
-    this.pdfExcelService.generarPDFExpediente(expedienteSeguro);  // ← CAMBIAR
+    this.pdfExcelService.generarPDFExpediente(expedienteSeguro);
     this.servicioAlerta.alertaExito('PDF generado exitosamente');
   } catch (error) {
     this.servicioAlerta.alertaError('Error al generar el PDF del expediente');

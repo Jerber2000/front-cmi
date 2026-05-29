@@ -16,13 +16,17 @@
   width: calc(100vw - 280px);
 }
 
+.mobile-menu-btn {
+  display: none;
+}
+
 .menu-container {
   width: 100%;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  padding: 20px;
-  gap: 20px;
+  padding: 14px;
+  gap: 12px;
 }
 
 /* ============================================
@@ -31,10 +35,10 @@
 .header {
   background-color: #2c6662;
   color: white;
-  padding: 20px;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
-  border-radius: 15px;
+  border-radius: 12px;
 }
 
 .header-content {
@@ -51,13 +55,13 @@
 }
 
 .title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
   margin: 0;
 }
 
 .logo {
-  height: 60px;
+  height: 44px;
   margin-left: auto;
 }
 
@@ -66,13 +70,13 @@
    ============================================ */
 .toolbar {
   background: rgba(240, 240, 240, 0.95);
-  border-radius: 15px;
-  padding: 20px;
+  border-radius: 12px;
+  padding: 10px 14px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
@@ -130,8 +134,8 @@
    ============================================ */
 .calendar-wrapper {
   background: white;
-  border-radius: 15px;
-  padding: 25px;
+  border-radius: 12px;
+  padding: 14px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   position: relative;
 }
@@ -287,8 +291,8 @@
    ============================================ */
 .calendar-legend {
   background: white;
-  border-radius: 15px;
-  padding: 20px;
+  border-radius: 12px;
+  padding: 10px 14px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -541,49 +545,210 @@
    RESPONSIVE
    ============================================ */
 @media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #2c6662;
+    color: white;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 1100;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  .mobile-menu-btn.sidebar-open {
+    background: #c0392b;
+    transform: rotate(90deg);
+  }
+
   .content-area {
     margin-left: 0 !important;
     width: 100% !important;
   }
 
   .menu-container {
-    padding: 15px;
+    padding: 8px;
+    gap: 8px;
   }
 
-  .toolbar {
-    flex-direction: column;
-    align-items: stretch;
+  /* Header compacto */
+  .header {
+    padding: 8px 12px;
   }
 
-  .calendar-wrapper {
-    padding: 15px;
-  }
-
-  .calendar-nav {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .calendar-title {
-    font-size: 1.25rem;
+  .title {
+    font-size: 16px;
   }
 
   .logo {
-    height: 40px;
+    height: 34px;
   }
 
+  /* Toolbar en fila compacta */
+  .toolbar {
+    padding: 8px 10px;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+
+  .toolbar-left {
+    flex-shrink: 0;
+  }
+
+  .toolbar-center {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .toolbar-center .form-select {
+    min-width: 0;
+    width: 100%;
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+
+  .btn-add {
+    width: 36px;
+    height: 36px;
+    font-size: 15px;
+  }
+
+  .trans {
+    padding: 6px 10px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  /* Calendar wrapper */
+  .calendar-wrapper {
+    padding: 10px;
+  }
+
+  /* Calendar header — nav en fila, acciones en segunda fila */
+  .calendar-header {
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+  }
+
+  .calendar-nav {
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .calendar-title {
+    font-size: 1.1rem;
+    flex: 0 0 auto;
+    order: -1;
+    width: 100%;
+    text-align: center;
+  }
+
+  .calendar-actions {
+    width: 100%;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  /* Celdas cuadradas — calc basado en el ancho disponible / 7 columnas */
   :host ::ng-deep .fc-daygrid-day {
-    min-height: 80px;
+    min-height: calc((100vw - 36px) / 7) !important;
+    height: calc((100vw - 36px) / 7) !important;
   }
 
+  :host ::ng-deep .fc-daygrid-day-frame {
+    min-height: calc((100vw - 36px) / 7) !important;
+    height: calc((100vw - 36px) / 7) !important;
+  }
+
+  :host ::ng-deep .fc-daygrid-day-events {
+    min-height: unset !important;
+  }
+
+  :host ::ng-deep .fc-col-header-cell {
+    padding: 8px 4px;
+    font-size: 11px;
+  }
+
+  :host ::ng-deep .fc-daygrid-day-number {
+    font-size: 12px;
+    padding: 4px 6px;
+  }
+
+  :host ::ng-deep .fc-event {
+    font-size: 10px;
+    padding: 1px 4px;
+  }
+
+  /* Leyenda compacta */
+  .calendar-legend {
+    padding: 8px 10px;
+    gap: 12px;
+  }
+
+  .legend-section h6 {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  .legend-items {
+    gap: 8px;
+  }
+
+  .legend-item {
+    font-size: 12px;
+  }
+
+  /* Modal compacto */
   .modal-footer {
+    padding: 10px 14px;
     flex-direction: column;
     align-items: stretch;
+    gap: 8px;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .modal-footer .btn-actions {
     width: 100%;
     justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .modal-footer .btn-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 14px;
+  }
+
+  .logo {
+    height: 30px;
+  }
+
+  .toolbar {
+    padding: 7px 8px;
+  }
+
+  .calendar-title {
+    font-size: 1rem;
   }
 }
 

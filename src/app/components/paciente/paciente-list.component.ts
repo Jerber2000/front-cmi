@@ -134,6 +134,7 @@ obtenerIniciales(nombres?: string, apellidos?: string): string {
   // Interfaz de usuario
   fechaActual = new Date();
   barraLateralExpandida = true;
+  sidebarVisible = false;
   informacionUsuario: any = {
     name: 'Usuario',
     avatar: null
@@ -995,6 +996,14 @@ private async subirTodosLosArchivos(pacienteId: number): Promise<{
     this.itemsPerPage = Number(this.itemsPerPage);
     this.currentPage = 1;
     this.updatePagination();
+  }
+
+  toggleSidebarMobile(): void {
+    this.sidebarVisible = !this.sidebarVisible;
+  }
+
+  onSidebarToggle(isExpanded: boolean): void {
+    this.sidebarVisible = isExpanded;
   }
 
   // Métodos del modal de acciones

@@ -42,7 +42,7 @@
 .modal-header {
   background: linear-gradient(135deg, #2c6662, #1f4540);
   color: white;
-  padding: 20px 25px;
+  padding: 12px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -51,7 +51,7 @@
 
   h3 {
     margin: 0;
-    font-size: 22px;
+    font-size: 18px;
     font-weight: 600;
   }
 }
@@ -82,8 +82,8 @@
 .modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 25px;
-  max-height: calc(90vh - 140px);
+  padding: 14px 18px;
+  max-height: calc(90vh - 110px);
 }
 
 /* ====================================
@@ -91,30 +91,34 @@
    ==================================== */
 .paciente-info-header {
   background: #f8f9fa;
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 25px;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
   border-left: 4px solid #2c6662;
 }
 
 .info-row {
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 20px;
-  margin-bottom: 15px;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 0;
 
   &:last-child {
     margin-bottom: 0;
+  }
+
+  &:not(:last-child) {
+    margin-bottom: 8px;
   }
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 2px;
 
   label {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     color: #666;
     text-transform: uppercase;
@@ -122,7 +126,7 @@
   }
 
   span {
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 500;
     color: #333;
   }
@@ -149,23 +153,25 @@
 .seccion-formulario {
   background: white;
   border: 1px solid #e9ecef;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .seccion-titulo {
   color: #2c6662;
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0 0 20px 0;
-  padding-bottom: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+  padding-bottom: 8px;
   border-bottom: 2px solid #e9ecef;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
 .subseccion {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 
   &:last-child {
     margin-bottom: 0;
@@ -173,9 +179,12 @@
 
   h5 {
     color: #495057;
-    font-size: 15px;
-    font-weight: 600;
-    margin: 0 0 15px 0;
+    font-size: 12px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: #6c757d;
   }
 }
 
@@ -183,7 +192,7 @@
    FORMULARIO
    ==================================== */
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 
   &:last-child {
     margin-bottom: 0;
@@ -191,23 +200,23 @@
 
   label {
     display: block;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #495057;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
   }
 }
 
 .form-textarea {
   width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: 7px 10px;
+  border: 1px solid #e1e5e9;
+  border-radius: 6px;
+  font-size: 13px;
   font-family: inherit;
   transition: all 0.3s ease;
   resize: vertical;
-  min-height: 60px;
+  min-height: 44px;
 
   &:focus {
     outline: none;
@@ -226,25 +235,25 @@
    ==================================== */
 .checkbox-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
 }
 
 .checkbox-columna {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 5px;
 }
 
 .checkbox-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px;
+  gap: 7px;
+  padding: 6px 8px;
   background: #f8f9fa;
-  border-radius: 6px;
+  border-radius: 5px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease;
   user-select: none;
 
   &:hover {
@@ -252,16 +261,18 @@
   }
 
   input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
+    width: 15px;
+    height: 15px;
     cursor: pointer;
     accent-color: #2c6662;
+    flex-shrink: 0;
   }
 
   span {
-    font-size: 14px;
+    font-size: 12px;
     color: #495057;
     font-weight: 500;
+    line-height: 1.2;
   }
 }
 
@@ -270,10 +281,10 @@
    ==================================== */
 .modal-footer {
   background: #f8f9fa;
-  padding: 20px 25px;
+  padding: 10px 18px;
   display: flex;
   justify-content: flex-end;
-  gap: 15px;
+  gap: 10px;
   border-top: 1px solid #dee2e6;
   border-radius: 0 0 15px 15px;
   flex-shrink: 0;
@@ -286,19 +297,19 @@
 .btn-secondary,
 .btn-success,
 .btn-primary {
-  padding: 12px 24px;
+  padding: 9px 18px;
   border: none;
-  border-radius: 8px;
+  border-radius: 7px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 
   i {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   &:hover {
@@ -374,50 +385,77 @@
    ==================================== */
 @media (max-width: 992px) {
   .checkbox-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .info-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 }
 
 @media (max-width: 768px) {
+  .modal-backdrop {
+    padding: 8px;
+  }
+
   .modal-content {
     max-width: 100%;
-    margin: 10px;
+    max-height: 97vh;
+    margin: 0;
   }
 
   .modal-body {
-    padding: 20px;
+    padding: 10px 12px;
   }
 
   .modal-footer {
+    padding: 8px 12px;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
 
     button {
-      flex: 1 1 calc(50% - 5px);
+      flex: 1;
       justify-content: center;
     }
   }
 
   .paciente-info-header {
-    padding: 15px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+  }
+
+  .info-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
 
   .seccion-formulario {
-    padding: 15px;
+    padding: 10px;
+    margin-bottom: 8px;
+  }
+
+  .checkbox-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+  }
+
+  .checkbox-item {
+    padding: 5px 7px;
+    span { font-size: 11px; }
   }
 }
 
 @media (max-width: 480px) {
   .modal-header h3 {
-    font-size: 18px;
+    font-size: 15px;
   }
 
   .seccion-titulo {
-    font-size: 16px;
+    font-size: 12px;
+  }
+
+  .checkbox-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .modal-footer button {

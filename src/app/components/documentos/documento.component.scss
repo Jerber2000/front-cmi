@@ -30,19 +30,26 @@ $gray-dark: #495057;
 }
 
 /* ====================================
+   BOTÓN HAMBURGUESA MÓVIL
+   ==================================== */
+.mobile-menu-btn {
+  display: none;
+}
+
+/* ====================================
    ENCABEZADO
    ==================================== */
 .header {
   background-color: $primary-color;
   color: white;
-  padding: 20px;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
   position: relative;
   width: 100%;
   box-sizing: border-box;
   border-radius: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .header-content {
@@ -62,7 +69,7 @@ $gray-dark: #495057;
 }
 
 .title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
   margin: 0;
   white-space: nowrap;
@@ -71,9 +78,9 @@ $gray-dark: #495057;
 .logo {
   position: absolute;
   top: 50%;
-  right: 20px;
+  right: 16px;
   transform: translateY(-50%);
-  height: 60px;
+  height: 44px;
   z-index: 10;
 }
 
@@ -82,9 +89,9 @@ $gray-dark: #495057;
    ==================================== */
 .control-card {
   background: white;
-  border-radius: 15px;
-  padding: 20px;
-  margin-bottom: 20px;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -92,16 +99,16 @@ $gray-dark: #495057;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
 .search-wrapper {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
   flex: 1;
-  min-width: 300px;
+  min-width: 0;
 }
 
 .search-input {
@@ -166,8 +173,8 @@ $gray-dark: #495057;
    ==================================== */
 .main-card {
   background: white;
-  border-radius: 15px;
-  padding: 25px;
+  border-radius: 12px;
+  padding: 14px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -284,7 +291,7 @@ $gray-dark: #495057;
    BOTONES DE ACCIÓN
    ==================================== */
 .action-btn {
-  padding: 8px 16px;
+  padding: 7px 12px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -292,8 +299,22 @@ $gray-dark: #495057;
   font-weight: 500;
   text-transform: uppercase;
   transition: all 0.2s ease;
-  min-width: 70px;
   letter-spacing: 0.3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+
+  &.download-btn {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+
+    &:hover {
+      background: linear-gradient(135deg, #0056b3, #004494);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0, 123, 255, 0.4);
+    }
+  }
 
   &.edit-btn {
     background: linear-gradient(135deg, $warning-color, #e0a800);
@@ -804,135 +825,237 @@ $gray-dark: #495057;
    ==================================== */
 @media (max-width: 1200px) {
   .search-controls {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
   }
-  
+
   .search-wrapper {
-    min-width: auto;
+    min-width: 0;
+    flex: 1;
   }
-  
+
   .header-info {
-    justify-content: center;
+    justify-content: flex-end;
+    flex-shrink: 0;
   }
 }
 
 @media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: $primary-color;
+    color: white;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 1100;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    transition: background 0.2s ease, transform 0.2s ease;
+
+    &.sidebar-open {
+      background: #c0392b;
+      transform: rotate(90deg);
+    }
+  }
+
   .content-area {
-    padding: 15px;
+    padding: 8px;
     margin-left: 0 !important;
     width: 100% !important;
   }
-  
-  .control-card {
-    padding: 15px;
+
+  // Header
+  .header {
+    padding: 8px 12px;
+    margin-bottom: 8px;
   }
-  
+
+  .title {
+    font-size: 16px;
+  }
+
+  .logo {
+    height: 34px;
+    right: 10px;
+  }
+
+  // Control card
+  .control-card {
+    padding: 8px 10px;
+    margin-bottom: 8px;
+  }
+
+  .search-controls {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .search-wrapper {
+    flex: 1;
+    min-width: 0;
+    gap: 8px;
+  }
+
   .search-input {
     max-width: none;
+    flex: 1;
+    min-width: 0;
+    padding: 8px 12px;
+    font-size: 13px;
   }
-  
+
+  .clinica-filter {
+    width: 130px;
+    max-width: 130px;
+    padding: 7px 8px;
+    font-size: 12px;
+  }
+
+  .date-info {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  // Main card
   .main-card {
-    padding: 15px;
+    padding: 10px;
   }
-  
-  .form-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-    padding: 15px;
-  }
-  
+
+  // Tabla — ocultar Descripción (3) y Fecha (4) → Nombre, Clínica, Estado, Descargar, Editar, Eliminar
   .data-table {
     font-size: 12px;
 
-    th,
-    td {
+    th:nth-child(3), td:nth-child(3),
+    th:nth-child(4), td:nth-child(4) {
+      display: none;
+    }
+
+    thead th {
+      padding: 8px 6px;
+      font-size: 11px;
+    }
+
+    tbody td {
       padding: 8px 6px;
     }
   }
-  
+
+  // Botones — solo ícono en móvil
   .action-btn {
-    padding: 6px 10px;
-    font-size: 10px;
-    min-width: 50px;
+    padding: 7px;
+    min-width: 32px;
+    min-height: 32px;
+    font-size: 13px;
+
+    .btn-text {
+      display: none;
+    }
   }
 
-  .file-upload-area {
-    padding: 20px;
-  }
-  
-  .file-upload-placeholder i {
-    font-size: 36px;
-  }
-  
-  .file-info {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .file-details {
-    text-align: center;
+  // Modal
+  .modal-backdrop {
+    padding: 8px;
   }
 
   .modal-content-large {
     max-width: 100%;
-    max-height: 95vh;
+    max-height: 97vh;
   }
-  
+
   .modal-header {
-    padding: 15px 20px;
+    padding: 12px 16px;
+
+    h3 { font-size: 16px; }
   }
-  
+
   .modal-body-scroll {
-    padding: 15px;
+    padding: 12px;
   }
-  
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .file-upload-area {
+    padding: 16px;
+  }
+
+  .file-upload-placeholder i {
+    font-size: 32px;
+  }
+
   .modal-footer {
-    padding: 15px 20px;
-    flex-direction: column;
-    gap: 10px;
+    padding: 12px 16px;
+    gap: 8px;
 
     .btn-cancel,
     .btn-save {
-      width: 100%;
+      flex: 1;
       justify-content: center;
     }
   }
 
+  // Paginación
   .pagination-container {
     flex-direction: column;
-    gap: 15px;
+    gap: 10px;
     align-items: stretch;
+    padding: 10px 12px;
+    margin-top: 10px;
   }
-  
+
   .pagination {
     justify-content: center;
     flex-wrap: wrap;
   }
-  
+
   .items-per-page {
     justify-content: center;
   }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 480px) {
+  .title {
+    font-size: 14px;
+  }
+
+  .logo {
+    height: 30px;
+    right: 8px;
+  }
+
+  // También ocultar Clínica (col 2) en pantallas muy pequeñas
+  .data-table {
+    th:nth-child(2), td:nth-child(2) {
+      display: none;
+    }
+  }
+
   .pagination-btn {
     min-width: 32px;
     height: 32px;
     font-size: 12px;
   }
-  
+
   .pagination-dots {
     padding: 0 4px;
   }
 
-  .title {
-    font-size: 20px;
-  }
-
   .section-title {
-    font-size: 14px;
-    padding: 12px 15px;
+    font-size: 13px;
+    padding: 10px 12px;
   }
 }
 
@@ -966,7 +1089,7 @@ $gray-dark: #495057;
 
 // Filtro de clínica en la barra de búsqueda
 .clinica-filter {
-  padding: 10px 15px;
+  padding: 8px 10px;
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 14px;
@@ -974,7 +1097,8 @@ $gray-dark: #495057;
   background-color: #fff;
   cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 200px;
+  width: 160px;
+  max-width: 160px;
 
   &:hover {
     border-color: #4CAF50;

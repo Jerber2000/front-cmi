@@ -23,20 +23,24 @@
   }
 }
 
+.mobile-menu-btn {
+  display: none;
+}
+
 /* ====================================
    ENCABEZADO
    ==================================== */
 .header {
   background-color: #2c6662;
   color: white;
-  padding: 20px;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
   position: relative;
   width: 100%;
   box-sizing: border-box;
   border-radius: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .header-content {
@@ -56,7 +60,7 @@
 }
 
 .title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
   margin: 0;
   white-space: nowrap;
@@ -65,9 +69,9 @@
 .logo {
   position: absolute;
   top: 50%;
-  right: 20px;
+  right: 16px;
   transform: translateY(-50%);
-  height: 60px;
+  height: 44px;
   z-index: 10;
 }
 
@@ -138,8 +142,8 @@
    ==================================== */
 .main-card {
   background: white;
-  border-radius: 15px;
-  padding: 25px;
+  border-radius: 12px;
+  padding: 14px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(10px);
 }
@@ -164,7 +168,7 @@
   background: linear-gradient(135deg, #5ba892, #4a9d7e);
   color: white;
   border: none;
-  padding: 12px 20px;
+  padding: 9px 14px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
@@ -187,8 +191,8 @@
    ==================================== */
 .sesiones-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
 }
 
 .sesion-card {
@@ -697,76 +701,218 @@
    ==================================== */
 @media (max-width: 992px) {
   .sesiones-grid {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  }
-  
-  .diagnostico-inputs,
-  .form-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   }
 }
 
 @media (max-width: 768px) {
-  .patient-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 15px;
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #2c6662;
+    color: white;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 1100;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    transition: background 0.2s ease, transform 0.2s ease;
+
+    &.sidebar-open {
+      background: #c0392b;
+      transform: rotate(90deg);
+    }
   }
-  
+
+  .content-area {
+    margin-left: 0 !important;
+    padding: 8px;
+  }
+
+  // Header
+  .header {
+    padding: 8px 12px;
+    margin-bottom: 8px;
+  }
+
+  .title { font-size: 16px; }
+  .logo { height: 34px; right: 10px; }
+
+  // Tarjeta paciente
+  .patient-info-card {
+    padding: 12px;
+    margin-bottom: 8px;
+  }
+
+  .patient-card-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .avatar-circle {
+    width: 56px;
+    height: 56px;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .patient-basic-info h2 {
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+
+  .expediente-number {
+    font-size: 12px;
+    padding: 3px 8px;
+  }
+
+  .patient-age,
+  .patient-gender {
+    font-size: 12px;
+    margin: 3px 0;
+  }
+
+  .btn-back {
+    padding: 7px 12px;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  // Filtros
+  .filtros-container {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+
+  .filtro-clinica {
+    flex-wrap: wrap;
+    label { font-size: 12px; }
+    .select-clinica { font-size: 12px; padding: 6px 8px; }
+  }
+
+  // Main card
+  .main-card {
+    padding: 10px;
+  }
+
+  // Historial header
   .historial-header {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 15px;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 14px;
   }
-  
+
+  // Botones del header — 2x2 grid en móvil
+  .header-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+
+    button {
+      padding: 8px 10px;
+      font-size: 12px;
+      justify-content: center;
+      text-align: center;
+    }
+  }
+
+  // Sesiones
   .sesiones-grid {
     grid-template-columns: 1fr;
-    gap: 15px;
-  }
-  
-  .modal-content {
-    max-width: 100%;
-    margin: 10px;
-  }
-  
-  .modal-body {
-    padding: 20px;
-  }
-  
-  .modal-footer {
-    flex-direction: column;
     gap: 10px;
   }
-  
-  .btn-cancelar,
-  .btn-aceptar,
-  .btn-guardar {
-    width: 100%;
-    justify-content: center;
+
+  .sesion-card {
+    padding: 12px 14px;
+  }
+
+  // Modal
+  .modal-backdrop {
+    padding: 8px;
+  }
+
+  .modal-content {
+    max-width: 100%;
+    max-height: 97vh;
+    margin: 0;
+  }
+
+  .modal-header {
+    padding: 12px 16px;
+    h3 { font-size: 15px; }
+  }
+
+  .modal-body {
+    padding: 12px;
+  }
+
+  .modal-footer {
+    padding: 12px 16px;
+    gap: 8px;
+
+    .btn-cancelar,
+    .btn-aceptar,
+    .btn-guardar {
+      flex: 1;
+      justify-content: center;
+    }
+  }
+
+  // Formulario — 2 cols en móvil
+  .form-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .diagnostico-inputs {
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 }
 
 @media (max-width: 480px) {
-  .title {
-    font-size: 20px;
+  .title { font-size: 14px; }
+  .logo { height: 30px; }
+
+  .patient-card-header {
+    gap: 10px;
   }
-  
-  .patient-details h2 {
-    font-size: 20px;
-  }
-  
-  .sesion-card {
-    padding: 15px;
-  }
-  
-  .modal-header h3 {
+
+  .avatar-circle {
+    width: 46px;
+    height: 46px;
     font-size: 18px;
   }
-  
-  .main-card,
-  .patient-info,
-  .control-card {
-    padding: 20px;
+
+  .patient-basic-info h2 {
+    font-size: 14px;
+  }
+
+  .header-buttons {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+
+    button {
+      padding: 7px 8px;
+      font-size: 11px;
+    }
+  }
+
+  .sesion-card {
+    padding: 10px 12px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -775,9 +921,9 @@
    ==================================== */
 .patient-info-card {
   background: white;
-  border-radius: 15px;
-  padding: 25px;
-  margin-bottom: 20px;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border: 2px solid #5ba892;
 }
@@ -863,52 +1009,7 @@
   border-left: 4px solid #5ba892;
 }
 
-/* ====================================
-   RESPONSIVE PARA TARJETA DE PACIENTE
-   ==================================== */
-@media (max-width: 768px) {
-  .patient-card-header {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 20px;
-  }
-  
-  .avatar-circle {
-    width: 70px;
-    height: 70px;
-    font-size: 28px;
-  }
-  
-  .patient-basic-info h2 {
-    font-size: 24px;
-  }
-  
-  .expediente-number {
-    font-size: 14px;
-  }
-}
-
-@media (max-width: 480px) {
-  .patient-info-card {
-    padding: 20px;
-  }
-  
-  .avatar-circle {
-    width: 60px;
-    height: 60px;
-    font-size: 24px;
-  }
-  
-  .patient-basic-info h2 {
-    font-size: 20px;
-  }
-  
-  .patient-description {
-    padding: 12px;
-    font-size: 13px;
-  }
-}
+/* RESPONSIVE TARJETA PACIENTE — manejado en sección principal */
 
 /* Estilos para la columna de acciones consolidada */
 .columna-acciones {
@@ -988,34 +1089,23 @@
   background-color: #dc2626;
 }
 
-/* Responsive: En pantallas pequeñas, apilar los botones */
-@media (max-width: 768px) {
-  .contenedor-acciones {
-    flex-direction: column;
-    gap: 4px;
-  }
-  
-  .boton-accion {
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
-  }
-}
+/* Responsive acciones — manejado en sección principal */
 
 /* ====================================
    BOTONES DEL HEADER
    ==================================== */
 .header-buttons {
   display: flex;
-  gap: 15px;
+  gap: 10px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .btn-notas-rapidas {
   background: linear-gradient(135deg, #ffc107, #e0a800);
   color: #212529;
   border: none;
-  padding: 12px 20px;
+  padding: 9px 14px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
@@ -1060,7 +1150,7 @@
   background: linear-gradient(135deg, #2f6e66, #245851);
   color: white;
   border: none;
-  padding: 12px 20px;
+  padding: 9px 14px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
@@ -1245,52 +1335,12 @@
   }
 }
 
-/* ====================================
-   RESPONSIVE PARA NUEVAS FUNCIONALIDADES
-   ==================================== */
+/* RESPONSIVE FUNCIONALIDADES — manejado en sección principal */
 @media (max-width: 768px) {
-  .header-buttons {
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-  }
-
-  .btn-notas-rapidas,
-  .btn-nueva-sesion {
-    width: 100%;
-    justify-content: center;
-  }
-
   .nota-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 480px) {
-  .nota-card {
-    padding: 15px;
-  }
-
-  .nota-section {
-    .nota-text,
-    .recordatorio-text {
-      padding: 8px;
-      font-size: 13px;
-    }
-  }
-
-  .files-section {
-    padding: 15px;
-
-    h4 {
-      font-size: 13px;
-    }
   }
 }
 
@@ -1656,7 +1706,7 @@
   background: linear-gradient(135deg, #8e44ad, #7d3c98);
   color: white;
   border: none;
-  padding: 12px 20px;
+  padding: 9px 14px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;

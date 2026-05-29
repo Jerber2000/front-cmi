@@ -1,13 +1,18 @@
 <!-- menu.component.html -->
 <div class="menu-layout" [class.sidebar-expanded]="sidebarExpanded">
-  
-  <app-sidebar 
+
+  <!-- Botón hamburguesa visible solo en móvil -->
+  <button class="mobile-menu-btn" (click)="toggleSidebar()" [class.sidebar-open]="sidebarVisible">
+    <i class="fas" [class.fa-bars]="!sidebarVisible" [class.fa-times]="sidebarVisible"></i>
+  </button>
+
+  <app-sidebar
     [userInfo]="userInfo"
     [isExpanded]="sidebarVisible"
     (toggleSidebar)="onSidebarToggle($event)"
     (menuItemClick)="onSidebarMenuItemClick($event)">
   </app-sidebar>
-  
+
   <div class="menu-container">
    <!-- Dashboard Principal -->
     <main class="main-content">

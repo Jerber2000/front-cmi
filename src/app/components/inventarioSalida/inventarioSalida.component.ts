@@ -29,9 +29,10 @@ import { AlertaService } from '../../services/alerta.service';
 export class InventarioSalidaComponent implements OnInit, AfterViewInit, OnDestroy {
   private perfilSubscription?: Subscription;
   sidebarExpanded = true;
+  sidebarVisible = false;
   loading = false;
   guardando = false;
-  
+
   // Usuario actual
   userInfo: any = {};
   usuarioActual: any = null;
@@ -148,6 +149,9 @@ export class InventarioSalidaComponent implements OnInit, AfterViewInit, OnDestr
     } catch (error) {
     }
   }
+
+  toggleSidebarMobile(): void { this.sidebarVisible = !this.sidebarVisible; }
+  onSidebarToggle(isExpanded: boolean): void { this.sidebarVisible = isExpanded; }
 
   detectSidebarState(): void {
     const checkSidebar = () => {

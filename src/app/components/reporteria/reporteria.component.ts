@@ -35,6 +35,7 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
   private perfilSubscription?: Subscription;
   
   sidebarExpanded = true;
+  sidebarVisible = false;
   loading = false;
   loadingReporte = false;
   generandoPDF = false;
@@ -205,6 +206,14 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
         console.error('Error al cargar médicos:', error);
       }
     });
+  }
+
+  toggleSidebarMobile(): void {
+    this.sidebarVisible = !this.sidebarVisible;
+  }
+
+  onSidebarToggle(isExpanded: boolean): void {
+    this.sidebarVisible = isExpanded;
   }
 
   detectSidebarState(): void {

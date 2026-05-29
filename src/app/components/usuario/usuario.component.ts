@@ -61,6 +61,7 @@ export class UsuarioComponent implements OnInit, AfterViewInit, OnDestroy {
   showConfirmPassword = false;
 
   mostrarInactivos = false;
+  sidebarVisible = false;
 
   private currentUserId: string = '1';
   private perfilSubscription?: Subscription;
@@ -103,6 +104,14 @@ export class UsuarioComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleConfirmPasswordVisibility(): void {
     this.showConfirmPassword = !this.showConfirmPassword;
+  }
+
+  toggleSidebarMobile(): void {
+    this.sidebarVisible = !this.sidebarVisible;
+  }
+
+  onSidebarToggle(isExpanded: boolean): void {
+    this.sidebarVisible = isExpanded;
   }
 
     /**

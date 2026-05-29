@@ -31,6 +31,7 @@ export class ReferidosComponent implements OnInit, AfterViewInit, OnDestroy {
   @Output() modalCerrado = new EventEmitter<void>();
 
   sidebarExpanded = true;
+  sidebarVisible = false;
   loading = false;
   guardando = false;
   confirmando = false;
@@ -189,6 +190,14 @@ export class ReferidosComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       }
     } catch (error) {}
+  }
+
+  toggleSidebarMobile(): void {
+    this.sidebarVisible = !this.sidebarVisible;
+  }
+
+  onSidebarToggle(isExpanded: boolean): void {
+    this.sidebarVisible = isExpanded;
   }
 
   detectSidebarState(): void {

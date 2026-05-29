@@ -30,6 +30,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
   showEditModal = false;
   loading = false;
   sidebarExpanded = true;
+  sidebarVisible = false;
   currentDate = new Date();
   
   selectedPhoto: File | null = null;
@@ -343,6 +344,14 @@ private cargarDesdeBackend(): void {
         this.alerta.alertaError(error.message || 'Error al actualizar el perfil');
       }
     });
+  }
+
+  toggleSidebarMobile(): void {
+    this.sidebarVisible = !this.sidebarVisible;
+  }
+
+  onSidebarToggle(isExpanded: boolean): void {
+    this.sidebarVisible = isExpanded;
   }
 
   // Método para manejar el clic fuera del modal

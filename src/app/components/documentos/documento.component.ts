@@ -30,6 +30,7 @@ export class DocumentoComponent implements OnInit, AfterViewInit, OnDestroy {
   searchTerm = '';
   currentDate = new Date();
   sidebarExpanded = true;
+  sidebarVisible = false;
   userInfo: any = {};
 
   clinicas: Clinica[] = [];
@@ -88,6 +89,14 @@ export class DocumentoComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.perfilSubscription?.unsubscribe();
+  }
+
+  toggleSidebarMobile(): void {
+    this.sidebarVisible = !this.sidebarVisible;
+  }
+
+  onSidebarToggle(isExpanded: boolean): void {
+    this.sidebarVisible = isExpanded;
   }
 
   detectSidebarState(): void {
