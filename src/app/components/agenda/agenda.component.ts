@@ -108,9 +108,12 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
       html: `<span class="badge-citas-dia">${args.num}</span>`
     }),
 
-    // Al hacer click en el badge → abrir panel del día
+    // Al hacer click en el badge → abrir panel del día (prevenimos el popover nativo)
     moreLinkClick: (info: any) => {
+      info.jsEvent?.preventDefault();
+      info.jsEvent?.stopPropagation();
       this.handleDayBadgeClick(info);
+      return false; // Evita que FullCalendar muestre su popover nativo
     },
 
     selectAllow: (selectInfo) => {

@@ -472,6 +472,14 @@
 /* ============================================
    FULLCALENDAR PERSONALIZACIÓN
    ============================================ */
+
+/* Ocultar el popover nativo de FullCalendar — usamos nuestro panel custom */
+:host ::ng-deep .fc-popover {
+  display: none !important;
+}
+:host ::ng-deep .fc-more-popover {
+  display: none !important;
+}
 :host ::ng-deep .fc {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   width: 100% !important;
