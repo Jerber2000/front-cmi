@@ -66,13 +66,14 @@
             <th>Correo</th>
             <th>Rol</th>
             <th>Estado</th>
+            <th>Editar</th>
             <th>Eliminar</th>
           </tr>
         </thead>
         <tbody>
           <!-- 🆕 Cambiar filteredUsers por paginatedUsers -->
           <tr *ngFor="let user of paginatedUsers" class="table-row" [class.row-inactivo]="user.estado === 0">
-            <td class="user-name" (click)="editUser(user)" title="Click para editar">
+            <td class="user-name" (click)="viewUser(user)">
               {{ user.nombres }} {{ user.apellidos}}
             </td>
             <td>{{ user.usuario || '—' }}</td>
@@ -82,6 +83,16 @@
               <span class="status-badge" [class.badge-activo]="user.estado === 1" [class.badge-inactivo]="user.estado === 0">
                 {{ user.estado == 1 ? 'Activo' : 'Inactivo' }}
               </span>
+            </td>
+            <td>
+              <button
+                class="action-btn edit-btn"
+                (click)="editUser(user)"
+                title="Editar"
+              >
+                <i class="fas fa-edit"></i>
+                <span class="btn-text">Editar</span>
+              </button>
             </td>
             <td>
               <button

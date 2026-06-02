@@ -681,7 +681,7 @@
     padding: 10px;
   }
 
-  /* Tabla — ocultar Correo (3) y Rol (4) en móvil → Nombre, Usuario, Estado, Eliminar */
+  /* Tabla — ocultar Correo (3) y Rol (4) en móvil → Nombre, Usuario, Estado, Editar, Eliminar */
   .data-table th:nth-child(3),
   .data-table td:nth-child(3),
   .data-table th:nth-child(4),
