@@ -98,10 +98,20 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     events: [],
     selectable: true,
     selectMirror: true,
-    dayMaxEvents: 3,
+    dayMaxEvents: 0,        // Colapsa TODOS los eventos en badge numérico
     longPressDelay: 0,
     selectLongPressDelay: 0,
     eventLongPressDelay: 0,
+
+    // Badge de conteo — muestra el número de citas del día
+    moreLinkContent: (args: any) => ({
+      html: `<span class="badge-citas-dia">${args.num}</span>`
+    }),
+
+    // Al hacer click en el badge → abrir panel del día
+    moreLinkClick: (info: any) => {
+      this.handleDayBadgeClick(info);
+    },
 
     selectAllow: (selectInfo) => {
       const fechaSeleccionada = selectInfo.startStr.split('T')[0];
@@ -146,6 +156,11 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
   modalMode: 'create' | 'edit' | 'view' = 'create';
   selectedDate: string = '';
   selectedCita: CitaRequest | null = null;
+
+  // Panel de citas del día
+  mostrarPanelDia = false;
+  fechaDiaSeleccionado = '';
+  citasDiaSeleccionado: CitaRequest[] = [];
   selectedMedico: string = '';
   isSelectDisabled: boolean = false;
   currentView: string = 'dayGridMonth';
@@ -751,6 +766,35 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
       this.loading = false;
     }
   }
+
+  // ── Panel de citas por día ──────────────────────────────
+  handleDayBadgeClick(info: any): void {
+    // Obtener todas las citas del día desde los segmentos
+    const citas: CitaRequest[] = (info.allSegs || [])
+      .map((seg: any) => seg.event?.extendedProps?.citaCompleta)
+      .filter(Boolean)
+      .sort((a: CitaRequest, b: CitaRequest) =>
+        (a.horaatencion || '').localeCompare(b.horaatencion || '')
+      );
+
+    this.citasDiaSeleccionado = citas;
+    this.fechaDiaSeleccionado = format(info.date, "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
+    this.mostrarPanelDia = true;
+  }
+
+  cerrarPanelDia(): void {
+    this.mostrarPanelDia = false;
+    this.citasDiaSeleccionado = [];
+    this.fechaDiaSeleccionado = '';
+  }
+
+  abrirCitaDesdePanel(cita: CitaRequest): void {
+    this.cerrarPanelDia();
+    this.modalMode = 'view';
+    this.selectedCita = cita;
+    this.showModal = true;
+  }
+  // ────────────────────────────────────────────────────────
 
   handleDateClick(info: any): void {
     const fechaSeleccionada = info.dateStr;

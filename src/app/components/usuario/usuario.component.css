@@ -681,6 +681,14 @@
     padding: 10px;
   }
 
+  /* Tabla — ocultar Correo (3) y Rol (4) en móvil → Nombre, Usuario, Estado, Eliminar */
+  .data-table th:nth-child(3),
+  .data-table td:nth-child(3),
+  .data-table th:nth-child(4),
+  .data-table td:nth-child(4) {
+    display: none;
+  }
+
   .data-table {
     font-size: 13px;
   }
@@ -735,6 +743,12 @@
 }
 
 @media (max-width: 480px) {
+  /* En pantallas muy pequeñas también ocultar Usuario (col 2) → solo Nombre, Estado, Eliminar */
+  .data-table th:nth-child(2),
+  .data-table td:nth-child(2) {
+    display: none;
+  }
+
   .title {
     font-size: 14px;
   }

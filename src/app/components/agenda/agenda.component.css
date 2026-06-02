@@ -198,6 +198,278 @@
 }
 
 /* ============================================
+   BADGE DE CITAS POR DÍA
+   ============================================ */
+:host ::ng-deep .fc-daygrid-more-link {
+  display: flex !important;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+:host ::ng-deep .badge-citas-dia {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  background: linear-gradient(135deg, #2c6662, #1f4540);
+  color: white;
+  border-radius: 13px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(44, 102, 98, 0.4);
+}
+
+:host ::ng-deep .fc-daygrid-more-link:hover .badge-citas-dia {
+  background: linear-gradient(135deg, #1f4540, #145858);
+  transform: scale(1.1);
+  box-shadow: 0 4px 10px rgba(44, 102, 98, 0.5);
+}
+
+/* ============================================
+   PANEL DE CITAS DEL DÍA
+   ============================================ */
+.panel-dia-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  padding: 16px;
+  box-sizing: border-box;
+  animation: fadeIn 0.2s ease;
+}
+
+.panel-dia-container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 460px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  animation: modalSlideIn 0.25s ease;
+  overflow: hidden;
+}
+
+.panel-dia-header {
+  background: linear-gradient(135deg, #2c6662, #1f4540);
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.panel-dia-titulo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  i { font-size: 20px; opacity: 0.9; }
+
+  .panel-dia-label {
+    display: block;
+    font-size: 11px;
+    opacity: 0.75;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .panel-dia-fecha {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+}
+
+.panel-dia-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+
+  &:hover { background: rgba(255, 255, 255, 0.3); }
+}
+
+.panel-dia-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px;
+}
+
+.panel-cita-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  border: 1px solid #e9ecef;
+  transition: all 0.2s ease;
+  background: white;
+
+  &:hover {
+    background: #f0faf8;
+    border-color: #5ba892;
+    transform: translateX(2px);
+  }
+
+  &:last-child { margin-bottom: 0; }
+}
+
+.panel-cita-hora {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 52px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #2c6662;
+  flex-shrink: 0;
+
+  i { font-size: 12px; opacity: 0.6; }
+}
+
+.panel-cita-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.panel-cita-paciente {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel-cita-medico {
+  font-size: 11px;
+  color: #6c757d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel-cita-estado {
+  flex-shrink: 0;
+}
+
+.panel-estado-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+
+  &.pendiente {
+    background: #fff3cd;
+    color: #856404;
+  }
+
+  &.confirmada {
+    background: #d4edda;
+    color: #155724;
+  }
+
+  &.no-presento {
+    background: #f8d7da;
+    color: #721c24;
+  }
+}
+
+.panel-cita-arrow {
+  color: #adb5bd;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.panel-dia-vacio {
+  text-align: center;
+  padding: 40px 20px;
+  color: #adb5bd;
+
+  i { font-size: 36px; display: block; margin-bottom: 12px; }
+  p { margin: 0; font-size: 14px; }
+}
+
+.panel-dia-footer {
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.panel-dia-nueva {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #5ba892, #4a9d7e);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: linear-gradient(135deg, #4a9d7e, #3e8a6b);
+    transform: translateY(-1px);
+  }
+}
+
+.panel-dia-count {
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+@media (max-width: 480px) {
+  .panel-dia-container {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: 16px 16px 0 0;
+    align-self: flex-end;
+  }
+
+  .panel-dia-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+}
+
+/* ============================================
    FULLCALENDAR PERSONALIZACIÓN
    ============================================ */
 :host ::ng-deep .fc {
