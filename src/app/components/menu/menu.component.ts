@@ -1,13 +1,16 @@
 import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router'; 
-import { SidebarComponent, MenuItem as SidebarMenuItem } from '../sidebar/sidebar.component'; 
+import { Router } from '@angular/router';
+import { SidebarComponent, MenuItem as SidebarMenuItem } from '../sidebar/sidebar.component';
 import { AuthService } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
 import { ArchivoService } from '../../services/archivo.service';
 import { ReporteriaService, DashboardData } from '../../services/reporteria.service';
 import { HasRoleDirective } from '../../directives/has-role.directive';
 import { PerfilService } from '../../services/perfil.service';
+import { PermisoService } from '../../services/permiso.service';
+
+const ROLES_SUPERADMIN = [1, 4];
 
 // Interface para módulos recomendados
 interface ModuloRecomendado {
@@ -92,15 +95,35 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
     16: 'Terapeuta del Lenguaje'
   };
 
+  // Rutas permitidas cargadas desde BD para filtrar las tarjetas del menú
+  private rutasPermitidas: string[] = [];
+
   constructor(
     private authService: AuthService,
     private archivoService: ArchivoService,
     private router: Router,
     private reporteriaService: ReporteriaService,
-    private perfilService: PerfilService
+    private perfilService: PerfilService,
+    private permisoService: PermisoService
   ) {}
 
+  /** Devuelve true si el usuario tiene acceso al módulo según los permisos de BD */
+  puedeVerModulo(modulo: ModuloPrincipal): boolean {
+    if (!this.rutasPermitidas.length) return false;
+    if (this.rutasPermitidas.includes('*')) return true;
+    const ruta = modulo.ruta.replace(/^\//, '').split('/')[0];
+    // perfil siempre visible
+    if (ruta === 'perfil') return true;
+    return this.rutasPermitidas.includes(ruta);
+  }
+
   ngOnInit() {
+    // Cargar rutas permitidas para filtrar módulos del menú dinámicamente
+    this.permisoService.obtenerMisRutas().subscribe({
+      next: rutas => { this.rutasPermitidas = rutas; },
+      error: ()   => { this.rutasPermitidas = ['*']; } // fallback: mostrar todo
+    });
+
     // Siempre refrescar el perfil desde el backend al iniciar el menú
     this.perfilService.refrescarPerfil().subscribe({
       next: (usuario) => {

@@ -121,8 +121,8 @@
         <div class="modules-grid">
           <!-- Usar directiva appHasRole -->
           <ng-container *ngFor="let modulo of modulosPrincipales">
-            <div class="module-card" 
-                 *appHasRole="modulo.roles"
+            <div class="module-card"
+                 *ngIf="puedeVerModulo(modulo)"
                  (click)="navegarA(modulo.ruta)">
               <div class="module-header">
                 <div class="module-icon-bg" [style.background]="modulo.iconoBg">

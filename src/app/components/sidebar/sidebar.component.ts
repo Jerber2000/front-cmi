@@ -5,7 +5,13 @@ import { AuthService } from '../../services/auth.service';
 import { HasRoleDirective } from '../../directives/has-role.directive';
 import { PerfilService } from '../../services/perfil.service';
 import { ArchivoService } from '../../services/archivo.service';
+import { PermisoService } from '../../services/permiso.service';
 import { Subscription } from 'rxjs';
+
+// Rutas visibles para cualquier usuario autenticado (sin necesidad de permiso en BD)
+const RUTAS_SIEMPRE_VISIBLES = ['perfil', 'logout'];
+// Roles que tienen acceso total (bypass DB)
+const ROLES_SUPERADMIN = [1, 4];
 
 export interface MenuItem {
   label: string;
@@ -78,14 +84,34 @@ export class SidebarComponent implements OnInit, OnDestroy, OnChanges {
     }
   ];
 
+  // Rutas permitidas cargadas desde BD
+  rutasPermitidas: string[] = [];
+  permisosListos = false;
+  private permisosSubscription?: Subscription;
+
   constructor(
-    private router: Router, 
+    private router: Router,
     private authService: AuthService,
     private perfilService: PerfilService,
-    private archivoService: ArchivoService
+    private archivoService: ArchivoService,
+    private permisoService: PermisoService
   ){}
 
   ngOnInit(): void {
+    // Cargar permisos desde BD (o caché) para filtrar el menú dinámicamente
+    this.permisosSubscription = this.permisoService.obtenerMisRutas().subscribe({
+      next: rutas => {
+        this.rutasPermitidas = rutas;
+        this.permisosListos = true;
+      },
+      error: () => {
+        // Si falla la BD, marcar como listo para que el menú no quede vacío
+        // El fallback será mostrar todos los items (el roleGuard protege de todas formas)
+        this.rutasPermitidas = ['*'];
+        this.permisosListos = true;
+      }
+    });
+
     // Cargar userInfo desde localStorage como valor inicial
     this.cargarInfoDelStorage();
 
@@ -167,6 +193,50 @@ export class SidebarComponent implements OnInit, OnDestroy, OnChanges {
   ngOnDestroy(): void {
     this.perfilSubscription?.unsubscribe();
     this.userInfoSubscription?.unsubscribe();
+    this.permisosSubscription?.unsubscribe();
+  }
+
+  // ─── Visibilidad dinámica basada en BD ─────────────────────────────────────
+
+  /** Extrae el segmento de ruta limpio: '/salida-inventario' → 'salida-inventario' */
+  private rutaLimpia(route: string): string {
+    return route.replace(/^\//, '').split('?')[0].split('/')[0];
+  }
+
+  /** El usuario tiene acceso total (superadmin o permisos cargados con '*') */
+  private esAccesoTotal(): boolean {
+    const rol = this.authService.userRole;
+    return (rol !== null && ROLES_SUPERADMIN.includes(rol)) ||
+           this.rutasPermitidas.includes('*');
+  }
+
+  /** Determina si un sub-item del menú debe mostrarse */
+  puedeVerSubItem(subItem: MenuItem): boolean {
+    if (!this.permisosListos) return false;
+    if (!subItem.route) return true;
+
+    const ruta = this.rutaLimpia(subItem.route);
+
+    // Siempre visibles independientemente de permisos
+    if (RUTAS_SIEMPRE_VISIBLES.some(r => ruta.startsWith(r))) return true;
+
+    if (this.esAccesoTotal()) return true;
+
+    return this.rutasPermitidas.includes(ruta);
+  }
+
+  /** Determina si un item padre debe mostrarse (visible si al menos 1 hijo lo es) */
+  puedeVerItem(item: MenuItem): boolean {
+    if (!this.permisosListos) return false;
+    if (this.esAccesoTotal()) return true;
+
+    if (!item.children || item.children.length === 0) {
+      // Item sin hijos — verificar su propia ruta
+      return item.route ? this.puedeVerSubItem(item) : true;
+    }
+
+    // Item padre — visible si al menos un hijo es accesible
+    return item.children.some(child => this.puedeVerSubItem(child));
   }
 
   get currentMenuItems(): MenuItem[] {
