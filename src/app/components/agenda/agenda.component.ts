@@ -113,7 +113,7 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
       info.jsEvent?.preventDefault();
       info.jsEvent?.stopPropagation();
       this.handleDayBadgeClick(info);
-      return false; // Evita que FullCalendar muestre su popover nativo
+      // No retornar nada (void) — el CSS oculta el popover nativo como capa extra
     },
 
     selectAllow: (selectInfo) => {
