@@ -6,11 +6,9 @@ import { AuthService } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
 import { ArchivoService } from '../../services/archivo.service';
 import { ReporteriaService, DashboardData } from '../../services/reporteria.service';
-import { HasRoleDirective } from '../../directives/has-role.directive';
+
 import { PerfilService } from '../../services/perfil.service';
 import { PermisoService } from '../../services/permiso.service';
-
-const ROLES_SUPERADMIN = [1, 4];
 
 // Interface para módulos recomendados
 interface ModuloRecomendado {
@@ -55,7 +53,7 @@ interface UsuarioInfo {
   selector: 'app-menu',
   templateUrl: './menu.component.html',
   styleUrls: ['./menu.component.scss'],
-  imports: [CommonModule, SidebarComponent, HasRoleDirective]
+  imports: [CommonModule, SidebarComponent]
 })
 export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
   sidebarVisible = false;

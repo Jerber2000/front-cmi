@@ -2,7 +2,7 @@ import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, OnChanges, S
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { HasRoleDirective } from '../../directives/has-role.directive';
+
 import { PerfilService } from '../../services/perfil.service';
 import { ArchivoService } from '../../services/archivo.service';
 import { PermisoService } from '../../services/permiso.service';
@@ -27,7 +27,7 @@ export interface MenuItem {
   selector: 'app-sidebar',
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.scss'],
-  imports: [CommonModule, HasRoleDirective],
+  imports: [CommonModule],
 })
 export class SidebarComponent implements OnInit, OnDestroy, OnChanges {
   @Input() isExpanded: boolean = false; // Sidebar cerrado por defecto
