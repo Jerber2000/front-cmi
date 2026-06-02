@@ -1,35 +1,55 @@
 // guards/role.guard.ts
 import { CanActivateFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
+import { Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
 import { AlertaService } from '../services/alerta.service';
+import { PermisoService } from '../services/permiso.service';
 
-export const roleGuard: CanActivateFn = (route, state) => {
-  const authService = inject(AuthService);
-  const router = inject(Router);
-  const alertaService = inject(AlertaService); 
+// Roles con acceso total — nunca se validan contra la BD
+const ROLES_SUPERADMIN = [1, 4];
 
-  // Verificar si está autenticado
+// Rutas que no necesitan permiso de BD (accesibles a cualquier autenticado)
+const RUTAS_LIBRES = ['menu', 'bienvenida', 'perfil', 'gestion-permisos'];
+
+export const roleGuard: CanActivateFn = (route, state): Observable<boolean> | boolean => {
+  const authService  = inject(AuthService);
+  const permisoSvc   = inject(PermisoService);
+  const router       = inject(Router);
+  const alertaService = inject(AlertaService);
+
+  // Sin sesión → login
   if (!authService.isAuthenticated) {
     router.navigate(['/login']);
     return false;
   }
 
-  // Obtener roles permitidos desde la data de la ruta
-  const rolesPermitidos = route.data['roles'] as number[];
+  const rol = authService.userRole;
 
-  // Si no hay roles especificados, permitir acceso
-  if (!rolesPermitidos || rolesPermitidos.length === 0) {
-    return true;
-  }
+  // Superadmin → acceso total sin consultar BD
+  if (rol !== null && ROLES_SUPERADMIN.includes(rol)) return true;
 
-  // Verificar si el usuario tiene uno de los roles permitidos
-  if (authService.hasRole(rolesPermitidos)) {
-    return true;
-  }
+  // Extraer primer segmento de la ruta (ej: '/historial/3' → 'historial')
+  const ruta = state.url.split('/').filter(Boolean)[0]?.split('?')[0] || '';
 
-  alertaService.alertaError('No tienes permisos para acceder');
+  // Rutas libres para todos los autenticados
+  if (RUTAS_LIBRES.includes(ruta)) return true;
 
-  router.navigate(['/menu']);
-  return false;
+  // ── Validación contra BD ─────────────────────────────────────────────────
+  return permisoSvc.verificarAcceso(ruta).pipe(
+    map(tieneAcceso => {
+      if (tieneAcceso) return true;
+      alertaService.alertaError('No tienes permisos para acceder a esta página');
+      router.navigate(['/menu']);
+      return false;
+    }),
+    catchError(() => {
+      // Fallback: usar roles hardcodeados en data.roles si la BD falla
+      const rolesPermitidos = route.data?.['roles'] as number[] | undefined;
+      if (rolesPermitidos && authService.hasRole(rolesPermitidos)) return of(true);
+      router.navigate(['/menu']);
+      return of(false);
+    })
+  );
 };

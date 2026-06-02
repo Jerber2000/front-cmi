@@ -41,8 +41,9 @@ export class SidebarComponent implements OnInit, OnDestroy, OnChanges {
       icon: 'fas fa-users',
       roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
       children: [
-        { label: 'Usuarios', route: '/usuario', roles: [1,4,7] } ,
-        { label: 'Perfiles', route: '/perfil', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] } 
+        { label: 'Usuarios', route: '/usuario', roles: [1,4,7] },
+        { label: 'Perfiles', route: '/perfil', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
+        { label: 'Permisos y Accesos', route: '/gestion-permisos', roles: [1,4] }
       ]
     },
     {

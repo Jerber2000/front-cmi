@@ -145,6 +145,13 @@ export const routes: Routes = [
   },
 
   {
+    path: 'gestion-permisos',
+    loadComponent: () =>
+      import('./components/gestionPermisos/gestion-permisos.component').then(m => m.GestionPermisosComponent),
+    canActivate: [authGuard, roleGuard],
+    data: { roles: [1, 4] }   // fallback — el guard ya sabe que 1 y 4 son superadmin
+  },
+  {
     path: '',
     redirectTo: '/login',
     pathMatch: 'full',

@@ -6,6 +6,9 @@ import { environment } from '../../environments/environment';
 import { ArchivoService } from '../services/archivo.service';
 import { BehaviorSubject } from 'rxjs';
 
+// Clave del caché de permisos — debe coincidir con permiso.service.ts
+const PERMISO_CACHE_KEY = '_cmi_permisos_v2';
+
 export interface CambiarClaveRequest {
   usuario: string;
   claveActual: string;
@@ -214,11 +217,14 @@ export class AuthService {
     localStorage.removeItem('usuario');
     localStorage.removeItem('currentUser');
     localStorage.removeItem('loginTime');
-    
+
+    // Limpiar caché de permisos en sessionStorage
+    sessionStorage.removeItem(PERMISO_CACHE_KEY);
+
     // Limpiar estado de usuario en el BehaviorSubject
     this.userInfoSubject.next({ name: 'Usuario', avatar: null });
     this.cambiarClaveSubject.next(false);
-    
+
     this.router.navigate(['/login']);
   }
 
