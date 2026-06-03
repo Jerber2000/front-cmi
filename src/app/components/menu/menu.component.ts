@@ -95,6 +95,7 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Rutas permitidas cargadas desde BD para filtrar las tarjetas del menú
   private rutasPermitidas: string[] = [];
+  private usarFallbackRoles = false;
 
   constructor(
     private authService: AuthService,
@@ -107,19 +108,37 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
 
   /** Devuelve true si el usuario tiene acceso al módulo según los permisos de BD */
   puedeVerModulo(modulo: ModuloPrincipal): boolean {
-    if (!this.rutasPermitidas.length) return false;
+    // Superadmin: siempre visible
     if (this.rutasPermitidas.includes('*')) return true;
+
     const ruta = modulo.ruta.replace(/^\//, '').split('/')[0];
-    // perfil siempre visible
+
+    // Perfil siempre visible para cualquier usuario autenticado
     if (ruta === 'perfil') return true;
+
+    // Fallback: si la API falló, usar los roles hardcodeados del módulo
+    if (this.usarFallbackRoles) {
+      return this.authService.hasRole(modulo.roles);
+    }
+
+    // Sin permisos cargados aún → ocultar
+    if (!this.rutasPermitidas.length) return false;
+
     return this.rutasPermitidas.includes(ruta);
   }
 
   ngOnInit() {
     // Cargar rutas permitidas para filtrar módulos del menú dinámicamente
     this.permisoService.obtenerMisRutas().subscribe({
-      next: rutas => { this.rutasPermitidas = rutas; },
-      error: ()   => { this.rutasPermitidas = ['*']; } // fallback: mostrar todo
+      next: rutas => {
+        // null = API falló → usar roles hardcodeados del módulo
+        this.rutasPermitidas = rutas ?? [];
+        this.usarFallbackRoles = rutas === null;
+      },
+      error: () => {
+        this.rutasPermitidas = [];
+        this.usarFallbackRoles = true;
+      }
     });
 
     // Siempre refrescar el perfil desde el backend al iniciar el menú
@@ -316,7 +335,7 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
   /**
    * Genera mensaje de bienvenida personalizado según el rol
    */
-  private generarMensajeBienvenida(idRol: number, nombre: string): string {
+  private generarMensajeBienvenida(idRol: number, _nombre: string): string {
     const mensajes: { [key: number]: string } = {
       1: `Tienes acceso completo al sistema. Administra usuarios, clínicas y configuraciones.`,
       2: `Gestiona expedientes médicos, consultas y referencias de tus pacientes.`,

@@ -26,12 +26,13 @@ export interface ResumenPermisos {
   roles: RolConPermisos[];
 }
 
-// Roles que tienen acceso total — no se validan contra la BD
 const ROLES_SUPERADMIN = [1, 4];
-const CACHE_KEY = '_cmi_permisos_v2';
+const CACHE_PREFIX = '_cmi_permisos_u';
 
 @Injectable({ providedIn: 'root' })
 export class PermisoService {
+  // Caché en memoria: incluye el ID del usuario para no mezclar sesiones
+  private cachedUserId: number | null = null;
   private rutasPermitidas: string[] | null = null;
 
   constructor(
@@ -39,10 +40,21 @@ export class PermisoService {
     private authService: AuthService
   ) {}
 
-  /**
-   * Verifica si el usuario tiene acceso a una ruta específica.
-   * Primero usa caché (memoria → sessionStorage), luego llama a la API.
-   */
+  /** Clave sessionStorage específica por usuario */
+  private cacheKey(): string {
+    const uid = this.authService.getCurrentUser()?.idusuario ?? 0;
+    return `${CACHE_PREFIX}${uid}`;
+  }
+
+  /** Invalida caché si cambió el usuario en sesión */
+  private invalidarSiCambioUsuario(): void {
+    const uid = this.authService.getCurrentUser()?.idusuario ?? null;
+    if (uid !== this.cachedUserId) {
+      this.rutasPermitidas = null;
+      this.cachedUserId = uid;
+    }
+  }
+
   verificarAcceso(ruta: string): Observable<boolean> {
     return this.obtenerMisRutas().pipe(
       map(rutas => rutas.includes('*') || rutas.includes(ruta)),
@@ -50,30 +62,31 @@ export class PermisoService {
     );
   }
 
-  /**
-   * Devuelve las rutas permitidas para el usuario actual.
-   * - Superadmin: ['*']
-   * - Otros: lista de rutas desde la API (con caché en sessionStorage)
-   */
   obtenerMisRutas(): Observable<string[]> {
-    // Caché en memoria
-    if (this.rutasPermitidas) return of(this.rutasPermitidas);
+    // Invalidar si el usuario cambió (cambio de sesión sin recarga)
+    this.invalidarSiCambioUsuario();
 
-    // Caché en sessionStorage (sobrevive F5)
-    const cached = sessionStorage.getItem(CACHE_KEY);
+    // Superadmin: bypass inmediato sin caché
+    const rol = this.authService.userRole;
+    if (rol !== null && ROLES_SUPERADMIN.includes(rol)) {
+      this.rutasPermitidas = ['*'];
+      this.cachedUserId = this.authService.getCurrentUser()?.idusuario ?? null;
+      return of(['*']);
+    }
+
+    // Caché en memoria (válida para el mismo usuario)
+    if (this.rutasPermitidas !== null) {
+      return of(this.rutasPermitidas);
+    }
+
+    // Caché en sessionStorage (sobrevive F5, específica por usuario)
+    const key = this.cacheKey();
+    const cached = sessionStorage.getItem(key);
     if (cached) {
       try {
         this.rutasPermitidas = JSON.parse(cached);
         return of(this.rutasPermitidas!);
-      } catch {}
-    }
-
-    const rol = this.authService.userRole;
-
-    // Superadmin — acceso total sin consultar BD
-    if (rol !== null && ROLES_SUPERADMIN.includes(rol)) {
-      this.rutasPermitidas = ['*'];
-      return of(['*']);
+      } catch { /* caché corrupta, seguir */ }
     }
 
     // Llamar a la API
@@ -81,21 +94,29 @@ export class PermisoService {
       .get<{ success: boolean; data: string[] }>(`${environment.apiUrl}/permisos/mis-rutas`)
       .pipe(
         map(resp => {
-          this.rutasPermitidas = resp.data;
-          sessionStorage.setItem(CACHE_KEY, JSON.stringify(resp.data));
-          return resp.data;
+          this.rutasPermitidas = resp.data ?? [];
+          this.cachedUserId = this.authService.getCurrentUser()?.idusuario ?? null;
+          sessionStorage.setItem(key, JSON.stringify(this.rutasPermitidas));
+          return this.rutasPermitidas;
         }),
-        catchError(() => of([]))
+        catchError(() => {
+          // Si la API falla, devolver null para que el sidebar use fallback hardcodeado
+          return of(null as any);
+        })
       );
   }
 
-  /** Limpia el caché (llamar al hacer logout o cuando se cambian permisos) */
+  /** Limpia TODO el caché de permisos (logout o cambio de permisos) */
   limpiarCache(): void {
     this.rutasPermitidas = null;
-    sessionStorage.removeItem(CACHE_KEY);
+    this.cachedUserId = null;
+    // Limpiar todas las claves de permisos del sessionStorage
+    Object.keys(sessionStorage)
+      .filter(k => k.startsWith(CACHE_PREFIX))
+      .forEach(k => sessionStorage.removeItem(k));
   }
 
-  // ─── API de administración de permisos (solo admin) ────────────────────────
+  // ─── API de administración ────────────────────────────────────────────────
 
   obtenerResumen(): Observable<ResumenPermisos> {
     return this.http

@@ -87,6 +87,7 @@ export class SidebarComponent implements OnInit, OnDestroy, OnChanges {
   // Rutas permitidas cargadas desde BD
   rutasPermitidas: string[] = [];
   permisosListos = false;
+  usarFallbackRoles = false; // true cuando la API falla → usar roles hardcodeados
   private permisosSubscription?: Subscription;
 
   constructor(
@@ -101,13 +102,14 @@ export class SidebarComponent implements OnInit, OnDestroy, OnChanges {
     // Cargar permisos desde BD (o caché) para filtrar el menú dinámicamente
     this.permisosSubscription = this.permisoService.obtenerMisRutas().subscribe({
       next: rutas => {
-        this.rutasPermitidas = rutas;
+        // null indica que la API falló — usar fallback de roles hardcodeados
+        this.rutasPermitidas = rutas ?? [];
+        this.usarFallbackRoles = rutas === null;
         this.permisosListos = true;
       },
       error: () => {
-        // Si falla la BD, marcar como listo para que el menú no quede vacío
-        // El fallback será mostrar todos los items (el roleGuard protege de todas formas)
-        this.rutasPermitidas = ['*'];
+        this.rutasPermitidas = [];
+        this.usarFallbackRoles = true;
         this.permisosListos = true;
       }
     });
@@ -217,11 +219,18 @@ export class SidebarComponent implements OnInit, OnDestroy, OnChanges {
 
     const ruta = this.rutaLimpia(subItem.route);
 
-    // Siempre visibles independientemente de permisos
+    // Siempre visibles para cualquier usuario autenticado
     if (RUTAS_SIEMPRE_VISIBLES.some(r => ruta.startsWith(r))) return true;
 
+    // Superadmin: acceso total
     if (this.esAccesoTotal()) return true;
 
+    // Fallback: si la API falló, usar roles hardcodeados del menú
+    if (this.usarFallbackRoles) {
+      return subItem.roles ? this.authService.hasRole(subItem.roles) : true;
+    }
+
+    // Validación desde BD
     return this.rutasPermitidas.includes(ruta);
   }
 
@@ -231,11 +240,9 @@ export class SidebarComponent implements OnInit, OnDestroy, OnChanges {
     if (this.esAccesoTotal()) return true;
 
     if (!item.children || item.children.length === 0) {
-      // Item sin hijos — verificar su propia ruta
       return item.route ? this.puedeVerSubItem(item) : true;
     }
 
-    // Item padre — visible si al menos un hijo es accesible
     return item.children.some(child => this.puedeVerSubItem(child));
   }
 
