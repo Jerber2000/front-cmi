@@ -722,10 +722,15 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
             const colorBase = this.getColorPorMedico(cita.fkusuario);
             const { backgroundColor, borderColor, textColor } = this.getEstilosPorEstado(cita.estado, colorBase);
 
+            // Extraer solo YYYY-MM-DD y HH:MM:SS para evitar que FullCalendar
+            // aplique conversión de timezone al recibir un ISO string con 'Z'
+            const fechaSolo = String(cita.fechaatencion).substring(0, 10);
+            const horaSolo  = String(cita.horaatencion).substring(0, 8);
+
             return {
               id: cita.idagenda?.toString() || '',
               title: `${cita.paciente?.nombres} ${cita.paciente?.apellidos}`,
-              start: `${cita.fechaatencion}T${cita.horaatencion}`,
+              start: `${fechaSolo}T${horaSolo}`,
               backgroundColor,
               borderColor,
               textColor,
