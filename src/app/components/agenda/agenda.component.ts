@@ -105,7 +105,11 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Badge de conteo — muestra el número de citas del día
     moreLinkContent: (args: any) => ({
-      html: `<span class="badge-citas-dia">${args.num}</span>`
+      html: `<span class="badge-citas-dia">
+        <i class="fas fa-calendar-check badge-icon"></i>
+        <span class="badge-num">${args.num}</span>
+        <span class="badge-label"> cita${args.num !== 1 ? 's' : ''}</span>
+      </span>`
     }),
 
     // Al hacer click en el badge → abrir panel del día (prevenimos el popover nativo)
@@ -786,7 +790,14 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
       );
 
     this.citasDiaSeleccionado = citas;
-    this.fechaDiaSeleccionado = format(info.date, "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
+
+    // info.date viene como medianoche UTC desde FullCalendar.
+    // Si se formatea directamente, date-fns lo convierte a hora local (UTC-6),
+    // mostrando el día anterior. Se extrae la fecha en UTC y se construye
+    // un Date local al mediodía para evitar el desfase de zona horaria.
+    const utcDateStr = info.date.toISOString().split('T')[0]; // "YYYY-MM-DD" en UTC
+    const localNoon = new Date(`${utcDateStr}T12:00:00`);
+    this.fechaDiaSeleccionado = format(localNoon, "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
     this.mostrarPanelDia = true;
   }
 
