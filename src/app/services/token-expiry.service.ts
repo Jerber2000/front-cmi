@@ -37,9 +37,11 @@ export class TokenExpiryService implements OnDestroy {
     const msUntilExpiry = expiry - now;
 
     if (msUntilExpiry <= 0) {
-      // Token ya expirado
-      console.log('[TokenExpiry] Token ya expirado, cerrando sesión.');
-      this.authService.logout();
+      // Token ya estaba vencido al cargar la app (sesión vieja en localStorage).
+      // Se descarta en silencio: no tiene sentido decirle "tu sesión expiró"
+      // a alguien que todavía no ha iniciado sesión en esta visita.
+      console.log('[TokenExpiry] Token ya expirado al iniciar, descartando sesión en silencio.');
+      this.authService.descartarSesionVencida();
       return;
     }
 

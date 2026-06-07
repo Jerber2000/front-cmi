@@ -84,14 +84,6 @@
           Referencias
         </button>
 
-        <button *appHasRole="[1,4,7,9]"
-          class="btn-filtro" 
-          [class.active]="tipoReporteActivo === 'salidas'"
-          (click)="cambiarTipoReporte('salidas')"
-        >
-          <i class="fas fa-box-open"></i>
-          Salidas Inventario
-        </button>
       </div>
 
       <!-- BOTONES DE EXPORTACIÓN -->
@@ -262,6 +254,28 @@
             <label>Edad Máxima</label>
             <input type="number" formControlName="edadMax" class="form-input" placeholder="100">
           </div>
+          <div class="form-group">
+            <label>Discapacidad</label>
+            <input type="text" formControlName="tipodiscapacidad" class="form-input" placeholder="Ej: Visual, Auditiva..." list="listaTipoDiscapacidadReporte">
+            <datalist id="listaTipoDiscapacidadReporte">
+              <option value="Ninguna">
+              <option value="Física">
+              <option value="Visual">
+              <option value="Auditiva">
+              <option value="Intelectual">
+              <option value="Psicosocial">
+              <option value="Múltiple">
+            </datalist>
+          </div>
+          <div class="form-group">
+            <label>Programa</label>
+            <select formControlName="programa" class="form-select">
+              <option value="">Todos</option>
+              <option *ngFor="let programa of programasDisponibles" [value]="programa.idprograma">
+                {{ programa.nombre }}
+              </option>
+            </select>
+          </div>
         </div>
         <div class="filtros-actions">
           <button type="button" class="btn-aplicar" (click)="cargarReporte()">
@@ -300,32 +314,41 @@
           <tr>
             <th>Nombre</th>
             <th>CUI</th>
-            <th>Género</th>
-            <th>Edad</th>
+            <th class="col-compacta">Género</th>
+            <th class="col-compacta">Edad</th>
             <th>F. Nacimiento</th>
             <th>Teléfono</th>
             <th>Municipio</th>
-            <th>Aldea</th>
-            <th>Dirección</th>
+            <th>Programa</th>
+            <th class="col-extra">Aldea</th>
+            <th class="col-extra">Dirección</th>
             <th>N° Expediente</th>
-            <th>Contacto Emergencia</th>
-            <th>Tel. Emergencia</th>
-            <th>Encargado</th>
-            <th>DPI Encargado</th>
-            <th>Tel. Encargado</th>
+            <th class="col-extra">Contacto Emergencia</th>
+            <th class="col-extra">Tel. Emergencia</th>
+            <th class="col-extra">Encargado</th>
+            <th class="col-extra">DPI Encargado</th>
+            <th class="col-extra">Tel. Encargado</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let item of datosPaginados">
             <td>{{ item.nombres }} {{ item.apellidos }}</td>
             <td>{{ item.cui }}</td>
-            <td>{{ item.genero === 'M' ? 'M' : 'F' }}</td>
-            <td>{{ calcularEdad(item.fechanacimiento) }}</td>
+            <td class="col-compacta">{{ item.genero === 'M' ? 'M' : 'F' }}</td>
+            <td class="col-compacta">{{ calcularEdad(item.fechanacimiento) }}</td>
             <td>{{ reporteriaService.formatearFecha(item.fechanacimiento) }}</td>
             <td>{{ item.telefonopersonal || 'N/A' }}</td>
             <td>{{ item.municipio || 'N/A' }}</td>
-            <td>{{ item.aldea || 'N/A' }}</td>
-            <td>{{ item.direccion || 'N/A' }}</td>
+            <td>
+              <span class="badge-expediente" *ngFor="let programa of item.programas" [title]="programa.nombre">
+                {{ programa.nombre }}
+              </span>
+              <span class="text-muted" *ngIf="!item.programas || item.programas.length === 0">
+                Sin programa
+              </span>
+            </td>
+            <td class="col-extra">{{ item.aldea || 'N/A' }}</td>
+            <td class="col-extra">{{ item.direccion || 'N/A' }}</td>
             <td>
               <span class="badge-expediente" *ngIf="item.expedientes && item.expedientes.length > 0">
                 {{ item.expedientes[0].numeroexpediente }}
@@ -334,14 +357,14 @@
                 Sin expediente
               </span>
             </td>
-            <td>{{ item.nombrecontactoemergencia || 'N/A' }}</td>
-            <td>{{ item.telefonoemergencia || 'N/A' }}</td>
-            <td>{{ item.nombreencargado || 'N/A' }}</td>
-            <td>{{ item.dpiencargado || 'N/A' }}</td>
-            <td>{{ item.telefonoencargado || 'N/A' }}</td>
+            <td class="col-extra">{{ item.nombrecontactoemergencia || 'N/A' }}</td>
+            <td class="col-extra">{{ item.telefonoemergencia || 'N/A' }}</td>
+            <td class="col-extra">{{ item.nombreencargado || 'N/A' }}</td>
+            <td class="col-extra">{{ item.dpiencargado || 'N/A' }}</td>
+            <td class="col-extra">{{ item.telefonoencargado || 'N/A' }}</td>
           </tr>
           <tr *ngIf="datosPaginados.length === 0">
-            <td colspan="15" class="empty-state">
+            <td colspan="16" class="empty-state">
               <i class="fas fa-folder-open"></i>
               <p>No hay datos para mostrar</p>
             </td>
@@ -402,12 +425,12 @@
             <input type="text" formControlName="cuiPaciente" class="form-input" placeholder="Buscar por CUI...">
           </div>
           <div class="form-group">
-            <label>Desde</label>
-            <input type="date" formControlName="desde" class="form-input">
+            <label title="Muestra solo las consultas realizadas a partir de esta fecha (incluida)">Fecha de consulta desde</label>
+            <input type="date" formControlName="desde" class="form-input" title="Muestra solo las consultas realizadas a partir de esta fecha (incluida)">
           </div>
           <div class="form-group">
-            <label>Hasta</label>
-            <input type="date" formControlName="hasta" class="form-input">
+            <label title="Muestra solo las consultas realizadas hasta esta fecha (incluida)">Fecha de consulta hasta</label>
+            <input type="date" formControlName="hasta" class="form-input" title="Muestra solo las consultas realizadas hasta esta fecha (incluida)">
           </div>
         </div>
         <div class="form-row">
@@ -417,6 +440,15 @@
               <option value="">Todos</option>
               <option *ngFor="let medico of medicosDisponibles" [value]="medico.idusuario">
                 {{ medico.nombres }} {{ medico.apellidos }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Programa</label>
+            <select formControlName="programa" class="form-select">
+              <option value="">Todos</option>
+              <option *ngFor="let programa of programasDisponibles" [value]="programa.idprograma">
+                {{ programa.nombre }}
               </option>
             </select>
           </div>
@@ -459,6 +491,7 @@
           <tr>
             <th>Fecha</th>
             <th>Paciente</th>
+            <th>Identificación</th>
             <th>F. Nac. Paciente</th>
             <th>Médico</th>
             <th>Clínica</th>
@@ -473,6 +506,7 @@
           <tr *ngFor="let item of datosPaginados">
             <td>{{ reporteriaService.formatearFecha(item.fecha) }}</td>
             <td>{{ item.paciente?.nombres }} {{ item.paciente?.apellidos }}</td>
+            <td>{{ item.paciente?.cui || 'N/A' }}</td>
             <td>{{ reporteriaService.formatearFecha(item.paciente?.fechanacimiento) }}</td>
             <td>{{ item.usuario?.nombres }} {{ item.usuario?.apellidos }}</td>
             <td>{{ item.usuario?.clinica?.nombreclinica || 'N/A' }}</td>
@@ -503,7 +537,7 @@
             </td>
           </tr>
           <tr *ngIf="datosPaginados.length === 0">
-            <td colspan="10" class="empty-state">
+            <td colspan="11" class="empty-state">
               <i class="fas fa-folder-open"></i>
               <p>No hay datos para mostrar</p>
             </td>
@@ -551,10 +585,35 @@
   <!-- REPORTE DE INVENTARIO -->
   <!-- ============================================ -->
   <div class="main-card" *ngIf="tipoReporteActivo === 'inventario'">
+    <!-- Sub-vistas: Existencias actuales / Salidas registradas -->
+    <div class="subvista-toggle">
+      <button
+        class="btn-filtro"
+        [class.active]="vistaInventario === 'actual'"
+        (click)="cambiarVistaInventario('actual')"
+      >
+        <i class="fas fa-pills"></i>
+        Existencias
+      </button>
+      <button
+        class="btn-filtro"
+        [class.active]="vistaInventario === 'salidas'"
+        (click)="cambiarVistaInventario('salidas')"
+      >
+        <i class="fas fa-box-open"></i>
+        Salidas
+      </button>
+    </div>
+
+    <div *ngIf="vistaInventario === 'actual'">
     <!-- Filtros -->
     <div class="filtros-reporte">
       <form [formGroup]="filtrosInventarioForm" class="filtros-form">
         <div class="form-row">
+          <div class="form-group">
+            <label>Nombre Medicamento</label>
+            <input type="text" formControlName="nombreMedicamento" class="form-input" placeholder="Buscar medicamento...">
+          </div>
           <div class="form-group">
             <label>Estado</label>
             <select formControlName="estado" class="form-select">
@@ -697,6 +756,159 @@
         <span>por página</span>
       </div>
     </div>
+    </div>
+    <!-- /vistaInventario === 'actual' -->
+
+    <div *ngIf="vistaInventario === 'salidas'">
+      <!-- Filtros -->
+      <div class="filtros-reporte">
+        <div class="filtros-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nombre Medicamento</label>
+              <input type="text" [(ngModel)]="filtrosSalidas.nombreMedicamento" placeholder="Buscar medicamento..." class="form-input">
+            </div>
+            <div class="form-group">
+              <label>Desde</label>
+              <input type="date" [(ngModel)]="filtrosSalidas.desde" class="form-input">
+            </div>
+            <div class="form-group">
+              <label>Hasta</label>
+              <input type="date" [(ngModel)]="filtrosSalidas.hasta" class="form-input">
+            </div>
+            <div class="form-group">
+              <label>Estado</label>
+              <select [(ngModel)]="filtrosSalidas.estado" class="form-select">
+                <option value="">Todas</option>
+                <option value="activas">Activas</option>
+                <option value="anuladas">Anuladas</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Motivo</label>
+              <input type="text" [(ngModel)]="filtrosSalidas.motivo" placeholder="Buscar por motivo..." class="form-input">
+            </div>
+            <div class="form-group">
+              <label>Destino</label>
+              <input type="text" [(ngModel)]="filtrosSalidas.destino" placeholder="Buscar por destino..." class="form-input">
+            </div>
+          </div>
+          <div class="filtros-actions">
+            <button type="button" class="btn-aplicar" (click)="aplicarFiltros()">
+              <i class="fas fa-search"></i> Buscar
+            </button>
+            <button type="button" class="btn-limpiar" (click)="limpiarFiltros()">
+              <i class="fas fa-eraser"></i> Limpiar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumen -->
+      <div class="resumen-card" *ngIf="resumenReporte">
+        <div class="resumen-item">
+          <span class="resumen-label">Total Salidas:</span>
+          <span class="resumen-valor">{{ resumenReporte.totalSalidas || 0 }}</span>
+        </div>
+        <div class="resumen-item">
+          <span class="resumen-label">Activas:</span>
+          <span class="resumen-valor text-success">{{ resumenReporte.activas || 0 }}</span>
+        </div>
+        <div class="resumen-item">
+          <span class="resumen-label">Anuladas:</span>
+          <span class="resumen-valor text-danger">{{ resumenReporte.anuladas || 0 }}</span>
+        </div>
+        <div class="resumen-item">
+          <span class="resumen-label">Unidades Despachadas:</span>
+          <span class="resumen-valor">{{ resumenReporte.totalUnidadesDespachadas || 0 }}</span>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="table-container" *ngIf="!loadingReporte">
+        <table class="reporte-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Medicamento</th>
+              <th>Cantidad</th>
+              <th>Motivo</th>
+              <th>Destino</th>
+              <th>Usuario</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of datosPaginados">
+              <td>{{ reporteriaService.formatearFecha(item.fechacreacion) }}</td>
+              <td>
+                <strong>{{ item.medicamento?.nombremedicamento || 'N/A' }}</strong>
+                <div class="text-muted small" *ngIf="item.medicamento?.principioactivo">
+                  {{ item.medicamento.principioactivo }}
+                </div>
+              </td>
+              <td class="text-center">
+                <span class="badge-cantidad">{{ item.cantidad }} {{ item.medicamento?.unidadmedida || 'unidades' }}</span>
+              </td>
+              <td>{{ item.motivo || 'N/A' }}</td>
+              <td>{{ item.destino || 'N/A' }}</td>
+              <td>
+                <div>{{ item.usuario?.nombres }} {{ item.usuario?.apellidos }}</div>
+                <div class="text-muted small" *ngIf="item.usuario?.rol">{{ item.usuario.rol }}</div>
+              </td>
+                <td>
+                  <span class="badge-estado"
+                        [class.activo]="item.estado === 1"
+                        [class.anulado]="item.estado === 0">
+                    {{ item.estado === 1 ? 'ACTIVA' : 'ANULADA' }}
+                  </span>
+                </td>
+            </tr>
+            <tr *ngIf="datosPaginados.length === 0">
+              <td colspan="7" class="empty-state">
+                <i class="fas fa-folder-open"></i>
+                <p>No hay datos para mostrar</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="loadingReporte" class="loading-state">
+        <i class="fas fa-spinner fa-spin"></i>
+        Cargando reporte...
+      </div>
+
+      <!-- Paginación -->
+      <div class="pagination-container" *ngIf="totalItems > 0">
+        <div class="pagination" *ngIf="totalPages > 1">
+          <button class="pagination-btn" [class.disabled]="currentPage === 1" (click)="previousPage()" [disabled]="currentPage === 1">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <button *ngIf="getPages()[0] > 1" class="pagination-btn" (click)="goToPage(1)">1</button>
+          <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
+          <button *ngFor="let page of getPages()" class="pagination-btn" [class.active]="page === currentPage" (click)="goToPage(page)">{{ page }}</button>
+          <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
+          <button *ngIf="getPages()[getPages().length - 1] < totalPages" class="pagination-btn" (click)="goToPage(totalPages)">{{ totalPages }}</button>
+          <button class="pagination-btn" [class.disabled]="currentPage === totalPages" (click)="nextPage()" [disabled]="currentPage === totalPages">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+        <div *ngIf="totalPages <= 1" class="pagination-single">Página 1 de 1</div>
+        <div class="items-per-page">
+          <label>Mostrar:</label>
+          <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
+            <option [value]="10">10</option>
+            <option [value]="20">20</option>
+            <option [value]="50">50</option>
+            <option [value]="100">100</option>
+          </select>
+          <span>por página</span>
+        </div>
+      </div>
+    </div>
+    <!-- /vistaInventario === 'salidas' -->
   </div>
 
   <!-- ============================================ -->
@@ -883,6 +1095,14 @@
       <form [formGroup]="filtrosReferenciasForm" class="filtros-form">
         <div class="form-row">
           <div class="form-group">
+            <label>Nombre Paciente</label>
+            <input type="text" formControlName="nombrePaciente" class="form-input" placeholder="Buscar por nombre...">
+          </div>
+          <div class="form-group">
+            <label>Identificación (CUI)</label>
+            <input type="text" formControlName="cuiPaciente" class="form-input" placeholder="Buscar por CUI...">
+          </div>
+          <div class="form-group">
             <label>Tipo</label>
             <select formControlName="tipo" class="form-select">
               <option value="">Todos</option>
@@ -897,6 +1117,30 @@
               <option value="pendiente">Pendiente</option>
               <option value="proceso">En Proceso</option>
               <option value="completado">Completado</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Enviado Por</label>
+            <select formControlName="enviadoPor" class="form-select">
+              <option value="">Todos</option>
+              <option *ngFor="let medico of medicosDisponibles" [value]="medico.idusuario">
+                {{ medico.nombres }} {{ medico.apellidos }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Confirmado Por</label>
+            <input type="text" formControlName="confirmadoPor" class="form-input" placeholder="Buscar por nombre...">
+          </div>
+          <div class="form-group">
+            <label>Clínica</label>
+            <select formControlName="clinica" class="form-select">
+              <option value="">Todas</option>
+              <option *ngFor="let clinica of clinicasDisponibles" [value]="clinica.idclinica">
+                {{ clinica.nombreclinica }}
+              </option>
             </select>
           </div>
           <div class="form-group">
@@ -950,6 +1194,7 @@
           <tr>
             <th>Fecha</th>
             <th>Paciente</th>
+            <th>Identificación</th>
             <th>N° Expediente</th>
             <th>Enviado Por</th>
             <th>Confirmado Por</th>
@@ -961,6 +1206,7 @@
           <tr *ngFor="let item of datosPaginados">
             <td>{{ reporteriaService.formatearFecha(item.fechacreacion) }}</td>
             <td>{{ item.paciente?.nombres }} {{ item.paciente?.apellidos }}</td>
+            <td>{{ item.paciente?.cui || 'N/A' }}</td>
             <td>
               <span class="badge-expediente" *ngIf="item.expediente?.numeroexpediente">
                 {{ item.expediente.numeroexpediente }}
@@ -986,156 +1232,7 @@
             </td>
           </tr>
           <tr *ngIf="datosPaginados.length === 0">
-            <td colspan="7" class="empty-state">
-              <i class="fas fa-folder-open"></i>
-              <p>No hay datos para mostrar</p>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Loading -->
-    <div *ngIf="loadingReporte" class="loading-state">
-      <i class="fas fa-spinner fa-spin"></i>
-      Cargando reporte...
-    </div>
-
-    <!-- Paginación -->
-    <div class="pagination-container" *ngIf="totalItems > 0">
-      <div class="pagination" *ngIf="totalPages > 1">
-        <button class="pagination-btn" [class.disabled]="currentPage === 1" (click)="previousPage()" [disabled]="currentPage === 1">
-          <i class="fas fa-chevron-left"></i>
-        </button>
-        <button *ngIf="getPages()[0] > 1" class="pagination-btn" (click)="goToPage(1)">1</button>
-        <span *ngIf="getPages()[0] > 2" class="pagination-dots">...</span>
-        <button *ngFor="let page of getPages()" class="pagination-btn" [class.active]="page === currentPage" (click)="goToPage(page)">{{ page }}</button>
-        <span *ngIf="getPages()[getPages().length - 1] < totalPages - 1" class="pagination-dots">...</span>
-        <button *ngIf="getPages()[getPages().length - 1] < totalPages" class="pagination-btn" (click)="goToPage(totalPages)">{{ totalPages }}</button>
-        <button class="pagination-btn" [class.disabled]="currentPage === totalPages" (click)="nextPage()" [disabled]="currentPage === totalPages">
-          <i class="fas fa-chevron-right"></i>
-        </button>
-      </div>
-      <div *ngIf="totalPages <= 1" class="pagination-single">Página 1 de 1</div>
-      <div class="items-per-page">
-        <label>Mostrar:</label>
-        <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()">
-          <option [value]="10">10</option>
-          <option [value]="20">20</option>
-          <option [value]="50">50</option>
-          <option [value]="100">100</option>
-        </select>
-        <span>por página</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============================================ -->
-  <!-- REPORTE DE SALIDAS -->
-  <!-- ============================================ -->
-  <div class="main-card" *ngIf="tipoReporteActivo === 'salidas'">
-    <!-- Filtros -->
-    <div class="filtros-reporte">
-      <div class="filtros-form">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Desde</label>
-            <input type="date" [(ngModel)]="filtrosSalidas.desde" class="form-input">
-          </div>
-          <div class="form-group">
-            <label>Hasta</label>
-            <input type="date" [(ngModel)]="filtrosSalidas.hasta" class="form-input">
-          </div>
-          <div class="form-group">
-            <label>Estado</label>
-            <select [(ngModel)]="filtrosSalidas.estado" class="form-select">
-              <option value="">Todas</option>
-              <option value="activas">Activas</option>
-              <option value="anuladas">Anuladas</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Motivo</label>
-            <input type="text" [(ngModel)]="filtrosSalidas.motivo" placeholder="Buscar por motivo..." class="form-input">
-          </div>
-          <div class="form-group">
-            <label>Destino</label>
-            <input type="text" [(ngModel)]="filtrosSalidas.destino" placeholder="Buscar por destino..." class="form-input">
-          </div>
-        </div>
-        <div class="filtros-actions">
-          <button type="button" class="btn-aplicar" (click)="aplicarFiltros()">
-            <i class="fas fa-search"></i> Buscar
-          </button>
-          <button type="button" class="btn-limpiar" (click)="limpiarFiltros()">
-            <i class="fas fa-eraser"></i> Limpiar
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Resumen -->
-    <div class="resumen-card" *ngIf="resumenReporte">
-      <div class="resumen-item">
-        <span class="resumen-label">Total Salidas:</span>
-        <span class="resumen-valor">{{ resumenReporte.totalSalidas || 0 }}</span>
-      </div>
-      <div class="resumen-item">
-        <span class="resumen-label">Activas:</span>
-        <span class="resumen-valor text-success">{{ resumenReporte.activas || 0 }}</span>
-      </div>
-      <div class="resumen-item">
-        <span class="resumen-label">Anuladas:</span>
-        <span class="resumen-valor text-danger">{{ resumenReporte.anuladas || 0 }}</span>
-      </div>
-      <div class="resumen-item">
-        <span class="resumen-label">Unidades Despachadas:</span>
-        <span class="resumen-valor">{{ resumenReporte.totalUnidadesDespachadas || 0 }}</span>
-      </div>
-    </div>
-
-    <!-- Tabla -->
-    <div class="table-container" *ngIf="!loadingReporte">
-      <table class="reporte-table">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Medicamento</th>
-            <th>Cantidad</th>
-            <th>Motivo</th>
-            <th>Destino</th>
-            <th>Usuario</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of datosPaginados">
-            <td>{{ reporteriaService.formatearFecha(item.fechacreacion) }}</td>
-            <td>
-              <strong>{{ item.medicamento?.nombremedicamento || 'N/A' }}</strong>
-              <div class="text-muted small" *ngIf="item.medicamento?.principioactivo">
-                {{ item.medicamento.principioactivo }}
-              </div>
-            </td>
-            <td class="text-center">
-              <span class="badge-cantidad">{{ item.cantidad }} {{ item.medicamento?.unidadmedida || 'unidades' }}</span>
-            </td>
-            <td>{{ item.motivo || 'N/A' }}</td>
-            <td>{{ item.destino || 'N/A' }}</td>
-            <td>
-              <div>{{ item.usuario?.nombres }} {{ item.usuario?.apellidos }}</div>
-              <div class="text-muted small" *ngIf="item.usuario?.rol">{{ item.usuario.rol }}</div>
-            </td>
-              <td>
-                <span class="badge-estado" 
-                      [class.activo]="item.estado === 1" 
-                      [class.anulado]="item.estado === 0">
-                  {{ item.estado === 1 ? 'ACTIVA' : 'ANULADA' }}
-                </span>
-              </td>
-          </tr>
-          <tr *ngIf="datosPaginados.length === 0">
-            <td colspan="7" class="empty-state">
+            <td colspan="8" class="empty-state">
               <i class="fas fa-folder-open"></i>
               <p>No hay datos para mostrar</p>
             </td>

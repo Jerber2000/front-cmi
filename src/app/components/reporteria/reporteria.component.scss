@@ -192,6 +192,17 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+.subvista-toggle {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+
+  .btn-filtro {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -347,43 +358,43 @@
    ==================================== */
 .filtros-reporte {
   background: #f8f9fa;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border-radius: 10px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .filtros-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .form-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 8px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 
   label {
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 600;
     color: #495057;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.2px;
   }
 }
 
 .form-input,
 .form-select {
-  padding: 10px 14px;
-  border: 2px solid #e1e5e9;
+  padding: 7px 10px;
+  border: 1px solid #e1e5e9;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
   transition: all 0.3s ease;
   background: white;
 
@@ -402,11 +413,11 @@
 
 .btn-aplicar,
 .btn-limpiar {
-  padding: 10px 20px;
+  padding: 8px 18px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   transition: all 0.2s ease;
   display: flex;
@@ -615,6 +626,21 @@
   }
 }
 
+/* Columnas angostas (Género, Edad) — no necesitan el mismo ancho que el resto */
+.reporte-table .col-compacta {
+  width: 70px;
+  text-align: center;
+}
+
+/* Columnas secundarias del reporte de pacientes (datos de contacto/encargado):
+   se ocultan en pantallas chicas para que la tabla no quede con 15 columnas
+   apretadas; siguen disponibles en escritorio y en las exportaciones PDF/Excel */
+@media (max-width: 768px) {
+  .reporte-table .col-extra {
+    display: none;
+  }
+}
+
 .badge-estado {
   display: inline-block;
   padding: 6px 12px;
@@ -672,6 +698,7 @@
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
+  margin: 2px;
 }
 
 .text-danger {
@@ -960,38 +987,46 @@
     font-size: 11px;
   }
 
-  // Filtros de reporte
+  // Filtros de reporte — más compactos para no ocupar tanto alto en móvil
   .filtros-reporte {
-    padding: 10px;
-    margin-bottom: 10px;
+    padding: 8px;
+    margin-bottom: 8px;
+  }
+
+  .filtros-form {
+    gap: 6px;
   }
 
   .form-row {
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    gap: 6px;
   }
 
   .form-group {
+    gap: 3px;
+
     label {
-      font-size: 11px;
+      font-size: 10px;
+      letter-spacing: 0.1px;
     }
   }
 
   .form-input,
   .form-select {
-    padding: 8px 10px;
-    font-size: 13px;
+    padding: 6px 8px;
+    font-size: 12px;
   }
 
   .filtros-actions {
     justify-content: stretch;
+    gap: 8px;
 
     .btn-aplicar,
     .btn-limpiar {
       flex: 1;
       justify-content: center;
-      padding: 8px 12px;
-      font-size: 13px;
+      padding: 7px 12px;
+      font-size: 12px;
     }
   }
 
@@ -1059,6 +1094,12 @@
 }
 
 @media (max-width: 480px) {
+  // En pantallas muy angostas, 2 columnas dejan los inputs demasiado
+  // estrechos — una sola columna se lee mejor.
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
   .title {
     font-size: 14px;
   }

@@ -187,6 +187,16 @@ export class AuthService {
   }
 
   /**
+   * Descarta una sesión que ya estaba vencida ANTES de interactuar con la app
+   * (p. ej. token viejo en localStorage de una visita anterior). No tiene caso
+   * avisar al backend ni mostrar "tu sesión expiró" — el usuario ni siquiera
+   * ha iniciado sesión en este momento, así que solo limpiamos en silencio.
+   */
+  descartarSesionVencida(): void {
+    this.clearLocalData();
+  }
+
+  /**
    * Logout
    */
   logout(): void {
