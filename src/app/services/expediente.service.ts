@@ -86,6 +86,15 @@ paciente?: {
       nombreclinica: string;
     };
   }>;
+
+  // Programas asignados al expediente
+  programas?: Array<{
+    idprograma: number;
+    programa: {
+      idprograma: number;
+      nombre: string;
+    };
+  }>;
 }
 
 /**

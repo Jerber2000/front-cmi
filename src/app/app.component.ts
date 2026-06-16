@@ -1,36 +1,35 @@
 //app.component.ts
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { TokenExpiryService } from './services/token-expiry.service';
-import { AuthService } from './services/auth.service';
 
+/**
+ * El logout en beforeunload causaba que F5 cerrara la sesión:
+ * el servidor ponía last_login_timestamp = null, y al recargar
+ * la primera API call devolvía 401.
+ *
+ * Solución: NO enviar logout al servidor en beforeunload.
+ * - F5: token sigue en localStorage y last_login_timestamp intacto → sesión OK.
+ * - Cierre de pestaña: last_login_timestamp queda en BD hasta que
+ *   el token expire (3h) o el usuario haga login de nuevo.
+ * - Multi-dispositivo: sigue funcionando porque cada nuevo login
+ *   actualiza last_login_timestamp e invalida la sesión anterior.
+ * - Logout explícito: el botón "Cerrar Sesión" llama logout() que
+ *   sí limpia el servidor y localStorage correctamente.
+ */
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
-export class AppComponent implements OnInit, OnDestroy {
+export class AppComponent implements OnInit {
   title = 'CMI-FRONT';
 
-  constructor(
-    private tokenExpiry: TokenExpiryService,
-    private authService: AuthService
-  ) {}
+  constructor(private tokenExpiry: TokenExpiryService) {}
 
   ngOnInit(): void {
-    // Si ya hay un token al cargar la app (recarga de página), programar la alerta
+    // Programar alerta de expiración de token si ya hay sesión activa
     this.tokenExpiry.schedule();
-    
-    // Agregar listener para logout automático al cerrar
-    window.addEventListener('beforeunload', this.handleUnload);
-  }
-
-  ngOnDestroy(): void {
-    window.removeEventListener('beforeunload', this.handleUnload);
-  }
-
-  handleUnload = (event: any) => {
-    this.authService.logoutSync();
   }
 }

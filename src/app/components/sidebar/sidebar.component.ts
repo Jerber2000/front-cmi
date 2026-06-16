@@ -2,10 +2,16 @@ import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, OnChanges, S
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { HasRoleDirective } from '../../directives/has-role.directive';
+
 import { PerfilService } from '../../services/perfil.service';
 import { ArchivoService } from '../../services/archivo.service';
+import { PermisoService } from '../../services/permiso.service';
 import { Subscription } from 'rxjs';
+
+// Rutas visibles para cualquier usuario autenticado (sin necesidad de permiso en BD)
+const RUTAS_SIEMPRE_VISIBLES = ['perfil', 'logout'];
+// Roles que tienen acceso total (bypass DB)
+const ROLES_SUPERADMIN = [1, 4];
 
 export interface MenuItem {
   label: string;
@@ -21,7 +27,7 @@ export interface MenuItem {
   selector: 'app-sidebar',
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.scss'],
-  imports: [CommonModule, HasRoleDirective],
+  imports: [CommonModule],
 })
 export class SidebarComponent implements OnInit, OnDestroy, OnChanges {
   @Input() isExpanded: boolean = false; // Sidebar cerrado por defecto
@@ -41,8 +47,9 @@ export class SidebarComponent implements OnInit, OnDestroy, OnChanges {
       icon: 'fas fa-users',
       roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
       children: [
-        { label: 'Usuarios', route: '/usuario', roles: [1,4,7] } ,
-        { label: 'Perfiles', route: '/perfil', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] } 
+        { label: 'Usuarios', route: '/usuario', roles: [1,4,7] },
+        { label: 'Perfiles', route: '/perfil', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
+        { label: 'Permisos y Accesos', route: '/gestion-permisos', roles: [1,4] }
       ]
     },
     {
@@ -77,14 +84,36 @@ export class SidebarComponent implements OnInit, OnDestroy, OnChanges {
     }
   ];
 
+  // Rutas permitidas cargadas desde BD
+  rutasPermitidas: string[] = [];
+  permisosListos = false;
+  usarFallbackRoles = false; // true cuando la API falla → usar roles hardcodeados
+  private permisosSubscription?: Subscription;
+
   constructor(
-    private router: Router, 
+    private router: Router,
     private authService: AuthService,
     private perfilService: PerfilService,
-    private archivoService: ArchivoService
+    private archivoService: ArchivoService,
+    private permisoService: PermisoService
   ){}
 
   ngOnInit(): void {
+    // Cargar permisos desde BD (o caché) para filtrar el menú dinámicamente
+    this.permisosSubscription = this.permisoService.obtenerMisRutas().subscribe({
+      next: rutas => {
+        // null indica que la API falló — usar fallback de roles hardcodeados
+        this.rutasPermitidas = rutas ?? [];
+        this.usarFallbackRoles = rutas === null;
+        this.permisosListos = true;
+      },
+      error: () => {
+        this.rutasPermitidas = [];
+        this.usarFallbackRoles = true;
+        this.permisosListos = true;
+      }
+    });
+
     // Cargar userInfo desde localStorage como valor inicial
     this.cargarInfoDelStorage();
 
@@ -166,6 +195,55 @@ export class SidebarComponent implements OnInit, OnDestroy, OnChanges {
   ngOnDestroy(): void {
     this.perfilSubscription?.unsubscribe();
     this.userInfoSubscription?.unsubscribe();
+    this.permisosSubscription?.unsubscribe();
+  }
+
+  // ─── Visibilidad dinámica basada en BD ─────────────────────────────────────
+
+  /** Extrae el segmento de ruta limpio: '/salida-inventario' → 'salida-inventario' */
+  private rutaLimpia(route: string): string {
+    return route.replace(/^\//, '').split('?')[0].split('/')[0];
+  }
+
+  /** El usuario tiene acceso total (superadmin o permisos cargados con '*') */
+  private esAccesoTotal(): boolean {
+    const rol = this.authService.userRole;
+    return (rol !== null && ROLES_SUPERADMIN.includes(rol)) ||
+           this.rutasPermitidas.includes('*');
+  }
+
+  /** Determina si un sub-item del menú debe mostrarse */
+  puedeVerSubItem(subItem: MenuItem): boolean {
+    if (!this.permisosListos) return false;
+    if (!subItem.route) return true;
+
+    const ruta = this.rutaLimpia(subItem.route);
+
+    // Siempre visibles para cualquier usuario autenticado
+    if (RUTAS_SIEMPRE_VISIBLES.some(r => ruta.startsWith(r))) return true;
+
+    // Superadmin: acceso total
+    if (this.esAccesoTotal()) return true;
+
+    // Fallback: si la API falló, usar roles hardcodeados del menú
+    if (this.usarFallbackRoles) {
+      return subItem.roles ? this.authService.hasRole(subItem.roles) : true;
+    }
+
+    // Validación desde BD
+    return this.rutasPermitidas.includes(ruta);
+  }
+
+  /** Determina si un item padre debe mostrarse (visible si al menos 1 hijo lo es) */
+  puedeVerItem(item: MenuItem): boolean {
+    if (!this.permisosListos) return false;
+    if (this.esAccesoTotal()) return true;
+
+    if (!item.children || item.children.length === 0) {
+      return item.route ? this.puedeVerSubItem(item) : true;
+    }
+
+    return item.children.some(child => this.puedeVerSubItem(child));
   }
 
   get currentMenuItems(): MenuItem[] {

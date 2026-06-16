@@ -1,0 +1,382 @@
+$primary: #2c6662;
+$primary-dark: #1f4540;
+$primary-light: #5ba892;
+
+.mobile-menu-btn {
+  display: none;
+}
+
+.content-area {
+  padding: 0;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin-left: 70px;
+  transition: margin-left 0.3s ease;
+  box-sizing: border-box;
+
+  &.sidebar-expanded { margin-left: 280px; }
+}
+
+.menu-container { padding: 0; }
+
+.header {
+  background-color: $primary;
+  color: white;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.title { font-size: 20px; font-weight: bold; margin: 0; color: white; }
+.logo { height: 44px; flex-shrink: 0; }
+
+// ── Loading ──────────────────────────────────────────────
+.loading-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 16px;
+  color: $primary;
+  font-size: 15px;
+
+  i { font-size: 36px; }
+}
+
+// ── Layout ───────────────────────────────────────────────
+.permisos-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 16px;
+  padding: 16px;
+  align-items: start;
+  min-height: calc(100vh - 60px);
+}
+
+// ── Panel izquierdo — Roles ───────────────────────────────
+.roles-panel {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  overflow: hidden;
+  position: sticky;
+  top: 16px;
+}
+
+.panel-header {
+  padding: 16px 18px;
+  border-bottom: 1px solid #e9ecef;
+  background: linear-gradient(135deg, $primary, $primary-dark);
+  color: white;
+
+  h3 {
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.panel-subtitle {
+  font-size: 11px;
+  opacity: 0.8;
+  margin: 0;
+}
+
+.nota-superadmin {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #fff8e1;
+  border-bottom: 1px solid #ffe082;
+  font-size: 11px;
+  color: #856404;
+
+  i { font-size: 13px; margin-top: 1px; flex-shrink: 0; }
+}
+
+.roles-lista {
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+}
+
+.rol-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: none;
+  border-bottom: 1px solid #f0f0f0;
+  background: white;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  gap: 10px;
+
+  &:hover { background: #f8f9fa; }
+
+  &.activo {
+    background: linear-gradient(135deg, rgba(44,102,98,0.1), rgba(44,102,98,0.05));
+    border-left: 4px solid $primary;
+  }
+
+  &:last-child { border-bottom: none; }
+}
+
+.rol-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.rol-nombre {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rol-desc {
+  font-size: 11px;
+  color: #6c757d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rol-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: $primary;
+  background: rgba(44,102,98,0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+// ── Panel derecho — Permisos ──────────────────────────────
+.permisos-panel {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.panel-header-right {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e9ecef;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  h3 {
+    margin: 0 0 4px;
+    font-size: 18px;
+    font-weight: 700;
+    color: $primary;
+  }
+}
+
+.panel-acciones {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.btn-toggle-todos {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 2px solid #e9ecef;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #495057;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: $primary;
+    color: $primary;
+  }
+}
+
+.btn-guardar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, $primary, $primary-dark);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(44,102,98,0.3);
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, $primary-dark, #174239);
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    background: #adb5bd;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+// ── Grid de permisos ──────────────────────────────────────
+.permisos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  padding: 16px 20px;
+}
+
+.permiso-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+  user-select: none;
+
+  input[type="checkbox"] { display: none; }
+
+  &:hover {
+    border-color: $primary-light;
+    background: #f8fcfb;
+  }
+
+  &.activo {
+    border-color: $primary;
+    background: linear-gradient(135deg, rgba(44,102,98,0.06), rgba(91,168,146,0.04));
+  }
+}
+
+.permiso-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(44,102,98,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  i { font-size: 16px; color: $primary; }
+}
+
+.permiso-card.activo .permiso-icon {
+  background: $primary;
+  i { color: white; }
+}
+
+.permiso-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.permiso-nombre {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  line-height: 1.2;
+}
+
+.permiso-ruta {
+  font-size: 10px;
+  color: #adb5bd;
+  font-family: 'Courier New', monospace;
+}
+
+.permiso-check {
+  flex-shrink: 0;
+
+  .fa-check-circle { color: $primary; font-size: 18px; }
+  .fa-circle { color: #dee2e6; font-size: 18px; }
+}
+
+// ── Vacío ─────────────────────────────────────────────────
+.permisos-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 14px;
+  color: #adb5bd;
+
+  i { font-size: 48px; }
+  p { font-size: 16px; margin: 0; }
+}
+
+// ── Responsive ────────────────────────────────────────────
+@media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: $primary;
+    color: white;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 1100;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+
+    &.sidebar-open { background: #c0392b; transform: rotate(90deg); }
+  }
+
+  .content-area { margin-left: 0 !important; }
+
+  .permisos-layout {
+    grid-template-columns: 1fr;
+    padding: 8px;
+  }
+
+  .roles-panel { position: static; }
+  .roles-lista { max-height: 220px; }
+
+  .permisos-grid {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 12px;
+  }
+
+  .panel-header-right { padding: 12px 14px; }
+  .panel-acciones { flex-wrap: wrap; width: 100%; }
+  .btn-guardar, .btn-toggle-todos { flex: 1; justify-content: center; }
+}

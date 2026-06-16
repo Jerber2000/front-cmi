@@ -6,6 +6,9 @@ import { environment } from '../../environments/environment';
 import { ArchivoService } from '../services/archivo.service';
 import { BehaviorSubject } from 'rxjs';
 
+// Prefijo del caché de permisos — debe coincidir con permiso.service.ts
+const PERMISO_CACHE_PREFIX = '_cmi_permisos_u';
+
 export interface CambiarClaveRequest {
   usuario: string;
   claveActual: string;
@@ -184,6 +187,16 @@ export class AuthService {
   }
 
   /**
+   * Descarta una sesión que ya estaba vencida ANTES de interactuar con la app
+   * (p. ej. token viejo en localStorage de una visita anterior). No tiene caso
+   * avisar al backend ni mostrar "tu sesión expiró" — el usuario ni siquiera
+   * ha iniciado sesión en este momento, así que solo limpiamos en silencio.
+   */
+  descartarSesionVencida(): void {
+    this.clearLocalData();
+  }
+
+  /**
    * Logout
    */
   logout(): void {
@@ -214,11 +227,16 @@ export class AuthService {
     localStorage.removeItem('usuario');
     localStorage.removeItem('currentUser');
     localStorage.removeItem('loginTime');
-    
+
+    // Limpiar caché de permisos de todos los usuarios
+    Object.keys(sessionStorage)
+      .filter(k => k.startsWith(PERMISO_CACHE_PREFIX))
+      .forEach(k => sessionStorage.removeItem(k));
+
     // Limpiar estado de usuario en el BehaviorSubject
     this.userInfoSubject.next({ name: 'Usuario', avatar: null });
     this.cambiarClaveSubject.next(false);
-    
+
     this.router.navigate(['/login']);
   }
 

@@ -1,5 +1,15 @@
 <div class="content-area" [class.sidebar-expanded]="sidebarExpanded">
-  <app-sidebar [userInfo]="userInfo"></app-sidebar>
+
+  <!-- Botón hamburguesa solo en móvil -->
+  <button class="mobile-menu-btn" (click)="toggleSidebarMobile()" [class.sidebar-open]="sidebarVisible">
+    <i class="fas" [class.fa-bars]="!sidebarVisible" [class.fa-times]="sidebarVisible"></i>
+  </button>
+
+  <app-sidebar
+    [userInfo]="userInfo"
+    [isExpanded]="sidebarVisible"
+    (toggleSidebar)="onSidebarToggle($event)">
+  </app-sidebar>
   <div class="menu-container">
     <header class="header">
       <div class="header-content">
@@ -152,6 +162,73 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ================================================== -->
+<!-- PANEL DE CITAS DEL DÍA                           -->
+<!-- ================================================== -->
+<div class="panel-dia-backdrop" *ngIf="mostrarPanelDia" (click)="cerrarPanelDia()">
+  <div class="panel-dia-container" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="panel-dia-header">
+      <div class="panel-dia-titulo">
+        <i class="fas fa-calendar-day"></i>
+        <div>
+          <span class="panel-dia-label">Citas del día</span>
+          <span class="panel-dia-fecha">{{ fechaDiaSeleccionado }}</span>
+        </div>
+      </div>
+      <button class="panel-dia-close" (click)="cerrarPanelDia()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Lista de citas -->
+    <div class="panel-dia-body">
+      <div class="panel-cita-item"
+           *ngFor="let cita of citasDiaSeleccionado"
+           (click)="abrirCitaDesdePanel(cita)">
+        <div class="panel-cita-hora">
+          <i class="fas fa-clock"></i>
+          {{ cita.horaatencion }}
+        </div>
+        <div class="panel-cita-info">
+          <span class="panel-cita-paciente">
+            {{ cita.paciente?.nombres }} {{ cita.paciente?.apellidos }}
+          </span>
+          <span class="panel-cita-medico">
+            Dr. {{ cita.usuario?.nombres }} {{ cita.usuario?.apellidos }}
+          </span>
+        </div>
+        <div class="panel-cita-estado">
+          <span class="panel-estado-badge"
+            [class.pendiente]="!cita.estado || cita.estado === 1"
+            [class.confirmada]="cita.estado === 2"
+            [class.no-presento]="cita.estado === 3">
+            <ng-container *ngIf="!cita.estado || cita.estado === 1">Pendiente</ng-container>
+            <ng-container *ngIf="cita.estado === 2">Confirmada</ng-container>
+            <ng-container *ngIf="cita.estado === 3">No asistió</ng-container>
+          </span>
+        </div>
+        <i class="fas fa-chevron-right panel-cita-arrow"></i>
+      </div>
+
+      <div *ngIf="citasDiaSeleccionado.length === 0" class="panel-dia-vacio">
+        <i class="fas fa-calendar-times"></i>
+        <p>No hay citas para este día</p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="panel-dia-footer">
+      <button class="panel-dia-nueva" (click)="cerrarPanelDia(); abrirModalNuevaCita()">
+        <i class="fas fa-plus"></i> Nueva Cita
+      </button>
+      <span class="panel-dia-count">{{ citasDiaSeleccionado.length }} cita(s)</span>
+    </div>
+
   </div>
 </div>
 

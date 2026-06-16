@@ -51,22 +51,29 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           localStorage.removeItem('token');
           localStorage.removeItem('usuario');
           localStorage.removeItem('loginTime'); // ← Agregar esta línea
-          
-          // Determinar el mensaje apropiado
-          const mensaje = error.error?.message || 'Sesión expirada';
-          
-          // Mostrar alerta apropiada
-          if (mensaje.includes('otro dispositivo') || mensaje.includes('sesión')) {
-            alerta.alertaInfo('Tu sesión fue cerrada porque iniciaste sesión en otro dispositivo');
-          } else {
-            alerta.alertaError('Sesión expirada. Por favor, inicia sesión nuevamente.');
+
+          // Si el usuario ya está en el login, no tiene sentido avisarle que
+          // "su sesión expiró": no hay sesión activa que perder, simplemente
+          // limpiamos los datos locales sin mostrar la alerta ni redirigir.
+          const yaEnLogin = router.url.startsWith('/login');
+
+          if (!yaEnLogin) {
+            // Determinar el mensaje apropiado
+            const mensaje = error.error?.message || 'Sesión expirada';
+
+            // Mostrar alerta apropiada
+            if (mensaje.includes('otro dispositivo') || mensaje.includes('sesión')) {
+              alerta.alertaInfo('Tu sesión fue cerrada porque iniciaste sesión en otro dispositivo');
+            } else {
+              alerta.alertaError('Sesión expirada. Por favor, inicia sesión nuevamente.');
+            }
+
+            // Redirigir al login después de un pequeño delay
+            setTimeout(() => {
+              router.navigate(['/login']);
+            }, 2000);
           }
-          
-          // Redirigir al login después de un pequeño delay
-          setTimeout(() => {
-            router.navigate(['/login']);
-          }, 2000);
-          
+
           return throwError(() => error);
         }
         

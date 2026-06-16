@@ -1,13 +1,18 @@
 <!-- menu.component.html -->
 <div class="menu-layout" [class.sidebar-expanded]="sidebarExpanded">
-  
-  <app-sidebar 
+
+  <!-- Botón hamburguesa visible solo en móvil -->
+  <button class="mobile-menu-btn" (click)="toggleSidebar()" [class.sidebar-open]="sidebarVisible">
+    <i class="fas" [class.fa-bars]="!sidebarVisible" [class.fa-times]="sidebarVisible"></i>
+  </button>
+
+  <app-sidebar
     [userInfo]="userInfo"
     [isExpanded]="sidebarVisible"
     (toggleSidebar)="onSidebarToggle($event)"
     (menuItemClick)="onSidebarMenuItemClick($event)">
   </app-sidebar>
-  
+
   <div class="menu-container">
    <!-- Dashboard Principal -->
     <main class="main-content">
@@ -38,7 +43,6 @@
           </div>
           <div class="welcome-date">
             <img src="assets/img/LogoFraijanes.png" alt="Logo Fraijanes" class="logo">
-            <span>{{ fechaActual | date:'fullDate':'':'es' }}</span>
           </div>
         </div>
       </div>
@@ -117,8 +121,8 @@
         <div class="modules-grid">
           <!-- Usar directiva appHasRole -->
           <ng-container *ngFor="let modulo of modulosPrincipales">
-            <div class="module-card" 
-                 *appHasRole="modulo.roles"
+            <div class="module-card"
+                 *ngIf="puedeVerModulo(modulo)"
                  (click)="navegarA(modulo.ruta)">
               <div class="module-header">
                 <div class="module-icon-bg" [style.background]="modulo.iconoBg">

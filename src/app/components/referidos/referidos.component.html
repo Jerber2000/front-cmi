@@ -1,8 +1,18 @@
 <!-- referidos.component.html -->
-<div class="content-area" 
+<div class="content-area"
      *ngIf="!pacienteExterno"
      [class.sidebar-expanded]="sidebarExpanded">
-  <app-sidebar [userInfo]="userInfo"></app-sidebar>
+
+  <!-- Botón hamburguesa solo en móvil -->
+  <button class="mobile-menu-btn" (click)="toggleSidebarMobile()" [class.sidebar-open]="sidebarVisible">
+    <i class="fas" [class.fa-bars]="!sidebarVisible" [class.fa-times]="sidebarVisible"></i>
+  </button>
+
+  <app-sidebar
+    [userInfo]="userInfo"
+    [isExpanded]="sidebarVisible"
+    (toggleSidebar)="onSidebarToggle($event)">
+  </app-sidebar>
   
   <!-- HEADER -->
   <div class="menu-container">
@@ -63,21 +73,21 @@
       <div class="busqueda-grupo">
         <div class="search-box">
           <i class="fas fa-search"></i>
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Buscar por paciente (nombre, apellido o CUI)..."
             [(ngModel)]="busqueda"
             (input)="buscarReferidos()"
           >
-          <button 
-            class="btn-clear" 
+          <button
+            class="btn-clear"
             *ngIf="busqueda"
             (click)="limpiarBusqueda()"
           >
             <i class="fas fa-times"></i>
           </button>
         </div>
-        
+
         <button class="btn-nuevo-referido" (click)="abrirModalNuevoReferido()">
           <i class="fas fa-plus"></i> Nuevo Referido
         </button>

@@ -11,6 +11,7 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
+  padding-top: 100px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -58,6 +59,20 @@
   min-height: 500px;
 }
 
+.welcome-fraijanes-logo {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  margin-bottom: 1.25rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 8px;
+  border: 3px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.15), 0 8px 24px rgba(0, 0, 0, 0.2);
+  position: relative;
+  z-index: 1;
+}
+
 .welcome-section {
   background: linear-gradient(135deg, #00c896 0%, #00b386 100%);
   padding: 40px 30px;
@@ -69,17 +84,17 @@
   color: white;
   position: relative;
   overflow: hidden;
+}
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-    animation: rotate 20s linear infinite;
-  }
+.welcome-section::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  animation: rotate 20s linear infinite;
 }
 
 @keyframes rotate {
@@ -412,60 +427,149 @@
 }
 
 @media (max-width: 768px) {
-  :host {
-    padding: 10px;
+  .full-screen-container {
+    padding-top: 56px;
+    padding-left: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    align-items: flex-start;
+    min-height: 100vh;
+  }
+
+  /* Header más delgado y sin logo (ya está en welcome) */
+  .header-container {
+    height: 56px;
+    padding: 0 1rem;
+  }
+
+  .municipality-logo {
+    display: none;
   }
 
   .container {
     grid-template-columns: 1fr;
-    max-width: 400px;
-    min-height: auto;
+    max-width: 100%;
+    min-height: calc(100vh - 56px);
+    width: 100%;
+    border-radius: 0;
+    box-shadow: none;
   }
-  
+
+  /* Welcome section — horizontal compacta en móvil */
   .welcome-section {
-    padding: 40px 30px;
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    gap: 16px;
+    padding: 20px 20px;
     min-height: auto;
   }
-  
-  .form-section {
-    padding: 40px 30px;
-  }
-  
-  .welcome-title {
-    font-size: 24px;
-  }
-  
-  .form-title {
-    font-size: 24px;
+
+  .welcome-fraijanes-logo {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 0;
+    flex-shrink: 0;
   }
 
   .avatar {
-    width: 100px;
-    height: 100px;
+    display: none; /* ocultamos el ícono de llave para la versión horizontal */
+  }
 
-    i {
-      font-size: 36px;
-    }
+  .welcome-title {
+    font-size: 17px;
+    margin-bottom: 4px;
+  }
+
+  .welcome-subtitle {
+    font-size: 12px;
+    opacity: 0.85;
+  }
+
+  .form-section {
+    padding: 24px 20px 32px;
+    flex: 1;
+  }
+
+  .form-title {
+    font-size: 20px;
   }
 }
 
 @media (max-width: 480px) {
-  .form-section {
-    padding: 30px 20px;
+  .full-screen-container {
+    padding-top: 48px;
+  }
+
+  .header-container {
+    height: 48px;
+    padding: 0 0.75rem;
+  }
+
+  .municipality-logo {
+    display: none;
   }
 
   .welcome-section {
-    padding: 30px 20px;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .welcome-fraijanes-logo {
+    width: 54px;
+    height: 54px;
+  }
+
+  .welcome-title { font-size: 15px; }
+  .welcome-subtitle { font-size: 11px; }
+
+  .form-section {
+    padding: 20px 16px 28px;
   }
 
   .form-input {
-    padding: 12px 16px;
+    padding: 11px 14px;
     font-size: 14px;
   }
 
   .submit-button {
-    padding: 14px;
+    padding: 12px;
     font-size: 14px;
+  }
+
+  .form-title { font-size: 18px; }
+}
+
+@media (max-width: 320px) {
+  .full-screen-container {
+    padding-top: 70px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .welcome-section {
+    padding: 15px 12px;
+  }
+
+  .form-section {
+    padding: 15px 12px;
+  }
+
+  .welcome-title {
+    font-size: 18px;
+  }
+
+  .form-title {
+    font-size: 16px;
+  }
+
+  .avatar {
+    width: 60px;
+    height: 60px;
+  }
+
+  .avatar i {
+    font-size: 24px;
   }
 }
 

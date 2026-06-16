@@ -131,6 +131,7 @@ export interface FiltrosSalidas {
   hasta?: string;
   estado?: string; // 'activas' | 'anuladas' | 'todas'
   medicamento?: number;
+  nombreMedicamento?: string;
   usuario?: number;
   motivo?: string;
   destino?: string;
@@ -139,6 +140,8 @@ export interface FiltrosSalidas {
 }
 
 export interface FiltrosPacientes {
+  nombre?: string;
+  cui?: string;
   desde?: string;
   hasta?: string;
   genero?: string;
@@ -146,6 +149,7 @@ export interface FiltrosPacientes {
   edadMin?: number;
   edadMax?: number;
   tipodiscapacidad?: string;
+  programa?: number;
   page?: number;
   limit?: number;
 }
@@ -156,6 +160,7 @@ export interface FiltrosConsultas {
   desde?: string;
   hasta?: string;
   medico?: number;
+  programa?: number;
   diagnostico?: string;
   page?: number;
   limit?: number;
@@ -166,6 +171,7 @@ export interface FiltrosInventario {
   stockMinimo?: number;
   proximosVencer?: number;
   usuario?: number;
+  nombreMedicamento?: string;
   page?: number;
   limit?: number;
 }
@@ -183,10 +189,13 @@ export interface FiltrosAgenda {
 }
 
 export interface FiltrosReferencias {
+  nombrePaciente?: string;
+  cuiPaciente?: string;
   tipo?: string;
   estado?: string;
   clinica?: number;
-  medico?: number;
+  enviadoPor?: number;
+  confirmadoPor?: string;
   desde?: string;
   hasta?: string;
   page?: number;

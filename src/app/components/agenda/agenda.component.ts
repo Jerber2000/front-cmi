@@ -98,16 +98,37 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     events: [],
     selectable: true,
     selectMirror: true,
-    dayMaxEvents: 3,
-    
+    dayMaxEvents: 0,        // Colapsa TODOS los eventos en badge numérico
+    longPressDelay: 0,
+    selectLongPressDelay: 0,
+    eventLongPressDelay: 0,
+
+    // Badge de conteo — muestra el número de citas del día
+    moreLinkContent: (args: any) => ({
+      html: `<span class="badge-citas-dia">
+        <i class="fas fa-calendar-check badge-icon"></i>
+        <span class="badge-num">${args.num}</span>
+        <span class="badge-label"> cita${args.num !== 1 ? 's' : ''}</span>
+      </span>`
+    }),
+
+    // Al hacer click en el badge → abrir panel del día (prevenimos el popover nativo)
+    moreLinkClick: (info: any) => {
+      info.jsEvent?.preventDefault();
+      info.jsEvent?.stopPropagation();
+      this.handleDayBadgeClick(info);
+      // No retornar nada (void) — el CSS oculta el popover nativo como capa extra
+    },
+
     selectAllow: (selectInfo) => {
       const fechaSeleccionada = selectInfo.startStr.split('T')[0];
       const hoy = format(new Date(), 'yyyy-MM-dd');
-      return fechaSeleccionada >= hoy; // Solo permitir selección de hoy en adelante
+      return fechaSeleccionada >= hoy;
     },
 
     // Callbacks
     select: this.handleDateSelect.bind(this),
+    dateClick: this.handleDateClick.bind(this),
     eventClick: this.handleEventClick.bind(this),
     eventsSet: this.handleEvents.bind(this),
     datesSet: this.handleDatesSet.bind(this),
@@ -142,6 +163,11 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
   modalMode: 'create' | 'edit' | 'view' = 'create';
   selectedDate: string = '';
   selectedCita: CitaRequest | null = null;
+
+  // Panel de citas del día
+  mostrarPanelDia = false;
+  fechaDiaSeleccionado = '';
+  citasDiaSeleccionado: CitaRequest[] = [];
   selectedMedico: string = '';
   isSelectDisabled: boolean = false;
   currentView: string = 'dayGridMonth';
@@ -153,6 +179,7 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
   fechaActual: string = '';
   tituloCalendario: string = '';
   sidebarExpanded: boolean = false;
+  sidebarVisible = false;
   userInfo: any = {};
   usuario: Usuario[] = [];
   paciente: Paciente[] = [];
@@ -516,6 +543,14 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  toggleSidebarMobile(): void {
+    this.sidebarVisible = !this.sidebarVisible;
+  }
+
+  onSidebarToggle(isExpanded: boolean): void {
+    this.sidebarVisible = isExpanded;
+  }
+
   detectSidebarState(): void {
     const checkSidebar = () => {
       const sidebar = document.querySelector('.sidebar-container') || 
@@ -691,10 +726,15 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
             const colorBase = this.getColorPorMedico(cita.fkusuario);
             const { backgroundColor, borderColor, textColor } = this.getEstilosPorEstado(cita.estado, colorBase);
 
+            // Extraer solo YYYY-MM-DD y HH:MM:SS para evitar que FullCalendar
+            // aplique conversión de timezone al recibir un ISO string con 'Z'
+            const fechaSolo = String(cita.fechaatencion).substring(0, 10);
+            const horaSolo  = String(cita.horaatencion).substring(0, 8);
+
             return {
               id: cita.idagenda?.toString() || '',
               title: `${cita.paciente?.nombres} ${cita.paciente?.apellidos}`,
-              start: `${cita.fechaatencion}T${cita.horaatencion}`,
+              start: `${fechaSolo}T${horaSolo}`,
               backgroundColor,
               borderColor,
               textColor,
@@ -736,6 +776,58 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     } catch (error) {
       this.alerta.alertaError('Error al cargar las citas');
       this.loading = false;
+    }
+  }
+
+  // ── Panel de citas por día ──────────────────────────────
+  handleDayBadgeClick(info: any): void {
+    // Obtener todas las citas del día desde los segmentos
+    const citas: CitaRequest[] = (info.allSegs || [])
+      .map((seg: any) => seg.event?.extendedProps?.citaCompleta)
+      .filter(Boolean)
+      .sort((a: CitaRequest, b: CitaRequest) =>
+        (a.horaatencion || '').localeCompare(b.horaatencion || '')
+      );
+
+    this.citasDiaSeleccionado = citas;
+
+    // info.date viene como medianoche UTC desde FullCalendar.
+    // Si se formatea directamente, date-fns lo convierte a hora local (UTC-6),
+    // mostrando el día anterior. Se extrae la fecha en UTC y se construye
+    // un Date local al mediodía para evitar el desfase de zona horaria.
+    const utcDateStr = info.date.toISOString().split('T')[0]; // "YYYY-MM-DD" en UTC
+    const localNoon = new Date(`${utcDateStr}T12:00:00`);
+    this.fechaDiaSeleccionado = format(localNoon, "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
+    this.mostrarPanelDia = true;
+  }
+
+  cerrarPanelDia(): void {
+    this.mostrarPanelDia = false;
+    this.citasDiaSeleccionado = [];
+    this.fechaDiaSeleccionado = '';
+  }
+
+  abrirCitaDesdePanel(cita: CitaRequest): void {
+    this.cerrarPanelDia();
+    this.modalMode = 'view';
+    this.selectedCita = cita;
+    this.showModal = true;
+  }
+  // ────────────────────────────────────────────────────────
+
+  handleDateClick(info: any): void {
+    const fechaSeleccionada = info.dateStr;
+    const hoy = format(new Date(), 'yyyy-MM-dd');
+    if (fechaSeleccionada < hoy) return;
+
+    // En móvil el select no siempre dispara, así que dateClick abre el modal directamente
+    if (window.innerWidth <= 768) {
+      this.selectedDate = fechaSeleccionada;
+      this.modalMode = 'create';
+      this.selectedCita = null;
+      this.citaForm.reset();
+      this.citaForm.patchValue({ fechaatencion: fechaSeleccionada });
+      this.showModal = true;
     }
   }
 

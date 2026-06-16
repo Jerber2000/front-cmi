@@ -450,7 +450,7 @@ $border-radius: 15px;
 
   &:hover:not(:disabled) {
     transform: translateY(-3px);
-    background: linear-gradient(135deg, darken($primary-color, 10%));
+    background: linear-gradient(135deg, #1f4540);
   }
 
   &:disabled {

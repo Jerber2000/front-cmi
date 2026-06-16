@@ -36,6 +36,7 @@ import { HasRoleDirective } from '../../directives/has-role.directive';
 export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestroy {
   currentView: 'historial' | 'nueva-sesion' | 'diagnostico' | 'notas-rapidas' = 'historial';
   sidebarExpanded = true;
+  sidebarVisible = false;
   loading = false;
   pacienteParaReferir: Paciente | null = null;
   mostrarFormularioPsicologia = false;
@@ -314,6 +315,9 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
     } catch (error) {
     }
   }
+
+  toggleSidebarMobile(): void { this.sidebarVisible = !this.sidebarVisible; }
+  onSidebarToggle(isExpanded: boolean): void { this.sidebarVisible = isExpanded; }
 
   detectSidebarState(): void {
     const checkSidebar = () => {

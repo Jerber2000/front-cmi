@@ -1,13 +1,14 @@
 import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router'; 
-import { SidebarComponent, MenuItem as SidebarMenuItem } from '../sidebar/sidebar.component'; 
+import { Router } from '@angular/router';
+import { SidebarComponent, MenuItem as SidebarMenuItem } from '../sidebar/sidebar.component';
 import { AuthService } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
 import { ArchivoService } from '../../services/archivo.service';
 import { ReporteriaService, DashboardData } from '../../services/reporteria.service';
-import { HasRoleDirective } from '../../directives/has-role.directive';
+
 import { PerfilService } from '../../services/perfil.service';
+import { PermisoService } from '../../services/permiso.service';
 
 // Interface para módulos recomendados
 interface ModuloRecomendado {
@@ -52,7 +53,7 @@ interface UsuarioInfo {
   selector: 'app-menu',
   templateUrl: './menu.component.html',
   styleUrls: ['./menu.component.scss'],
-  imports: [CommonModule, SidebarComponent, HasRoleDirective]
+  imports: [CommonModule, SidebarComponent]
 })
 export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
   sidebarVisible = false;
@@ -92,15 +93,54 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
     16: 'Terapeuta del Lenguaje'
   };
 
+  // Rutas permitidas cargadas desde BD para filtrar las tarjetas del menú
+  private rutasPermitidas: string[] = [];
+  private usarFallbackRoles = false;
+
   constructor(
     private authService: AuthService,
     private archivoService: ArchivoService,
     private router: Router,
     private reporteriaService: ReporteriaService,
-    private perfilService: PerfilService
+    private perfilService: PerfilService,
+    private permisoService: PermisoService
   ) {}
 
+  /** Devuelve true si el usuario tiene acceso al módulo según los permisos de BD */
+  puedeVerModulo(modulo: ModuloPrincipal): boolean {
+    // Superadmin: siempre visible
+    if (this.rutasPermitidas.includes('*')) return true;
+
+    const ruta = modulo.ruta.replace(/^\//, '').split('/')[0];
+
+    // Perfil siempre visible para cualquier usuario autenticado
+    if (ruta === 'perfil') return true;
+
+    // Fallback: si la API falló, usar los roles hardcodeados del módulo
+    if (this.usarFallbackRoles) {
+      return this.authService.hasRole(modulo.roles);
+    }
+
+    // Sin permisos cargados aún → ocultar
+    if (!this.rutasPermitidas.length) return false;
+
+    return this.rutasPermitidas.includes(ruta);
+  }
+
   ngOnInit() {
+    // Cargar rutas permitidas para filtrar módulos del menú dinámicamente
+    this.permisoService.obtenerMisRutas().subscribe({
+      next: rutas => {
+        // null = API falló → usar roles hardcodeados del módulo
+        this.rutasPermitidas = rutas ?? [];
+        this.usarFallbackRoles = rutas === null;
+      },
+      error: () => {
+        this.rutasPermitidas = [];
+        this.usarFallbackRoles = true;
+      }
+    });
+
     // Siempre refrescar el perfil desde el backend al iniciar el menú
     this.perfilService.refrescarPerfil().subscribe({
       next: (usuario) => {
@@ -295,7 +335,7 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
   /**
    * Genera mensaje de bienvenida personalizado según el rol
    */
-  private generarMensajeBienvenida(idRol: number, nombre: string): string {
+  private generarMensajeBienvenida(idRol: number, _nombre: string): string {
     const mensajes: { [key: number]: string } = {
       1: `Tienes acceso completo al sistema. Administra usuarios, clínicas y configuraciones.`,
       2: `Gestiona expedientes médicos, consultas y referencias de tus pacientes.`,

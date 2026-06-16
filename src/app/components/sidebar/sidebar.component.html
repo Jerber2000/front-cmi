@@ -23,42 +23,55 @@
 
   <nav class="sidebar-nav">
     <ul class="nav-list">
-      <li class="nav-item" *ngFor="let item of currentMenuItems">
-        
-        <ng-container *appHasRole="item.roles || []">
-          
-          <!-- Item principal -->
-          <div class="nav-link"
-               [class.has-children]="item.children?.length"
-               [class.expanded]="item.expanded"
-               (click)="onMenuItemClick(item)">
-            <div class="nav-link-content">
-              <i *ngIf="item.icon" [class]="item.icon" class="nav-icon"></i>
-              <span class="nav-label" *ngIf="isExpanded">{{ item.label }}</span>
-            </div>
-            <i *ngIf="item.children?.length && isExpanded" 
-               class="fas fa-chevron-down expand-icon"
-               [class.rotated]="item.expanded"></i>
-          </div>
 
-          <!-- Submenú -->
-          <ul class="submenu"
-              *ngIf="item.children?.length && item.expanded && isExpanded">
-            
-            <li class="submenu-item" *ngFor="let subItem of item.children">
-              
-              <ng-container *appHasRole="subItem.roles || []">
-                <div class="submenu-link" (click)="onSubMenuItemClick(subItem)">
-                  <i *ngIf="subItem.icon" [class]="subItem.icon" class="submenu-icon"></i>
-                  <span class="submenu-label">{{ subItem.label }}</span>
-                </div>
-              </ng-container>
-              
-            </li>
-          </ul>
-          
-        </ng-container>
+      <!-- Skeleton mientras cargan los permisos -->
+      <li *ngIf="!permisosListos" class="nav-item-skeleton">
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line short"></div>
+        <div class="skeleton-line"></div>
       </li>
+
+      <ng-container *ngIf="permisosListos">
+        <li class="nav-item" *ngFor="let item of currentMenuItems">
+
+          <!-- Item visible solo si el usuario tiene acceso (dinámico desde BD) -->
+          <ng-container *ngIf="puedeVerItem(item)">
+
+            <!-- Item principal -->
+            <div class="nav-link"
+                 [class.has-children]="item.children?.length"
+                 [class.expanded]="item.expanded"
+                 (click)="onMenuItemClick(item)">
+              <div class="nav-link-content">
+                <i *ngIf="item.icon" [class]="item.icon" class="nav-icon"></i>
+                <span class="nav-label" *ngIf="isExpanded">{{ item.label }}</span>
+              </div>
+              <i *ngIf="item.children?.length && isExpanded"
+                 class="fas fa-chevron-down expand-icon"
+                 [class.rotated]="item.expanded"></i>
+            </div>
+
+            <!-- Submenú -->
+            <ul class="submenu"
+                *ngIf="item.children?.length && item.expanded && isExpanded">
+
+              <li class="submenu-item" *ngFor="let subItem of item.children">
+                <!-- Sub-item visible solo si el usuario tiene acceso (dinámico desde BD) -->
+                <ng-container *ngIf="puedeVerSubItem(subItem)">
+                  <div class="submenu-link" (click)="onSubMenuItemClick(subItem)">
+                    <i *ngIf="subItem.icon" [class]="subItem.icon" class="submenu-icon"></i>
+                    <span class="submenu-label">{{ subItem.label }}</span>
+                  </div>
+                </ng-container>
+              </li>
+
+            </ul>
+
+          </ng-container>
+
+        </li>
+      </ng-container>
+
     </ul>
   </nav>
 

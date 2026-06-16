@@ -74,11 +74,16 @@ $text-secondary: #6c757d;
   }
 }
 
+// Botón hamburguesa
+.mobile-menu-btn {
+  display: none;
+}
+
 // Header
 .encabezado {
   background-color: $primary-color;
   color: white;
-  padding: 20px;
+  padding: 10px 16px;
   position: relative;
 }
 
@@ -98,22 +103,22 @@ $text-secondary: #6c757d;
 }
 
 .titulo {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
   margin: 0;
 }
 
 .logo {
-  height: 60px;
-  margin-left: 20px;
+  height: 44px;
+  margin-left: 16px;
 }
 
 // Controles de búsqueda
 .tarjeta-control {
   background: rgba(240, 240, 240, 0.95);
-  border-radius: 15px;
-  padding: 20px;
-  margin-bottom: 20px;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -121,26 +126,27 @@ $text-secondary: #6c757d;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
 .contenedor-busqueda {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
   flex: 1;
-  min-width: 300px;
+  min-width: 0;
 }
 
 // Estilos para select de clínica
 .select-clinica {
-  padding: 10px 15px;
+  padding: 8px 10px;
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 14px;
-  min-width: 200px;
-  margin: 0 10px;
+  width: 160px;
+  max-width: 160px;
+  margin: 0;
   background-color: white;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -159,11 +165,11 @@ $text-secondary: #6c757d;
 // Badge para mostrar clínica en tabla
 .badge-clinica {
   display: inline-block;
-  padding: 4px 12px;
+  padding: 3px 8px;
   background: #e3f2fd;
   color: #1976d2;
-  border-radius: 12px;
-  font-size: 12px;
+  border-radius: 10px;
+  font-size: 11px;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -234,11 +240,11 @@ $text-secondary: #6c757d;
   th {
     background-color: $primary-color;
     color: white;
-    padding: 15px 12px;
+    padding: 10px 10px;
     text-align: center;
     font-weight: 600;
     border: none;
-    font-size: 13px;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     position: sticky;
@@ -250,11 +256,12 @@ $text-secondary: #6c757d;
   }
 
   td {
-    padding: 12px;
+    padding: 9px 10px;
     text-align: center;
     border-bottom: 1px solid #f0f0f0;
     vertical-align: middle;
     transition: background-color 0.2s ease;
+    font-size: 13px;
   }
 }
 
@@ -287,8 +294,8 @@ $text-secondary: #6c757d;
 
 // Insignias y badges
 .insignia-expediente {
-  padding: 4px 10px;
-  border-radius: 12px;
+  padding: 3px 8px;
+  border-radius: 10px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -296,7 +303,6 @@ $text-secondary: #6c757d;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  min-width: 80px;
   justify-content: center;
 }
 
@@ -869,9 +875,9 @@ $text-secondary: #6c757d;
 // Formulario
 .grilla-formulario {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-  padding: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  padding: 16px;
 }
 
 .grupo-formulario {
@@ -1223,9 +1229,9 @@ $text-secondary: #6c757d;
 // Info grid para detalles
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  padding: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  padding: 14px;
 }
 
 .info-item {
@@ -1519,145 +1525,329 @@ $text-secondary: #6c757d;
 // Responsive Design
 @media (max-width: 1200px) {
   .controles-busqueda {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
   }
-  
+
   .contenedor-busqueda {
-    min-width: auto;
+    min-width: 0;
+    flex: 1;
   }
-  
+
   .informacion-encabezado {
-    justify-content: center;
+    justify-content: flex-end;
+    flex-shrink: 0;
   }
 }
 
 @media (max-width: 768px) {
-  .content-area {
-    margin-left: 0 !important;
-  }
-  
-  .fondo-modal,
-  .modal-backdrop-detalle {
-    padding: 10px;
-  }
-  
-  .contenido-modal-grande,
-  .modal-detalle-paciente {
-    max-width: 100%;
-    max-height: 95vh;
-  }
-  
-  .grilla-formulario,
-  .info-grid {
-    grid-template-columns: 1fr;
-    gap: 15px;
-    padding: 15px;
-  }
-  
-  .pie-modal,
-  .modal-detalle-footer {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .pie-modal .boton-cancelar,
-  .pie-modal .boton-guardar,
-  .btn-cancelar-detalle,
-  .btn-editar-footer {
-    width: 100%;
+  // Hamburguesa flotante
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
     justify-content: center;
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: $primary-color;
+    color: white;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 1100;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    transition: background 0.2s ease, transform 0.2s ease;
+
+    &.sidebar-open {
+      background: #c0392b;
+      transform: rotate(90deg);
+    }
   }
 
-  .contenedor-fotos,
-  .fotos-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-    padding: 20px;
+  .content-area {
+    padding: 0;
+    margin-left: 0 !important;
   }
-  
-  .tarjeta-documento {
-    flex-direction: column;
-    gap: 20px;
-    padding: 20px;
+
+  .contenedor-menu {
+    margin-bottom: 8px;
   }
-  
-  .contenedor-vista-previa-documento {
-    max-width: 100%;
+
+  .tarjeta-control,
+  .contenedor-tabla,
+  .estado-vacio,
+  .pagination-container {
+    margin-left: 8px;
+    margin-right: 8px;
   }
-  
-  .acciones-documento {
-    width: 100%;
+
+  // Header compacto
+  .encabezado {
+    padding: 8px 12px;
   }
-  
-  .boton-subir-documento {
-    width: 100%;
+
+  .titulo {
+    font-size: 16px;
   }
-  
-  // Ocultar columnas menos importantes en móvil
-  .tabla-datos th:nth-child(5), /* Teléfono */
+
+  .logo {
+    height: 34px;
+    margin-left: 10px;
+  }
+
+  // Control card compacto
+  .tarjeta-control {
+    padding: 8px 10px;
+    margin-bottom: 8px;
+  }
+
+  .controles-busqueda {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .contenedor-busqueda {
+    flex: 1;
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .entrada-busqueda {
+    max-width: none;
+    padding: 8px 12px;
+    font-size: 13px;
+    flex: 1;
+  }
+
+  .select-clinica {
+    padding: 7px 8px;
+    font-size: 12px;
+    flex: 1;
+  }
+
+  .informacion-fecha {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  // Tabla — en móvil ocultar Género, Edad, CUI, Teléfono → quedan Nombre, Clínica, Expediente, Acciones
+  .tabla-datos th:nth-child(2),
+  .tabla-datos td:nth-child(2),
+  .tabla-datos th:nth-child(3),
+  .tabla-datos td:nth-child(3),
+  .tabla-datos th:nth-child(4),
+  .tabla-datos td:nth-child(4),
+  .tabla-datos th:nth-child(5),
   .tabla-datos td:nth-child(5) {
     display: none;
   }
-  
+
+  .tabla-datos {
+    font-size: 13px;
+
+    th, td {
+      padding: 8px 8px;
+    }
+  }
+
+  // Modales
+  .fondo-modal,
+  .modal-backdrop-detalle {
+    padding: 8px;
+  }
+
+  .contenido-modal-grande,
+  .modal-detalle-paciente {
+    max-width: 100%;
+    max-height: 97vh;
+  }
+
+  .encabezado-modal {
+    padding: 12px 16px;
+
+    h3 { font-size: 16px; }
+  }
+
+  .modal-detalle-header {
+    padding: 12px 16px;
+
+    h3 { font-size: 16px; }
+  }
+
+  .cuerpo-modal-scroll,
+  .modal-detalle-body {
+    padding: 12px;
+  }
+
+  // Formulario — 2 columnas en móvil
+  .grilla-formulario {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .grupo-formulario label {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  .entrada-formulario,
+  .area-texto-formulario {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  // Info grid — 2 columnas en móvil
+  .info-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .info-item label {
+    font-size: 12px;
+  }
+
+  .info-item span {
+    font-size: 13px;
+  }
+
+  // Fotos — 2 columnas
+  .contenedor-fotos,
+  .fotos-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .tarjeta-foto,
+  .foto-card {
+    padding: 12px;
+  }
+
+  .vista-previa-foto-circulo,
+  .foto-preview {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 8px;
+  }
+
+  .marcador-posicion-foto-circulo i {
+    font-size: 28px;
+  }
+
+  // Documentos
+  .tarjeta-documento {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .contenedor-vista-previa-documento {
+    max-width: 100%;
+  }
+
+  .acciones-documento,
+  .boton-subir-documento {
+    width: 100%;
+  }
+
+  // Footer modales — side by side
+  .pie-modal {
+    padding: 12px 16px;
+    gap: 8px;
+
+    .boton-cancelar,
+    .boton-guardar {
+      flex: 1;
+      justify-content: center;
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+  }
+
+  .modal-detalle-footer {
+    padding: 12px 16px;
+    gap: 8px;
+  }
+
+  .btn-cancelar-detalle,
+  .btn-editar-footer {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  // Secciones de formulario
+  .seccion-fotos,
+  .seccion-documentos,
+  .seccion-formulario {
+    margin-bottom: 16px;
+  }
+
+  .titulo-seccion,
+  .section-title {
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+
+  // Paginación
   .pagination-container {
     flex-direction: column;
-    gap: 15px;
+    gap: 10px;
     align-items: stretch;
+    padding: 10px 12px;
   }
-  
+
   .pagination {
     justify-content: center;
     flex-wrap: wrap;
   }
-  
+
   .items-per-page {
     justify-content: center;
   }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 480px) {
   .titulo {
-    font-size: 20px;
-  }
-
-  .encabezado-modal h3,
-  .modal-detalle-header h3 {
-    font-size: 18px;
-  }
-
-  .titulo-seccion,
-  .section-title {
     font-size: 14px;
-    padding: 12px 15px;
   }
 
-  .grilla-formulario,
-  .info-grid {
-    padding: 15px;
+  .encabezado {
+    padding: 7px 10px;
+  }
+
+  .logo {
+    height: 30px;
+    margin-left: 8px;
+  }
+
+  .tarjeta-control {
+    padding: 7px 8px;
+  }
+
+  .grilla-formulario {
+    gap: 8px;
+    padding: 8px;
   }
 
   .entrada-formulario,
   .area-texto-formulario {
-    font-size: 13px;
-    padding: 10px 12px;
+    padding: 7px 8px;
+    font-size: 12px;
   }
 
-  .cuerpo-modal-scroll,
-  .modal-detalle-body {
-    padding: 15px;
-  }
-
-  .estado-vacio {
-    padding: 40px 15px;
-
-    i {
-      font-size: 36px;
-    }
-
-    h3 {
-      font-size: 16px;
-    }
+  .info-grid {
+    gap: 8px;
+    padding: 8px;
   }
 
   .pagination-btn {
@@ -1665,47 +1855,8 @@ $text-secondary: #6c757d;
     height: 32px;
     font-size: 12px;
   }
-  
+
   .pagination-dots {
     padding: 0 4px;
   }
-
-  .documento-card {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .modal-acciones-container {
-    max-width: 95%;
-  }
-}
-
-@media (max-width: 480px) {
-  .tarjeta-control {
-    padding: 15px;
-    margin-bottom: 15px;
-  }
-
-  .contenedor-busqueda {
-    min-width: auto;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .entrada-busqueda {
-    max-width: 100%;
-  }
-
-  .logo {
-    height: 50px;
-    position: static;
-    margin: 10px 0 0 0;
-  }
-
-  .izquierda-encabezado {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  
 }

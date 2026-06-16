@@ -21,6 +21,8 @@ import {
 import { PdfExcelReporteriaService } from '../../services/pdf-excel-reporteria.service';
 import { ArchivoService } from '../../services/archivo.service';
 import { AlertaService } from '../../services/alerta.service';
+import { ProgramaService, Programa } from '../../services/programa.service';
+import { UsuarioService, Clinica } from '../../services/usuario.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { HasRoleDirective } from '../../directives/has-role.directive';
 
@@ -35,6 +37,7 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
   private perfilSubscription?: Subscription;
   
   sidebarExpanded = true;
+  sidebarVisible = false;
   loading = false;
   loadingReporte = false;
   generandoPDF = false;
@@ -43,7 +46,9 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
   userInfo: any = {};
   usuarioActual: any = null;
   dashboardData: DashboardData | null = null;
-  tipoReporteActivo: 'dashboard' | 'pacientes' | 'consultas' | 'inventario' | 'agenda' | 'referencias' | 'salidas' = 'dashboard';
+  tipoReporteActivo: 'dashboard' | 'pacientes' | 'consultas' | 'inventario' | 'agenda' | 'referencias' = 'dashboard';
+  // El reporte de Inventario agrupa dos vistas relacionadas: existencias actuales y salidas registradas
+  vistaInventario: 'actual' | 'salidas' = 'actual';
   
   datosReporte: any[] = [];
   resumenReporte: any = null;
@@ -67,6 +72,8 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
   };
   
   medicosDisponibles: any[] = [];
+  programasDisponibles: Programa[] = [];
+  clinicasDisponibles: Clinica[] = [];
   aniosDisponibles: number[] = [];
   estadosAgenda = [
     { valor: 0, nombre: 'Eliminada' },
@@ -98,7 +105,9 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
     private pdfExcelService: PdfExcelReporteriaService,
     private archivoService: ArchivoService,
     private alerta: AlertaService,
-    private perfilService: PerfilService
+    private perfilService: PerfilService,
+    private programaService: ProgramaService,
+    private usuarioService: UsuarioService
   ) {
     this.filtrosPacientesForm = this.fb.group({
       nombre: [''],
@@ -109,15 +118,17 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
       municipio: [''],
       edadMin: [''],
       edadMax: [''],
-      tipodiscapacidad: ['']
+      tipodiscapacidad: [''],
+      programa: ['']
     });
-    
+
     this.filtrosConsultasForm = this.fb.group({
       nombrePaciente: [''],
       cuiPaciente: [''],
       desde: [''],
       hasta: [''],
       medico: [''],
+      programa: [''],
       diagnostico: ['']
     });
     
@@ -125,7 +136,8 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
       estado: ['activo'],
       stockMinimo: [''],
       proximosVencer: [''],
-      usuario: ['']
+      usuario: [''],
+      nombreMedicamento: ['']
     });
     
     this.filtrosAgendaForm = this.fb.group({
@@ -139,10 +151,13 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
     });
     
     this.filtrosReferenciasForm = this.fb.group({
+      nombrePaciente: [''],
+      cuiPaciente: [''],
       tipo: [''],
       estado: [''],
       clinica: [''],
-      medico: [''],
+      enviadoPor: [''],
+      confirmadoPor: [''],
       desde: [''],
       hasta: ['']
     });
@@ -168,6 +183,8 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.generarAniosDisponibles();
     this.cargarMedicos();
+    this.cargarProgramas();
+    this.cargarClinicas();
     if (this.tipoReporteActivo === 'dashboard') {
       this.cargarDashboard();
     }
@@ -205,6 +222,36 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
         console.error('Error al cargar médicos:', error);
       }
     });
+  }
+
+  cargarProgramas(): void {
+    this.programaService.obtenerProgramas().subscribe({
+      next: (programas) => {
+        this.programasDisponibles = programas;
+      },
+      error: (error) => {
+        console.error('Error al cargar programas:', error);
+      }
+    });
+  }
+
+  cargarClinicas(): void {
+    this.usuarioService.obtenerClinicas().subscribe({
+      next: (clinicas) => {
+        this.clinicasDisponibles = clinicas;
+      },
+      error: (error) => {
+        console.error('Error al cargar clínicas:', error);
+      }
+    });
+  }
+
+  toggleSidebarMobile(): void {
+    this.sidebarVisible = !this.sidebarVisible;
+  }
+
+  onSidebarToggle(isExpanded: boolean): void {
+    this.sidebarVisible = isExpanded;
   }
 
   detectSidebarState(): void {
@@ -246,31 +293,44 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
     } else if (tipo === 'consultas') {
       this.cargarReporteConsultas();
     } else if (tipo === 'inventario') {
-      this.cargarReporteInventario();
+      this.cargarReporteInventarioActivo();
     } else if (tipo === 'agenda') {
       this.cargarReporteAgenda();
     } else if (tipo === 'referencias') {
       this.cargarReporteReferencias();
-    } else if (tipo === 'salidas') { 
+    }
+  }
+
+  /** Cambia entre las dos vistas del reporte de Inventario (existencias actuales / salidas) */
+  cambiarVistaInventario(vista: 'actual' | 'salidas'): void {
+    if (this.vistaInventario === vista) return;
+    this.vistaInventario = vista;
+    this.resetearPaginacion();
+    this.cargarReporteInventarioActivo();
+  }
+
+  /** Carga la vista de Inventario actualmente seleccionada (existencias o salidas) */
+  cargarReporteInventarioActivo(): void {
+    if (this.vistaInventario === 'salidas') {
       this.cargarReporteSalidas();
+    } else {
+      this.cargarReporteInventario();
     }
   }
 
   aplicarFiltros(): void {
     this.resetearPaginacion();
-    
+
     if (this.tipoReporteActivo === 'pacientes') {
       this.cargarReportePacientes();
     } else if (this.tipoReporteActivo === 'consultas') {
       this.cargarReporteConsultas();
     } else if (this.tipoReporteActivo === 'inventario') {
-      this.cargarReporteInventario();
+      this.cargarReporteInventarioActivo();
     } else if (this.tipoReporteActivo === 'agenda') {
       this.cargarReporteAgenda();
     } else if (this.tipoReporteActivo === 'referencias') {
       this.cargarReporteReferencias();
-    } else if (this.tipoReporteActivo === 'salidas') {  
-      this.cargarReporteSalidas();
     }
   }
 
@@ -304,16 +364,13 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.cargarReporteConsultas();
         break;
       case 'inventario':
-        this.cargarReporteInventario();
+        this.cargarReporteInventarioActivo();
         break;
       case 'agenda':
         this.cargarReporteAgenda();
         break;
       case 'referencias':
         this.cargarReporteReferencias();
-        break;
-      case 'salidas':  
-        this.cargarReporteSalidas();
         break;
       default:
         this.loadingReporte = false;
@@ -459,17 +516,19 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
       this.filtrosConsultasForm.reset();
       this.cargarReporteConsultas();
     } else if (this.tipoReporteActivo === 'inventario') {
-      this.filtrosInventarioForm.reset();
-      this.cargarReporteInventario();
+      if (this.vistaInventario === 'salidas') {
+        this.filtrosSalidas = { page: 1, limit: 10 };
+        this.cargarReporteSalidas();
+      } else {
+        this.filtrosInventarioForm.reset({ estado: 'activo' });
+        this.cargarReporteInventario();
+      }
     } else if (this.tipoReporteActivo === 'agenda') {
       this.filtrosAgendaForm.reset();
       this.cargarReporteAgenda();
     } else if (this.tipoReporteActivo === 'referencias') {
       this.filtrosReferenciasForm.reset();
       this.cargarReporteReferencias();
-    } else if (this.tipoReporteActivo === 'salidas') {
-      this.filtrosSalidas = { page: 1, limit: 10 };
-      this.cargarReporteSalidas();
     }
   }
 
@@ -570,7 +629,7 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
       }
       // Generar PDF
       await this.pdfExcelService.generarPDF(
-        this.tipoReporteActivo,
+        this.obtenerTipoReporteParaExportar(),
         this.datosReporte
       );
 
@@ -607,7 +666,7 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
       }
       // Generar Excel
       this.pdfExcelService.generarExcel(
-        this.tipoReporteActivo,
+        this.obtenerTipoReporteParaExportar(),
         this.datosReporte
       );
 
@@ -630,7 +689,7 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
       case 'consultas':
         return this.filtrosConsultasForm.value;
       case 'inventario':
-        return this.filtrosInventarioForm.value;
+        return this.vistaInventario === 'salidas' ? this.filtrosSalidas : this.filtrosInventarioForm.value;
       case 'agenda':
         return this.filtrosAgendaForm.value;
       case 'referencias':
@@ -639,7 +698,15 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
         return {};
     }
   }
-  
+
+  /** El reporte de Salidas tiene su propio formato de exportación, distinto al de Inventario */
+  obtenerTipoReporteParaExportar(): string {
+    if (this.tipoReporteActivo === 'inventario' && this.vistaInventario === 'salidas') {
+      return 'salidas';
+    }
+    return this.tipoReporteActivo;
+  }
+
   obtenerNombreTipoReporte(): string {
     const nombres: any = {
       'dashboard': 'Dashboard',

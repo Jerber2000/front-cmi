@@ -1,7 +1,16 @@
 <!-- expediente.html -->
 <div class="content-area" [class.sidebar-expanded]="barraLateralExpandida">
-  
-  <app-sidebar [userInfo]="informacionUsuario"></app-sidebar>
+
+  <!-- Botón hamburguesa solo en móvil -->
+  <button class="mobile-menu-btn" (click)="toggleSidebarMobile()" [class.sidebar-open]="sidebarVisible">
+    <i class="fas" [class.fa-bars]="!sidebarVisible" [class.fa-times]="sidebarVisible"></i>
+  </button>
+
+  <app-sidebar
+    [userInfo]="informacionUsuario"
+    [isExpanded]="sidebarVisible"
+    (toggleSidebar)="onSidebarToggle($event)">
+  </app-sidebar>
   
   <div class="contenedor-menu">
     <header class="encabezado">
@@ -45,6 +54,16 @@
         <div class="informacion-fecha">
           Fecha: {{ fechaActual | date:'dd/MM/yyyy' }}
         </div>
+        <!-- Botón gestión de programas — solo admins -->
+        <button
+          *appHasRole="[1, 4]"
+          class="btn-gestionar-programas"
+          (click)="abrirGestionProgramas()"
+          title="Gestionar Programas"
+        >
+          <i class="fas fa-clipboard-list"></i>
+          <span>Programas</span>
+        </button>
       </div>
     </div>
 
@@ -118,23 +137,25 @@
 
             <!-- COLUMNA 6: Editar -->
             <td>
-              <button 
-                class="boton-accion boton-editar" 
+              <button
+                class="boton-accion boton-editar"
                 (click)="editarExpediente(expediente)"
                 title="Editar"
               >
-                Editar
+                <i class="fas fa-edit"></i>
+                <span class="btn-text">Editar</span>
               </button>
             </td>
             
             <!-- COLUMNA 7: Eliminar -->
             <td>
-              <button 
-                class="boton-accion boton-eliminar" 
+              <button
+                class="boton-accion boton-eliminar"
                 (click)="eliminarExpediente(expediente.idexpediente!)"
                 title="Eliminar"
               >
-                Eliminar
+                <i class="fas fa-trash"></i>
+                <span class="btn-text">Eliminar</span>
               </button>
             </td>
           </tr>
@@ -932,6 +953,23 @@
         </div>
       </div>
 
+      <!-- Programas asignados — al final, igual que en el formulario de edición -->
+      <div class="seccion-formulario" *ngIf="$any(expedienteSeleccionado)?.programas?.length > 0">
+        <h4 class="titulo-seccion">
+          <i class="fas fa-clipboard-list"></i> Programas Asignados
+        </h4>
+        <div class="grilla-formulario">
+          <div class="grupo-formulario ancho-completo">
+            <div class="programas-detalle-vista">
+              <span class="programa-chip-vista" *ngFor="let ep of $any(expedienteSeleccionado).programas">
+                <i class="fas fa-check-circle"></i>
+                {{ ep.programa?.nombre || ep.nombre || 'Programa' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Pie del modal fijo -->
@@ -943,6 +981,119 @@
         <i class="fas fa-edit"></i> Editar Expediente
       </button>
       <button type="button" class="boton-cancelar" (click)="mostrarLista()">
+        <i class="fas fa-times"></i> Cerrar
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MODAL GESTIÓN DE PROGRAMAS (solo roles 1, 4)                -->
+<!-- ============================================================ -->
+<div class="modal-backdrop-programas" *ngIf="mostrarModalProgramas" (click)="cerrarGestionProgramas()">
+  <div class="modal-programas" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="modal-programas-header">
+      <div class="modal-programas-title">
+        <i class="fas fa-clipboard-list"></i>
+        Gestión de Programas
+      </div>
+      <button class="modal-programas-close" (click)="cerrarGestionProgramas()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-programas-body">
+
+      <!-- Formulario crear / editar -->
+      <div class="programa-form-card">
+        <h4>{{ programaEnEdicion ? 'Editar Programa' : 'Nuevo Programa' }}</h4>
+        <div class="programa-form-row">
+          <div class="programa-form-group">
+            <label>Nombre *</label>
+            <input
+              type="text"
+              [(ngModel)]="nombreProgramaForm"
+              placeholder="Nombre del programa"
+              class="programa-input"
+              (keyup.enter)="guardarProgramaGestion()"
+            >
+          </div>
+          <div class="programa-form-group">
+            <label>Descripción <span class="opcional">(opcional)</span></label>
+            <input
+              type="text"
+              [(ngModel)]="descripcionProgramaForm"
+              placeholder="Descripción breve"
+              class="programa-input"
+              (keyup.enter)="guardarProgramaGestion()"
+            >
+          </div>
+        </div>
+        <div class="programa-form-actions">
+          <button
+            *ngIf="programaEnEdicion"
+            type="button"
+            class="btn-programa-cancel"
+            (click)="cancelarEdicionPrograma()"
+          >
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-programa-save"
+            (click)="guardarProgramaGestion()"
+            [disabled]="guardandoPrograma || !nombreProgramaForm.trim()"
+          >
+            <i class="fas fa-spinner fa-spin" *ngIf="guardandoPrograma"></i>
+            <i class="fas fa-save" *ngIf="!guardandoPrograma"></i>
+            {{ guardandoPrograma ? 'Guardando...' : (programaEnEdicion ? 'Actualizar' : 'Crear Programa') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Lista de programas existentes -->
+      <div class="programas-lista">
+        <h4>Programas registrados ({{ listaProgramas.length }})</h4>
+
+        <div class="programa-lista-vacia" *ngIf="listaProgramas.length === 0">
+          <i class="fas fa-clipboard"></i>
+          <p>No hay programas registrados aún</p>
+        </div>
+
+        <div class="programa-item" *ngFor="let p of listaProgramas">
+          <div class="programa-item-info">
+            <span class="programa-item-nombre">{{ p.nombre }}</span>
+            <span class="programa-item-desc" *ngIf="p.descripcion">{{ p.descripcion }}</span>
+          </div>
+          <div class="programa-item-actions">
+            <button
+              class="btn-prog-edit"
+              (click)="iniciarEdicionPrograma(p)"
+              title="Editar"
+              [class.active]="programaEnEdicion?.idprograma === p.idprograma"
+            >
+              <i class="fas fa-edit"></i>
+            </button>
+            <button
+              class="btn-prog-delete"
+              (click)="eliminarProgramaGestion(p)"
+              title="Eliminar"
+            >
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-programas-footer">
+      <button class="btn-programa-cerrar" (click)="cerrarGestionProgramas()">
         <i class="fas fa-times"></i> Cerrar
       </button>
     </div>
