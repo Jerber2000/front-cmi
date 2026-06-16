@@ -395,7 +395,7 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
       // this.citaForm.get('fkusuario')?.disable();
       // this.isSelectDisabled = true;
 
-      this.UsuarioService.obtenerUsuariosPorRol('5,6,10,12,13,15').subscribe({
+      this.UsuarioService.obtenerProfesionalesAgenda().subscribe({
         next: (response) => {
           if (response.success && response.data) {
             this.usuario = response.data.map(usr => ({
@@ -454,7 +454,7 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
       this.isSelectDisabled = false;
       this.citaForm.get('fkusuario')?.enable();
       
-      this.UsuarioService.obtenerUsuariosPorRol('5,6,10,12,13,15').subscribe({
+      this.UsuarioService.obtenerProfesionalesAgenda().subscribe({
         next: (response) => {
           if (response.success && response.data) {
             this.usuario = response.data.map(usr => ({

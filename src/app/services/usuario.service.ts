@@ -106,16 +106,14 @@ export class UsuarioService{
         );
     }
 
-    obtenerUsuariosPorRol(rol: string): Observable<ApiResponse<Usuario[]>> {
-        const ruta = `${this.apiUrl}/buscarPorRol/${rol}`;
+    obtenerProfesionalesAgenda(): Observable<ApiResponse<Usuario[]>> {
+        const ruta = `${this.apiUrl}/profesionalesAgenda`;
         return this.http.get<ApiResponse<Usuario[]>>(ruta).pipe(
-            tap(response => {
-            }),
             catchError(error => {
                 return of({
                     success: false,
                     data: [],
-                    message: 'Error al obtener usuarios'
+                    message: 'Error al obtener profesionales'
                 } as ApiResponse<Usuario[]>);
             })
         );
