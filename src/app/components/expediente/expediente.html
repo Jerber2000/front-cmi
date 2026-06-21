@@ -29,16 +29,18 @@
   <div class="tarjeta-control">
     <div class="controles-busqueda">
       <div class="contenedor-busqueda">
-        <input 
-          type="text" 
-          class="entrada-busqueda" 
+        <input
+          type="text"
+          class="entrada-busqueda"
           placeholder="Buscar"
           [(ngModel)]="terminoBusqueda"
           (input)="filtrarExpedientes()"
         >
-        
+      </div>
+
+      <div class="informacion-encabezado">
         <!-- Filtro por clínica -->
-        <select 
+        <select
           class="select-clinica"
           [(ngModel)]="clinicaSeleccionada"
           (change)="onClinicaChange()"
@@ -48,15 +50,10 @@
             {{ clinica.nombreclinica }}
           </option>
         </select>
-      </div>
-      
-      <div class="informacion-encabezado">
-        <div class="informacion-fecha">
-          Fecha: {{ fechaActual | date:'dd/MM/yyyy' }}
-        </div>
-        <!-- Botón gestión de programas — solo admins -->
+
+        <!-- Botón gestión de programas — Administrador, Sistemas, Auxiliar Administrativa -->
         <button
-          *appHasRole="[1, 4]"
+          *appHasRole="[1, 4, 7]"
           class="btn-gestionar-programas"
           (click)="abrirGestionProgramas()"
           title="Gestionar Programas"
@@ -682,11 +679,12 @@
           <div class="seccion-formulario">
             <h4 class="titulo-seccion">
               <i class="fas fa-clipboard-list"></i> Programas
+              <span class="subtitulo-seccion">(aplica para educación inclusiva)</span>
             </h4>
             <div class="grilla-formulario">
               <div class="grupo-formulario ancho-completo">
                 <label class="label-programas">Seleccione uno o más programas</label>
-                <div class="programas-grid">
+                <div class="programas-grid" *ngIf="listaProgramas.length > 0">
                   <label
                     *ngFor="let programa of listaProgramas"
                     class="programa-check-item"
@@ -702,6 +700,10 @@
                     </span>
                     <span class="check-label">{{ programa.nombre }}</span>
                   </label>
+                </div>
+                <div class="programa-lista-vacia" *ngIf="listaProgramas.length === 0">
+                  <i class="fas fa-clipboard"></i>
+                  <p>No hay programas registrados aún</p>
                 </div>
                 <small class="hint-programas" *ngIf="programasSeleccionados.length > 0">
                   <i class="fas fa-info-circle"></i>
@@ -951,17 +953,22 @@
       </div>
 
       <!-- Programas asignados — al final, igual que en el formulario de edición -->
-      <div class="seccion-formulario" *ngIf="$any(expedienteSeleccionado)?.programas?.length > 0">
+      <div class="seccion-formulario">
         <h4 class="titulo-seccion">
           <i class="fas fa-clipboard-list"></i> Programas Asignados
+          <span class="subtitulo-seccion">(aplica para educación inclusiva)</span>
         </h4>
         <div class="grilla-formulario">
           <div class="grupo-formulario ancho-completo">
-            <div class="programas-detalle-vista">
+            <div class="programas-detalle-vista" *ngIf="$any(expedienteSeleccionado)?.programas?.length > 0">
               <span class="programa-chip-vista" *ngFor="let ep of $any(expedienteSeleccionado).programas">
                 <i class="fas fa-check-circle"></i>
                 {{ ep.programa?.nombre || ep.nombre || 'Programa' }}
               </span>
+            </div>
+            <div class="programa-lista-vacia" *ngIf="!$any(expedienteSeleccionado)?.programas?.length">
+              <i class="fas fa-clipboard"></i>
+              <p>Sin programas asignados</p>
             </div>
           </div>
         </div>

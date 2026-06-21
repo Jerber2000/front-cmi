@@ -78,7 +78,6 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
   totalPaginas = 0;
   
   // Interfaz de usuario
-  fechaActual = new Date();
   barraLateralExpandida = true;
   sidebarVisible = false;
   informacionUsuario: any = { name: 'Usuario', avatar: null };

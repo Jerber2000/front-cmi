@@ -23,13 +23,13 @@ import { ArchivoService } from '../../services/archivo.service';
 import { AlertaService } from '../../services/alerta.service';
 import { ProgramaService, Programa } from '../../services/programa.service';
 import { UsuarioService, Clinica } from '../../services/usuario.service';
+import { PermisoService } from '../../services/permiso.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
-import { HasRoleDirective } from '../../directives/has-role.directive';
 
 @Component({
   selector: 'app-reporteria',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, HasRoleDirective, SidebarComponent, NgSelectModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent, NgSelectModule],
   templateUrl: './reporteria.component.html',
   styleUrls: ['./reporteria.component.scss']
 })
@@ -71,7 +71,13 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
     estado: ''
   };
   
-  medicosDisponibles: any[] = [];
+  // Pestañas de Reportería que el rol del usuario puede ver (ej: ['reporteria-inventario'] para Farmacia)
+  permisosReporteria: string[] = [];
+
+  medicosHistorial: any[] = [];
+  medicosAgenda: any[] = [];
+  medicosReferencias: any[] = [];
+  confirmadoresReferencias: any[] = [];
   programasDisponibles: Programa[] = [];
   clinicasDisponibles: Clinica[] = [];
   aniosDisponibles: number[] = [];
@@ -107,7 +113,8 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
     private alerta: AlertaService,
     private perfilService: PerfilService,
     private programaService: ProgramaService,
-    private usuarioService: UsuarioService
+    private usuarioService: UsuarioService,
+    private permisoService: PermisoService
   ) {
     this.filtrosPacientesForm = this.fb.group({
       nombre: [''],
@@ -119,7 +126,8 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
       edadMin: [''],
       edadMax: [''],
       tipodiscapacidad: [''],
-      programa: ['']
+      programa: [''],
+      fkclinica: ['']
     });
 
     this.filtrosConsultasForm = this.fb.group({
@@ -185,9 +193,22 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.cargarMedicos();
     this.cargarProgramas();
     this.cargarClinicas();
+    this.cargarPermisosReporteria();
     if (this.tipoReporteActivo === 'dashboard') {
       this.cargarDashboard();
     }
+  }
+
+  cargarPermisosReporteria(): void {
+    this.permisoService.obtenerMisRutas().subscribe({
+      next: (rutas) => this.permisosReporteria = rutas || [],
+      error: () => this.permisosReporteria = []
+    });
+  }
+
+  /** true si el usuario puede ver la pestaña de Reportería identificada por esa ruta de permiso */
+  puedeVerPestana(rutaPermiso: string): boolean {
+    return this.permisosReporteria.includes('*') || this.permisosReporteria.includes(rutaPermiso);
   }
     
   ngAfterViewInit(): void {
@@ -214,13 +235,24 @@ export class ReporteriaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   
   cargarMedicos(): void {
-    this.reporteriaService.obtenerMedicosDisponibles().subscribe({
-      next: (medicos: any[]) => {
-        this.medicosDisponibles = medicos;
-      },
-      error: (error) => {
-        console.error('Error al cargar médicos:', error);
-      }
+    this.reporteriaService.obtenerMedicosDisponibles('historial').subscribe({
+      next: (medicos: any[]) => this.medicosHistorial = medicos,
+      error: (error) => console.error('Error al cargar médicos de historial:', error)
+    });
+
+    this.reporteriaService.obtenerMedicosDisponibles('agenda').subscribe({
+      next: (medicos: any[]) => this.medicosAgenda = medicos,
+      error: (error) => console.error('Error al cargar médicos de agenda:', error)
+    });
+
+    this.reporteriaService.obtenerMedicosDisponibles('referencias').subscribe({
+      next: (medicos: any[]) => this.medicosReferencias = medicos,
+      error: (error) => console.error('Error al cargar médicos de referencias:', error)
+    });
+
+    this.reporteriaService.obtenerConfirmadoresReferidos().subscribe({
+      next: (confirmadores: any[]) => this.confirmadoresReferencias = confirmadores,
+      error: (error) => console.error('Error al cargar confirmadores de referidos:', error)
     });
   }
 

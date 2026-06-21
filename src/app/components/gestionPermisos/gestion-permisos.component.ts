@@ -17,7 +17,6 @@ import { Subscription } from 'rxjs';
 })
 export class GestionPermisosComponent implements OnInit {
   userInfo: any = {};
-  sidebarExpanded = false;
   sidebarVisible = false;
 
   permisos: Permiso[] = [];
@@ -25,6 +24,9 @@ export class GestionPermisosComponent implements OnInit {
 
   rolSeleccionado: RolConPermisos | null = null;
   permisosSeleccionados: Set<number> = new Set();
+
+  mostrarModalPestanas = false;
+  permisoEnModal: Permiso | null = null;
 
   loading = true;
   guardando = false;
@@ -68,6 +70,7 @@ export class GestionPermisosComponent implements OnInit {
   seleccionarRol(rol: RolConPermisos): void {
     this.rolSeleccionado = rol;
     this.permisosSeleccionados = new Set(rol.permisosAsignados);
+    this.cerrarModalPestanas();
   }
 
   tienePermiso(idpermiso: number): boolean {
@@ -75,11 +78,52 @@ export class GestionPermisosComponent implements OnInit {
   }
 
   togglePermiso(idpermiso: number): void {
+    const permiso = this.permisos.find(p => p.idpermiso === idpermiso);
+
     if (this.permisosSeleccionados.has(idpermiso)) {
       this.permisosSeleccionados.delete(idpermiso);
+      // Si se desmarca un permiso "padre" (ej: Reportería), sus sub-permisos
+      // (ej: pestañas de Reportería) pierden sentido sin él
+      if (permiso) {
+        this.subPermisosDe(permiso).forEach(hijo => this.permisosSeleccionados.delete(hijo.idpermiso));
+      }
     } else {
       this.permisosSeleccionados.add(idpermiso);
+      // Al activar un permiso con sub-secciones, abrir el modal para configurarlas de una vez
+      if (permiso && this.subPermisosDe(permiso).length > 0) {
+        this.abrirModalPestanas(permiso);
+      }
     }
+  }
+
+  abrirModalPestanas(permiso: Permiso): void {
+    this.permisoEnModal = permiso;
+    this.mostrarModalPestanas = true;
+  }
+
+  cerrarModalPestanas(): void {
+    this.mostrarModalPestanas = false;
+    this.permisoEnModal = null;
+  }
+
+  /** Permisos de nivel superior (sin contar los que son sub-secciones de otro permiso) */
+  get permisosPrincipales(): Permiso[] {
+    return this.permisos.filter(p => !this.esSubPermiso(p));
+  }
+
+  private esSubPermiso(permiso: Permiso): boolean {
+    return this.permisos.some(padre => padre.ruta !== permiso.ruta && permiso.ruta.startsWith(padre.ruta + '-'));
+  }
+
+  /** Sub-secciones de un permiso (ej: pestañas dentro de Reportería) */
+  subPermisosDe(permiso: Permiso): Permiso[] {
+    return this.permisos.filter(p => p.ruta.startsWith(permiso.ruta + '-'));
+  }
+
+  /** Nombre corto del sub-permiso, sin repetir el prefijo del padre (ej: "Reportería: Inventario" -> "Inventario") */
+  nombreSubPermiso(hijo: Permiso): string {
+    const partes = hijo.nombre.split(':');
+    return partes.length > 1 ? partes.slice(1).join(':').trim() : hijo.nombre;
   }
 
   toggleTodos(marcar: boolean): void {

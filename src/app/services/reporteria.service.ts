@@ -150,6 +150,7 @@ export interface FiltrosPacientes {
   edadMax?: number;
   tipodiscapacidad?: string;
   programa?: number;
+  fkclinica?: number;
   page?: number;
   limit?: number;
 }
@@ -269,9 +270,22 @@ export class ReporteriaService {
     );
   }
 
-  obtenerMedicosDisponibles(): Observable<any[]> {
+  obtenerMedicosDisponibles(contexto?: 'historial' | 'agenda' | 'referencias'): Observable<any[]> {
+    let params = new HttpParams();
+    if (contexto) {
+      params = params.set('contexto', contexto);
+    }
     return this.http.get<ApiResponse<any[]>>(
       `${this.apiUrl}/medicos`,
+      { headers: this.getHeaders(), params }
+    ).pipe(
+      map(response => response.data || [])
+    );
+  }
+
+  obtenerConfirmadoresReferidos(): Observable<any[]> {
+    return this.http.get<ApiResponse<any[]>>(
+      `${this.apiUrl}/confirmadores-referidos`,
       { headers: this.getHeaders() }
     ).pipe(
       map(response => response.data || [])

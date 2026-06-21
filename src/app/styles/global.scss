@@ -13,3 +13,19 @@ a {
   text-decoration: none;
   color: $primary-color;
 }
+
+// SweetAlert2 usa z-index: 1060 por defecto, pero varios modales del proyecto
+// usan z-index mucho más alto (2000, 3000, 9999...), dejando las alertas
+// ocultas detrás del modal. Esto las fuerza a estar siempre por encima de
+// cualquier modal de la app, sin importar el componente desde donde se llamen.
+.swal2-container {
+  z-index: 100000 !important;
+}
+
+.swal2-popup {
+  z-index: 100001 !important;
+}
+
+.swal2-backdrop-show {
+  z-index: 99999 !important;
+}

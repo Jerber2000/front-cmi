@@ -19,7 +19,6 @@ export interface MenuItem {
   route?: string;
   children?: MenuItem[];
   expanded?: boolean;
-  roles?: number[];
 }
 
 @Component({
@@ -45,41 +44,37 @@ export class SidebarComponent implements OnInit, OnDestroy, OnChanges {
     {
       label: 'Gestión de usuarios',
       icon: 'fas fa-users',
-      roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
       children: [
-        { label: 'Usuarios', route: '/usuario', roles: [1,4,7] },
-        { label: 'Perfiles', route: '/perfil', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
-        { label: 'Permisos y Accesos', route: '/gestion-permisos', roles: [1,4] }
+        { label: 'Usuarios', route: '/usuario' },
+        { label: 'Perfiles', route: '/perfil' },
+        { label: 'Permisos y Accesos', route: '/gestion-permisos' }
       ]
     },
     {
       label: 'Gestión de Pacientes',
       icon: 'fas fa-hospital-user',
-      roles: [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16],
       children: [
-        { label: 'Pacientes', route: '/pacientes', roles: [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16] },
-        { label: 'Expedientes', route: '/expedientes', roles: [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16] },
-        { label: 'Referidos', route: '/referidos', roles: [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16] }
+        { label: 'Pacientes', route: '/pacientes' },
+        { label: 'Expedientes', route: '/expedientes' },
+        { label: 'Referidos', route: '/referidos' }
     ]
   },
     {
       label: 'Gestión Clinica',
       icon: 'fas fa-hospital',
-      roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
       children: [
-        { label: 'Agenda', route: '/agenda', roles: [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16] },
-        { label: 'Reporteria', route: '/reporteria', roles: [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16] },
-        { label: 'Documentos', route: '/documentos', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
-        { label: 'Inventario', route: '/inventario', roles: [1,4,7,9] },
-        { label: 'Salida Inventario', route: '/salida-inventario', roles: [1,4,7,9] }
+        { label: 'Agenda', route: '/agenda' },
+        { label: 'Reporteria', route: '/reporteria' },
+        { label: 'Documentos', route: '/documentos' },
+        { label: 'Inventario', route: '/inventario' },
+        { label: 'Salida Inventario', route: '/salida-inventario' }
       ]
     },
     {
       label: 'Cerrar Sesion',
       icon: 'fas fa-sign-out-alt',
-      roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
       children: [
-        { label: 'Cerrar Sesion', route: '/logout/logout', roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] }
+        { label: 'Cerrar Sesion', route: '/logout/logout' }
       ]
     }
   ];
@@ -87,7 +82,6 @@ export class SidebarComponent implements OnInit, OnDestroy, OnChanges {
   // Rutas permitidas cargadas desde BD
   rutasPermitidas: string[] = [];
   permisosListos = false;
-  usarFallbackRoles = false; // true cuando la API falla → usar roles hardcodeados
   private permisosSubscription?: Subscription;
 
   constructor(
@@ -102,14 +96,12 @@ export class SidebarComponent implements OnInit, OnDestroy, OnChanges {
     // Cargar permisos desde BD (o caché) para filtrar el menú dinámicamente
     this.permisosSubscription = this.permisoService.obtenerMisRutas().subscribe({
       next: rutas => {
-        // null indica que la API falló — usar fallback de roles hardcodeados
+        // Si la API falla, rutas viene null — se trata igual que "sin permisos" (no se hardcodea nada)
         this.rutasPermitidas = rutas ?? [];
-        this.usarFallbackRoles = rutas === null;
         this.permisosListos = true;
       },
       error: () => {
         this.rutasPermitidas = [];
-        this.usarFallbackRoles = true;
         this.permisosListos = true;
       }
     });
@@ -225,12 +217,7 @@ export class SidebarComponent implements OnInit, OnDestroy, OnChanges {
     // Superadmin: acceso total
     if (this.esAccesoTotal()) return true;
 
-    // Fallback: si la API falló, usar roles hardcodeados del menú
-    if (this.usarFallbackRoles) {
-      return subItem.roles ? this.authService.hasRole(subItem.roles) : true;
-    }
-
-    // Validación desde BD
+    // Validación desde BD — único origen de verdad
     return this.rutasPermitidas.includes(ruta);
   }
 

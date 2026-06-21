@@ -36,7 +36,7 @@ export const roleGuard: CanActivateFn = (route, state): Observable<boolean> | bo
   // Rutas libres para todos los autenticados
   if (RUTAS_LIBRES.includes(ruta)) return true;
 
-  // ── Validación contra BD ─────────────────────────────────────────────────
+  // ── Validación contra BD — único origen de verdad, sin fallback a roles hardcodeados ──
   return permisoSvc.verificarAcceso(ruta).pipe(
     map(tieneAcceso => {
       if (tieneAcceso) return true;
@@ -45,9 +45,9 @@ export const roleGuard: CanActivateFn = (route, state): Observable<boolean> | bo
       return false;
     }),
     catchError(() => {
-      // Fallback: usar roles hardcodeados en data.roles si la BD falla
-      const rolesPermitidos = route.data?.['roles'] as number[] | undefined;
-      if (rolesPermitidos && authService.hasRole(rolesPermitidos)) return of(true);
+      // Si la verificación de permisos falla (ej: API caída), denegar por seguridad
+      // en vez de usar una lista de roles fija en el código.
+      alertaService.alertaError('No se pudo verificar tus permisos. Intenta de nuevo.');
       router.navigate(['/menu']);
       return of(false);
     })

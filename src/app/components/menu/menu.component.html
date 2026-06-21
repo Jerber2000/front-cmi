@@ -30,8 +30,8 @@
             <h2 class="welcome-greeting">¡Bienvenido, {{ usuarioActual.nombres }}!</h2>
             
             <p class="welcome-role">
-              <i class="fas fa-user-tag"></i> 
-              {{ obtenerNombreRol(usuarioActual.fkrol) }}
+              <i class="fas fa-user-tag"></i>
+              {{ usuarioActual.rol?.nombre || 'Usuario' }}
             </p>
             <p class="welcome-clinic" *ngIf="usuarioActual.clinica">
               <i class="fas fa-hospital"></i> 
@@ -119,7 +119,6 @@
         <h2 class="section-title">Todos los Módulos del Sistema</h2>
         
         <div class="modules-grid">
-          <!-- Usar directiva appHasRole -->
           <ng-container *ngFor="let modulo of modulosPrincipales">
             <div class="module-card"
                  *ngIf="puedeVerModulo(modulo)"

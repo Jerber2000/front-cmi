@@ -735,7 +735,7 @@
           <label class="form-label">Expediente</label>
           <div class="info-readonly">
             <i class="fas fa-folder"></i>
-            <span>Expediente #{{ referidoEnEdicion?.fkexpediente }}</span>
+            <span>Expediente {{ referidoEnEdicion?.expediente?.numeroexpediente || ('#' + referidoEnEdicion?.fkexpediente) }}</span>
           </div>
         </div>
 

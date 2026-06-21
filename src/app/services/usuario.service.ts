@@ -29,6 +29,7 @@ export interface Usuario {
     fkclinica:                number;
     nombreCompleto?:          string;
     sesion_grupal?:           boolean;
+    rol?:                     Rol;
 }
 
 export interface ApiResponse<T> {
