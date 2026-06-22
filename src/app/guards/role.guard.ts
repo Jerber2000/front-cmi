@@ -8,7 +8,8 @@ import { AlertaService } from '../services/alerta.service';
 import { PermisoService } from '../services/permiso.service';
 
 // Roles con acceso total — nunca se validan contra la BD
-const ROLES_SUPERADMIN = [1, 4];
+// Por NOMBRE, no por ID: el idrol de cada uno cambia entre entornos (local/produccion)
+const ROLES_SUPERADMIN = ['Administrador', 'Sistemas'];
 
 // Rutas que no necesitan permiso de BD (accesibles a cualquier autenticado)
 const RUTAS_LIBRES = ['menu', 'bienvenida', 'perfil', 'gestion-permisos'];
@@ -25,10 +26,10 @@ export const roleGuard: CanActivateFn = (route, state): Observable<boolean> | bo
     return false;
   }
 
-  const rol = authService.userRole;
+  const rolNombre = authService.userRoleName;
 
   // Superadmin → acceso total sin consultar BD
-  if (rol !== null && ROLES_SUPERADMIN.includes(rol)) return true;
+  if (rolNombre !== null && ROLES_SUPERADMIN.includes(rolNombre)) return true;
 
   // Extraer primer segmento de la ruta (ej: '/historial/3' → 'historial')
   const ruta = state.url.split('/').filter(Boolean)[0]?.split('?')[0] || '';

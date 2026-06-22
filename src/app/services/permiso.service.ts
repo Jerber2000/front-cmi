@@ -26,7 +26,8 @@ export interface ResumenPermisos {
   roles: RolConPermisos[];
 }
 
-const ROLES_SUPERADMIN = [1, 4];
+// Por NOMBRE, no por ID: el idrol de cada uno cambia entre entornos (local/produccion)
+const ROLES_SUPERADMIN = ['Administrador', 'Sistemas'];
 const CACHE_PREFIX = '_cmi_permisos_u';
 
 @Injectable({ providedIn: 'root' })
@@ -67,8 +68,8 @@ export class PermisoService {
     this.invalidarSiCambioUsuario();
 
     // Superadmin: bypass inmediato sin caché
-    const rol = this.authService.userRole;
-    if (rol !== null && ROLES_SUPERADMIN.includes(rol)) {
+    const rolNombre = this.authService.userRoleName;
+    if (rolNombre !== null && ROLES_SUPERADMIN.includes(rolNombre)) {
       this.rutasPermitidas = ['*'];
       this.cachedUserId = this.authService.getCurrentUser()?.idusuario ?? null;
       return of(['*']);

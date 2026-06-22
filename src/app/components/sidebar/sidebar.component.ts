@@ -11,7 +11,8 @@ import { Subscription } from 'rxjs';
 // Rutas visibles para cualquier usuario autenticado (sin necesidad de permiso en BD)
 const RUTAS_SIEMPRE_VISIBLES = ['perfil', 'logout'];
 // Roles que tienen acceso total (bypass DB)
-const ROLES_SUPERADMIN = [1, 4];
+// Por NOMBRE, no por ID: el idrol de cada uno cambia entre entornos (local/produccion)
+const ROLES_SUPERADMIN = ['Administrador', 'Sistemas'];
 
 export interface MenuItem {
   label: string;
@@ -199,8 +200,8 @@ export class SidebarComponent implements OnInit, OnDestroy, OnChanges {
 
   /** El usuario tiene acceso total (superadmin o permisos cargados con '*') */
   private esAccesoTotal(): boolean {
-    const rol = this.authService.userRole;
-    return (rol !== null && ROLES_SUPERADMIN.includes(rol)) ||
+    const rolNombre = this.authService.userRoleName;
+    return (rolNombre !== null && ROLES_SUPERADMIN.includes(rolNombre)) ||
            this.rutasPermitidas.includes('*');
   }
 
