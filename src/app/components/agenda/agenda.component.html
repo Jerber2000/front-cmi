@@ -50,7 +50,7 @@
         </div>
       </div>
       
-      <button *appHasRole="[1,4,7]"
+      <button *ngIf="puedeVer('agenda-transporte')"
         class="btn btn-primary trans"
         (click)="abrirModalReporte()"
         title="Reporte de Transportes">
@@ -878,9 +878,9 @@
         
         <div *ngIf="modalMode === 'view'" class="btn-actions">
           <div *ngIf="modalMode === 'view' && selectedCita">
-            <button *appHasRole="[1,2,3,4,5,6,7,8,10,11,12,13,14,15,16]"
+            <button *ngIf="puedeVer('agenda-historial-clinico')"
               type="button"
-              class="btn btn-historial me-2" 
+              class="btn btn-historial me-2"
               (click)="verHistorialClinico(selectedCita.paciente)"
               title="Ver Historial Clínico"
               > 

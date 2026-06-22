@@ -22,13 +22,13 @@ import { AlertaService } from '../../services/alerta.service';
 import { ArchivoService } from '../../services/archivo.service';
 import { Paciente, ServicioPaciente } from '../../services/paciente.service';
 import { ReferidosComponent } from '../referidos/referidos.component';
-import { FormularioPsicologiaComponent } from './formularioPsicologia/formulario-psicologia.component'; 
-import { HasRoleDirective } from '../../directives/has-role.directive';
+import { FormularioPsicologiaComponent } from './formularioPsicologia/formulario-psicologia.component';
+import { PermisoService } from '../../services/permiso.service';
 
 @Component({
   selector: 'app-historial-medico',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent,ReferidosComponent,FormularioPsicologiaComponent, HasRoleDirective ],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent,ReferidosComponent,FormularioPsicologiaComponent],
   templateUrl: './historialMedico.html',
   styleUrls: ['./historialMedico.scss']
 })
@@ -76,7 +76,8 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
     private http: HttpClient,
     private authService: AuthService,
     private perfilService: PerfilService,
-    private pacienteService: ServicioPaciente
+    private pacienteService: ServicioPaciente,
+    private permisoService: PermisoService
   ) {
     this.sesionForm = this.fb.group({
       motivoconsulta: ['', [Validators.required, Validators.minLength(10)]],
@@ -236,7 +237,20 @@ export class HistorialMedicoComponent implements OnInit, AfterViewInit, OnDestro
     return this.archivoService.formatearTamaño(size);
   }
 
+  // Rutas de permiso del rol actual, para mostrar/ocultar elementos sin roles quemados en el código
+  permisosHistorial: string[] = [];
+
+  /** true si el rol actual tiene el permiso (o sub-permiso) identificado por esa ruta */
+  puedeVer(rutaPermiso: string): boolean {
+    return this.permisosHistorial.includes('*') || this.permisosHistorial.includes(rutaPermiso);
+  }
+
   ngOnInit(): void {
+    this.permisoService.obtenerMisRutas().subscribe({
+      next: (rutas) => this.permisosHistorial = rutas || [],
+      error: () => this.permisosHistorial = []
+    });
+
     // Suscribirse al perfil para que el sidebar se actualice reactivamente
     this.perfilSubscription = this.perfilService.perfil$.subscribe({
       next: (usuario) => {

@@ -22,7 +22,7 @@ import { AlertaService } from '../../services/alerta.service';
 import { Paciente, ServicioPaciente } from '../../services/paciente.service';
 import { AgendaService, CitaRequest } from '../../services/agenda.service';
 import { PdfExcelReporteriaService } from '../../services/pdf-excel-reporteria.service';
-import { HasRoleDirective } from '../../directives/has-role.directive';
+import { PermisoService } from '../../services/permiso.service';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -67,7 +67,6 @@ export interface ApiResponse<T> {
     ReactiveFormsModule,
     FullCalendarModule,
     SidebarComponent,
-    HasRoleDirective,
     NgSelectModule
   ],
   templateUrl: './agenda.component.html',
@@ -243,14 +242,28 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     private agendaService: AgendaService,
     private pdfExcelService: PdfExcelReporteriaService,
     private router: Router,
-    private perfilService: PerfilService
+    private perfilService: PerfilService,
+    private permisoService: PermisoService
   ) {
     this.initForm();
     this.fechaActual = new Date().toLocaleDateString('es-ES');
     this.tituloCalendario = format(new Date(), 'MMMM yyyy', { locale: es });
   }
 
+  // Rutas de permiso del rol actual, para mostrar/ocultar elementos sin roles quemados en el código
+  permisosAgenda: string[] = [];
+
+  /** true si el rol actual tiene el permiso (o sub-permiso) identificado por esa ruta */
+  puedeVer(rutaPermiso: string): boolean {
+    return this.permisosAgenda.includes('*') || this.permisosAgenda.includes(rutaPermiso);
+  }
+
   ngOnInit(): void {
+    this.permisoService.obtenerMisRutas().subscribe({
+      next: (rutas) => this.permisosAgenda = rutas || [],
+      error: () => this.permisosAgenda = []
+    });
+
     this.perfilSubscription = this.perfilService.perfil$.subscribe({
       next: (usuario) => {
         if (usuario) {

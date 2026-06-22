@@ -15,12 +15,12 @@ import { NgxPaginationModule } from 'ngx-pagination';
 import { PdfExcelReporteriaService } from '../../services/pdf-excel-reporteria.service';
 import { ArchivoService } from '../../services/archivo.service';
 import { ProgramaService, Programa } from '../../services/programa.service';
-import { HasRoleDirective } from '../../directives/has-role.directive';
+import { PermisoService } from '../../services/permiso.service';
 
 @Component({
   selector: 'app-expediente-lista',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent, HasRoleDirective],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent],
   templateUrl: './expediente.html',
   styleUrls: ['./expediente.scss']
 })
@@ -96,12 +96,25 @@ export class ExpedienteListaComponent implements OnInit, AfterViewInit, OnDestro
     private authService: AuthService,
     private perfilService: PerfilService
     , private programaService: ProgramaService
+    , private permisoService: PermisoService
   ) {
     this.formularioExpediente = this.crearFormulario();
     this.configurarBusqueda();
   }
 
+  // Rutas de permiso del rol actual, para mostrar/ocultar elementos sin roles quemados en el código
+  permisosExpediente: string[] = [];
+
+  /** true si el rol actual tiene el permiso (o sub-permiso) identificado por esa ruta */
+  puedeVer(rutaPermiso: string): boolean {
+    return this.permisosExpediente.includes('*') || this.permisosExpediente.includes(rutaPermiso);
+  }
+
   ngOnInit(): void {
+    this.permisoService.obtenerMisRutas().subscribe({
+      next: (rutas) => this.permisosExpediente = rutas || [],
+      error: () => this.permisosExpediente = []
+    });
     this.cargarProgramas();
     // Suscribirse al perfil para que el sidebar se actualice reactivamente
     this.perfilSubscription = this.perfilService.perfil$.subscribe({
