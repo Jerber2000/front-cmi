@@ -39,44 +39,44 @@
           Dashboard
         </button>
         
-        <button 
-          class="btn-filtro" 
+        <button *ngIf="puedeVerPestana('reporteria-pacientes')"
+          class="btn-filtro"
           [class.active]="tipoReporteActivo === 'pacientes'"
           (click)="cambiarTipoReporte('pacientes')"
         >
           <i class="fas fa-users"></i>
           Pacientes
         </button>
-        
-        <button 
-          class="btn-filtro" 
+
+        <button *ngIf="puedeVerPestana('reporteria-historial')"
+          class="btn-filtro"
           [class.active]="tipoReporteActivo === 'consultas'"
           (click)="cambiarTipoReporte('consultas')"
         >
           <i class="fas fa-stethoscope"></i>
           Historial Clínico
         </button>
-        
-        <button *appHasRole="[1,4,7,9]"
-          class="btn-filtro" 
+
+        <button *ngIf="puedeVerPestana('reporteria-inventario')"
+          class="btn-filtro"
           [class.active]="tipoReporteActivo === 'inventario'"
           (click)="cambiarTipoReporte('inventario')"
         >
           <i class="fas fa-pills"></i>
           Inventario
         </button>
-        
-        <button 
-          class="btn-filtro" 
+
+        <button *ngIf="puedeVerPestana('reporteria-agenda')"
+          class="btn-filtro"
           [class.active]="tipoReporteActivo === 'agenda'"
           (click)="cambiarTipoReporte('agenda')"
         >
           <i class="fas fa-calendar-alt"></i>
           Agenda
         </button>
-        
-        <button 
-          class="btn-filtro" 
+
+        <button *ngIf="puedeVerPestana('reporteria-referencias')"
+          class="btn-filtro"
           [class.active]="tipoReporteActivo === 'referencias'"
           (click)="cambiarTipoReporte('referencias')"
         >
@@ -114,7 +114,7 @@
       <!-- Tarjetas de estadísticas -->
       <div class="stats-grid">
         <!-- Pacientes -->
-        <div class="stat-card pacientes">
+        <div *ngIf="puedeVerPestana('reporteria-pacientes')" class="stat-card pacientes">
           <div class="stat-icon">
             <i class="fas fa-users"></i>
           </div>
@@ -133,7 +133,7 @@
         </div>
 
         <!-- Consultas -->
-        <div class="stat-card consultas">
+        <div *ngIf="puedeVerPestana('reporteria-historial')" class="stat-card consultas">
           <div class="stat-icon">
             <i class="fas fa-stethoscope"></i>
           </div>
@@ -149,7 +149,7 @@
         </div>
 
         <!-- Inventario -->
-        <div *appHasRole="[1,4,7,9]" class="stat-card inventario">
+        <div *ngIf="puedeVerPestana('reporteria-inventario')" class="stat-card inventario">
           <div class="stat-icon">
             <i class="fas fa-pills"></i>
           </div>
@@ -168,7 +168,7 @@
         </div>
 
         <!-- Referencias -->
-        <div class="stat-card referencias">
+        <div *ngIf="puedeVerPestana('reporteria-referencias')" class="stat-card referencias">
           <div class="stat-icon">
             <i class="fas fa-exchange-alt"></i>
           </div>
@@ -187,7 +187,7 @@
         </div>
 
         <!-- Salidas -->
-        <div *appHasRole="[1,4,7,9]" class="stat-card salidas">
+        <div *ngIf="puedeVerPestana('reporteria-inventario')" class="stat-card salidas">
           <div class="stat-icon">
             <i class="fas fa-shipping-fast"></i>
           </div>
@@ -273,6 +273,15 @@
               <option value="">Todos</option>
               <option *ngFor="let programa of programasDisponibles" [value]="programa.idprograma">
                 {{ programa.nombre }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Clínica</label>
+            <select formControlName="fkclinica" class="form-select">
+              <option value="">Todas</option>
+              <option *ngFor="let clinica of clinicasDisponibles" [value]="clinica.idclinica">
+                {{ clinica.nombreclinica }}
               </option>
             </select>
           </div>
@@ -438,7 +447,7 @@
             <label>Médico</label>
             <select formControlName="medico" class="form-select">
               <option value="">Todos</option>
-              <option *ngFor="let medico of medicosDisponibles" [value]="medico.idusuario">
+              <option *ngFor="let medico of medicosHistorial" [value]="medico.idusuario">
                 {{ medico.nombres }} {{ medico.apellidos }}
               </option>
             </select>
@@ -941,7 +950,7 @@
             <label>Médico</label>
             <select formControlName="medico" class="form-select">
               <option value="">Todos</option>
-              <option *ngFor="let doc of medicosDisponibles" [value]="doc.idusuario">{{ doc.nombres }} {{ doc.apellidos }}</option>
+              <option *ngFor="let doc of medicosAgenda" [value]="doc.idusuario">{{ doc.nombres }} {{ doc.apellidos }}</option>
             </select>
           </div>
           <div class="form-group">
@@ -1125,14 +1134,19 @@
             <label>Enviado Por</label>
             <select formControlName="enviadoPor" class="form-select">
               <option value="">Todos</option>
-              <option *ngFor="let medico of medicosDisponibles" [value]="medico.idusuario">
+              <option *ngFor="let medico of medicosReferencias" [value]="medico.idusuario">
                 {{ medico.nombres }} {{ medico.apellidos }}
               </option>
             </select>
           </div>
           <div class="form-group">
             <label>Confirmado Por</label>
-            <input type="text" formControlName="confirmadoPor" class="form-input" placeholder="Buscar por nombre...">
+            <select formControlName="confirmadoPor" class="form-select">
+              <option value="">Todos</option>
+              <option *ngFor="let confirmador of confirmadoresReferencias" [value]="confirmador.usuario">
+                {{ confirmador.nombres }} {{ confirmador.apellidos }}
+              </option>
+            </select>
           </div>
           <div class="form-group">
             <label>Clínica</label>

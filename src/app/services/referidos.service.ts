@@ -41,6 +41,10 @@ export interface Referido {
     cui: string;
     fechanacimiento?: string;
   };
+  expediente?: {
+    idexpediente: number;
+    numeroexpediente: string;
+  };
   clinica?: Clinica;
   usuario?: {
     idusuario: number;

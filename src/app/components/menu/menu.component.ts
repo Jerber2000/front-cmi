@@ -10,16 +10,6 @@ import { ReporteriaService, DashboardData } from '../../services/reporteria.serv
 import { PerfilService } from '../../services/perfil.service';
 import { PermisoService } from '../../services/permiso.service';
 
-// Interface para módulos recomendados
-interface ModuloRecomendado {
-  titulo: string;
-  descripcion: string;
-  icono: string;
-  ruta: string;
-  color: string;
-  roles: number[];
-}
-
 // Interface para módulos principales
 interface ModuloPrincipal {
   titulo: string;
@@ -31,7 +21,6 @@ interface ModuloPrincipal {
     icono: string;
     texto: string;
   }[];
-  roles: number[];
 }
 
 // Interface para información del usuario
@@ -46,6 +35,10 @@ interface UsuarioInfo {
     nombreclinica: string;
   };
   fkclinica?: number;
+  rol?: {
+    idrol: number;
+    nombre: string;
+  };
 }
 
 @Component({
@@ -66,36 +59,14 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
   dashboardData: DashboardData | null = null;
   usuarioActual: UsuarioInfo | null = null;
   mensajeBienvenida = '';
-  modulosRecomendados: ModuloRecomendado[] = [];
   modulosPrincipales: ModuloPrincipal[] = [];
   cargando = true;
   
   private welcomeSubscription?: Subscription;
   private perfilSubscription?: Subscription;
 
-  // Mapeo de roles
-  private readonly rolesMap: { [key: number]: string } = {
-    1: 'Administrador del Sistema',
-    2: 'Médico General',
-    3: 'Enfermera',
-    4: 'Administrador de Clínica',
-    5: 'Director Médico',
-    6: 'Fisioterapeuta',
-    7: 'Psicólogo',
-    8: 'Contador',
-    9: 'Encargado de Inventario',
-    10: 'Técnico de Laboratorio',
-    11: 'Trabajador Social',
-    12: 'Farmacéutico',
-    13: 'Nutricionista',
-    14: 'Asistente Médico',
-    15: 'Educador Especial',
-    16: 'Terapeuta del Lenguaje'
-  };
-
   // Rutas permitidas cargadas desde BD para filtrar las tarjetas del menú
   private rutasPermitidas: string[] = [];
-  private usarFallbackRoles = false;
 
   constructor(
     private authService: AuthService,
@@ -116,12 +87,7 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
     // Perfil siempre visible para cualquier usuario autenticado
     if (ruta === 'perfil') return true;
 
-    // Fallback: si la API falló, usar los roles hardcodeados del módulo
-    if (this.usarFallbackRoles) {
-      return this.authService.hasRole(modulo.roles);
-    }
-
-    // Sin permisos cargados aún → ocultar
+    // Sin permisos cargados aún (o la API falló) → ocultar
     if (!this.rutasPermitidas.length) return false;
 
     return this.rutasPermitidas.includes(ruta);
@@ -131,13 +97,10 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
     // Cargar rutas permitidas para filtrar módulos del menú dinámicamente
     this.permisoService.obtenerMisRutas().subscribe({
       next: rutas => {
-        // null = API falló → usar roles hardcodeados del módulo
         this.rutasPermitidas = rutas ?? [];
-        this.usarFallbackRoles = rutas === null;
       },
       error: () => {
         this.rutasPermitidas = [];
-        this.usarFallbackRoles = true;
       }
     });
 
@@ -216,80 +179,70 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
         descripcion: 'Administra el registro completo de pacientes e información demográfica',
         icono: 'fas fa-users',
         iconoBg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        ruta: '/pacientes',
-        roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+        ruta: '/pacientes'
       },
       {
         titulo: 'Expedientes Médicos',
         descripcion: 'Historiales clínicos completos, diagnósticos y seguimiento médico integral',
         icono: 'fas fa-folder',
         iconoBg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-        ruta: '/expedientes',
-        roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+        ruta: '/expedientes'
       },
       {
         titulo: 'Referencias Médicas',
         descripcion: 'Gestión de referencias a especialistas y contrarreferencias',
         icono: 'fas fa-exchange-alt',
         iconoBg: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
-        ruta: '/referidos',
-        roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+        ruta: '/referidos'
       },
       {
         titulo: 'Mi Perfil',
         descripcion: 'Configuración personal, credenciales y preferencias del sistema',
         icono: 'fas fa-user-alt',
         iconoBg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-        ruta: '/perfil',
-        roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+        ruta: '/perfil'
       },
       {
         titulo: 'Agenda de Citas',
         descripcion: 'Programación y control de citas médicas y horarios',
         icono: 'fas fa-calendar-alt',
         iconoBg: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-        ruta: '/agenda',
-        roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+        ruta: '/agenda'
       },
       {
         titulo: 'Gestión Documental',
         descripcion: 'Administración de documentos, certificados y archivos clínicos',
         icono: 'fas fa-info-circle',
         iconoBg: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-        ruta: '/documentos',
-        roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+        ruta: '/documentos'
       },
       {
         titulo: 'Gestión de Usuarios',
         descripcion: 'Administración de usuarios y permisos del sistema',
         icono: 'fas fa-users-cog',
         iconoBg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        ruta: '/usuario',
-        roles: [1,4,7]
+        ruta: '/usuario'
       },
       {
         titulo: 'Inventario',
         descripcion: 'Control de medicamentos y suministros médicos',
         icono: 'fas fa-boxes',
         iconoBg: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
-        ruta: '/inventario',
-        roles: [1,4,7,9]
+        ruta: '/inventario'
       },
       {
         titulo: 'Salida de Inventario',
         descripcion: 'Registro de salidas y movimientos de inventario',
         icono: 'fas fa-box-open',
         iconoBg: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-        ruta: '/salida-inventario',
-        roles: [1,4,7,9]
+        ruta: '/salida-inventario'
       },
       {
         titulo: 'Reportería',
         descripcion: 'Reportes y estadísticas del sistema',
         icono: 'fas fa-chart-line',
         iconoBg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-        ruta: '/reporteria',
-        roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+        ruta: '/reporteria'
       }
     ];
   }
@@ -298,10 +251,24 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
    * Carga el dashboard general
    */
   cargarDashboard(): void {
-    this.reporteriaService.obtenerDashboard().subscribe({
-      next: (data) => {
-        this.dashboardData = data;
-        this.cargando = false;
+    // Solo pedir el dashboard de Reportería si el rol realmente tiene ese permiso;
+    // si no, ni se intenta la llamada (evita el toast de "no tienes permisos" al entrar al menú)
+    this.permisoService.obtenerMisRutas().subscribe({
+      next: (rutas) => {
+        const tieneAcceso = rutas === null || rutas.includes('*') || rutas.includes('reporteria');
+        if (!tieneAcceso) {
+          this.cargando = false;
+          return;
+        }
+        this.reporteriaService.obtenerDashboard().subscribe({
+          next: (data) => {
+            this.dashboardData = data;
+            this.cargando = false;
+          },
+          error: () => {
+            this.cargando = false;
+          }
+        });
       },
       error: () => {
         this.cargando = false;
@@ -321,11 +288,9 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
         
         if (this.usuarioActual) {
           this.mensajeBienvenida = this.generarMensajeBienvenida(
-            this.usuarioActual.fkrol, 
+            this.usuarioActual.fkrol,
             this.usuarioActual.nombres
           );
-          
-          this.modulosRecomendados = this.obtenerModulosRecomendados(this.usuarioActual.fkrol);
         }
       }
     } catch (error) {
@@ -358,320 +323,6 @@ export class MenuComponent implements OnInit, OnDestroy, AfterViewInit {
     return mensajes[idRol] || 'Bienvenido al Sistema de Clínicas Municipales Inclusivas.';
   }
 
-  /**
-   * Obtiene módulos recomendados según el rol del usuario
-   */
-  private obtenerModulosRecomendados(idRol: number): ModuloRecomendado[] {
-    const modulosPorRol: { [key: number]: ModuloRecomendado[] } = {
-      // Administrador del Sistema
-      1: [
-        {
-          titulo: 'Gestión de Usuarios',
-          descripcion: 'Administra usuarios del sistema',
-          icono: 'fas fa-users-cog',
-          ruta: '/usuario',
-          color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          roles: [1,4,7]
-        },
-        {
-          titulo: 'Reportería General',
-          descripcion: 'Reportes y estadísticas del sistema',
-          icono: 'fas fa-chart-line',
-          ruta: '/reporteria',
-          color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        },
-        {
-          titulo: 'Inventario General',
-          descripcion: 'Control de inventario de todas las clínicas',
-          icono: 'fas fa-boxes',
-          ruta: '/inventario',
-          color: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
-          roles: [1,4,7,9]
-        }
-      ],
-      // Médico General
-      2: [
-        {
-          titulo: 'Expedientes Médicos',
-          descripcion: 'Gestiona historias clínicas',
-          icono: 'fas fa-file-medical',
-          ruta: '/expedientes',
-          color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        },
-        {
-          titulo: 'Agenda de Consultas',
-          descripcion: 'Programa y gestiona citas',
-          icono: 'fas fa-calendar-alt',
-          ruta: '/agenda',
-          color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        },
-        {
-          titulo: 'Referencias Médicas',
-          descripcion: 'Envía y recibe referencias',
-          icono: 'fas fa-exchange-alt',
-          ruta: '/referidos',
-          color: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        }
-      ],
-      // Enfermera
-      3: [
-        {
-          titulo: 'Pacientes',
-          descripcion: 'Registro y seguimiento de pacientes',
-          icono: 'fas fa-users',
-          ruta: '/pacientes',
-          color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        },
-        {
-          titulo: 'Expedientes Médicos',
-          descripcion: 'Consulta y actualiza expedientes',
-          icono: 'fas fa-folder',
-          ruta: '/expedientes',
-          color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        },
-        {
-          titulo: 'Agenda',
-          descripcion: 'Coordina citas y seguimientos',
-          icono: 'fas fa-calendar-check',
-          ruta: '/agenda',
-          color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        }
-      ],
-      // Administrador de Clínica
-      4: [
-        {
-          titulo: 'Gestión de Usuarios',
-          descripcion: 'Administra personal de la clínica',
-          icono: 'fas fa-users-cog',
-          ruta: '/usuario',
-          color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          roles: [1,4,7]
-        },
-        {
-          titulo: 'Inventario de Clínica',
-          descripcion: 'Control de suministros y medicamentos',
-          icono: 'fas fa-boxes',
-          ruta: '/inventario',
-          color: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
-          roles: [1,4,7,9]
-        },
-        {
-          titulo: 'Reportería',
-          descripcion: 'Reportes de la clínica',
-          icono: 'fas fa-chart-bar',
-          ruta: '/reporteria',
-          color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        }
-      ],
-      // Director Médico
-      5: [
-        {
-          titulo: 'Panel de Control',
-          descripcion: 'Supervisión general del sistema',
-          icono: 'fas fa-tachometer-alt',
-          ruta: '/reporteria',
-          color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        },
-        {
-          titulo: 'Gestión de Personal',
-          descripcion: 'Administra el equipo médico',
-          icono: 'fas fa-user-md',
-          ruta: '/usuario',
-          color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          roles: [1,4,7]
-        },
-        {
-          titulo: 'Referencias',
-          descripcion: 'Supervisa referencias médicas',
-          icono: 'fas fa-exchange-alt',
-          ruta: '/referidos',
-          color: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        }
-      ],
-      // Fisioterapeuta
-      6: [
-        {
-          titulo: 'Pacientes',
-          descripcion: 'Gestión de pacientes en terapia',
-          icono: 'fas fa-users',
-          ruta: '/pacientes',
-          color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        },
-        {
-          titulo: 'Expedientes',
-          descripcion: 'Planes de tratamiento',
-          icono: 'fas fa-file-medical',
-          ruta: '/expedientes',
-          color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        },
-        {
-          titulo: 'Agenda',
-          descripcion: 'Sesiones de fisioterapia',
-          icono: 'fas fa-calendar-alt',
-          ruta: '/agenda',
-          color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        }
-      ],
-      // Psicólogo
-      7: [
-        {
-          titulo: 'Pacientes',
-          descripcion: 'Gestión de pacientes',
-          icono: 'fas fa-users',
-          ruta: '/pacientes',
-          color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        },
-        {
-          titulo: 'Expedientes Psicológicos',
-          descripcion: 'Evaluaciones y tratamientos',
-          icono: 'fas fa-file-medical',
-          ruta: '/expedientes',
-          color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        },
-        {
-          titulo: 'Agenda de Consultas',
-          descripcion: 'Sesiones psicológicas',
-          icono: 'fas fa-calendar-alt',
-          ruta: '/agenda',
-          color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        }
-      ],
-      // Contador
-      8: [
-        {
-          titulo: 'Reportería Financiera',
-          descripcion: 'Informes contables',
-          icono: 'fas fa-chart-line',
-          ruta: '/reporteria',
-          color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        },
-        {
-          titulo: 'Inventario',
-          descripcion: 'Control de activos',
-          icono: 'fas fa-boxes',
-          ruta: '/inventario',
-          color: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
-          roles: [1,4,7,9]
-        },
-        {
-          titulo: 'Documentos',
-          descripcion: 'Gestión documental',
-          icono: 'fas fa-file-invoice-dollar',
-          ruta: '/documentos',
-          color: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        }
-      ],
-      // Encargado de Inventario
-      9: [
-        {
-          titulo: 'Inventario',
-          descripcion: 'Gestión completa de inventario',
-          icono: 'fas fa-warehouse',
-          ruta: '/inventario',
-          color: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
-          roles: [1,4,7,9]
-        },
-        {
-          titulo: 'Salida de Inventario',
-          descripcion: 'Registra salidas y movimientos',
-          icono: 'fas fa-box-open',
-          ruta: '/salida-inventario',
-          color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-          roles: [1,4,7,9]
-        },
-        {
-          titulo: 'Reportes de Stock',
-          descripcion: 'Estadísticas de inventario',
-          icono: 'fas fa-chart-pie',
-          ruta: '/reporteria',
-          color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        }
-      ],
-      // Nutricionista
-      13: [
-        {
-          titulo: 'Pacientes',
-          descripcion: 'Gestión de pacientes',
-          icono: 'fas fa-users',
-          ruta: '/pacientes',
-          color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        },
-        {
-          titulo: 'Planes Nutricionales',
-          descripcion: 'Evaluaciones y planes dietéticos',
-          icono: 'fas fa-apple-alt',
-          ruta: '/expedientes',
-          color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        },
-        {
-          titulo: 'Agenda',
-          descripcion: 'Consultas nutricionales',
-          icono: 'fas fa-calendar-alt',
-          ruta: '/agenda',
-          color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-          roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        }
-      ]
-    };
-
-    // Módulos por defecto si el rol no está definido
-    const modulosDefault: ModuloRecomendado[] = [
-      {
-        titulo: 'Pacientes',
-        descripcion: 'Gestión de pacientes',
-        icono: 'fas fa-users',
-        ruta: '/pacientes',
-        color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-      },
-      {
-        titulo: 'Expedientes',
-        descripcion: 'Historiales médicos',
-        icono: 'fas fa-folder',
-        ruta: '/expedientes',
-        color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-        roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-      },
-      {
-        titulo: 'Mi Perfil',
-        descripcion: 'Configuración personal',
-        icono: 'fas fa-user-alt',
-        ruta: '/perfil',
-        color: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-        roles: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-      }
-    ];
-
-    return modulosPorRol[idRol] || modulosDefault;
-  }
-
-  /**
-   * Obtiene el nombre del rol según su ID
-   */
-  obtenerNombreRol(idRol: number): string {
-    return this.rolesMap[idRol] || 'Usuario';
-  }
 
   hideWelcomeMessage(): void {
     this.showWelcomeMessage = false;

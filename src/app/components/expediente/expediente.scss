@@ -103,13 +103,13 @@ $color-info: #17a2b8;
   display: flex;
   align-items: center;
   gap: 10px;
-  flex: 1;
+  flex: 0 1 420px;
   min-width: 0;
 }
 
 .entrada-busqueda {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
+  min-width: 120px;
   padding: 9px 16px;
   border: 2px solid #e1e5e9;
   border-radius: 25px;
@@ -121,6 +121,14 @@ $color-info: #17a2b8;
     border-color: $color-primary-light;
     box-shadow: 0 0 0 3px rgba(91, 168, 146, 0.1);
   }
+}
+
+.informacion-encabezado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .select-clinica {
@@ -139,17 +147,6 @@ $color-info: #17a2b8;
     border-color: $color-primary-light;
     box-shadow: 0 0 0 3px rgba(91, 168, 146, 0.1);
   }
-}
-
-.informacion-fecha {
-  background: white;
-  color: #666;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 500;
-  border: 1px solid #e9ecef;
-  white-space: nowrap;
 }
 
 /* ==========================================
@@ -562,6 +559,13 @@ $color-info: #17a2b8;
   i {
     font-size: 18px;
   }
+}
+
+.subtitulo-seccion {
+  font-size: 12px;
+  font-weight: 400;
+  color: #6c757d;
+  margin-left: 4px;
 }
 
 .grilla-formulario {
@@ -1171,11 +1175,6 @@ $color-info: #17a2b8;
     align-items: center;
   }
 
-  .contenedor-busqueda {
-    flex: 1;
-    min-width: 0;
-  }
-
   .informacion-encabezado {
     flex-shrink: 0;
   }
@@ -1245,8 +1244,14 @@ $color-info: #17a2b8;
   }
 
   .contenedor-busqueda {
-    flex: 1;
+    flex: 1 1 100%;
     min-width: 0;
+    gap: 8px;
+  }
+
+  .informacion-encabezado {
+    flex: 1 1 100%;
+    justify-content: flex-start;
     gap: 8px;
   }
 
@@ -1260,11 +1265,6 @@ $color-info: #17a2b8;
     font-size: 12px;
     width: 130px;
     max-width: 130px;
-  }
-
-  .informacion-fecha {
-    font-size: 11px;
-    padding: 5px 10px;
   }
 
   // Estadísticas

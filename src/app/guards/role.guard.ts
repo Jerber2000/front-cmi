@@ -8,7 +8,8 @@ import { AlertaService } from '../services/alerta.service';
 import { PermisoService } from '../services/permiso.service';
 
 // Roles con acceso total — nunca se validan contra la BD
-const ROLES_SUPERADMIN = [1, 4];
+// Por NOMBRE, no por ID: el idrol de cada uno cambia entre entornos (local/produccion)
+const ROLES_SUPERADMIN = ['Administrador', 'Sistemas'];
 
 // Rutas que no necesitan permiso de BD (accesibles a cualquier autenticado)
 const RUTAS_LIBRES = ['menu', 'bienvenida', 'perfil', 'gestion-permisos'];
@@ -25,10 +26,10 @@ export const roleGuard: CanActivateFn = (route, state): Observable<boolean> | bo
     return false;
   }
 
-  const rol = authService.userRole;
+  const rolNombre = authService.userRoleName;
 
   // Superadmin → acceso total sin consultar BD
-  if (rol !== null && ROLES_SUPERADMIN.includes(rol)) return true;
+  if (rolNombre !== null && ROLES_SUPERADMIN.includes(rolNombre)) return true;
 
   // Extraer primer segmento de la ruta (ej: '/historial/3' → 'historial')
   const ruta = state.url.split('/').filter(Boolean)[0]?.split('?')[0] || '';
@@ -36,7 +37,7 @@ export const roleGuard: CanActivateFn = (route, state): Observable<boolean> | bo
   // Rutas libres para todos los autenticados
   if (RUTAS_LIBRES.includes(ruta)) return true;
 
-  // ── Validación contra BD ─────────────────────────────────────────────────
+  // ── Validación contra BD — único origen de verdad, sin fallback a roles hardcodeados ──
   return permisoSvc.verificarAcceso(ruta).pipe(
     map(tieneAcceso => {
       if (tieneAcceso) return true;
@@ -45,9 +46,9 @@ export const roleGuard: CanActivateFn = (route, state): Observable<boolean> | bo
       return false;
     }),
     catchError(() => {
-      // Fallback: usar roles hardcodeados en data.roles si la BD falla
-      const rolesPermitidos = route.data?.['roles'] as number[] | undefined;
-      if (rolesPermitidos && authService.hasRole(rolesPermitidos)) return of(true);
+      // Si la verificación de permisos falla (ej: API caída), denegar por seguridad
+      // en vez de usar una lista de roles fija en el código.
+      alertaService.alertaError('No se pudo verificar tus permisos. Intenta de nuevo.');
       router.navigate(['/menu']);
       return of(false);
     })

@@ -81,7 +81,7 @@
       <h3>Historial de Sesiones</h3>
       <div class="header-buttons">
 
-        <button *appHasRole="[1,4,10,11]" class="btn-formulario-psicologia" (click)="abrirFormularioPsicologia()">
+        <button *ngIf="puedeVer('historial-examen-mental')" class="btn-formulario-psicologia" (click)="abrirFormularioPsicologia()">
           <i class="fas fa-brain"></i> Examen Mental 
         </button>
         <!--BOTÓN CREAR REFERIDO -->

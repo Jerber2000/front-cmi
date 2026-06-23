@@ -1,4 +1,4 @@
-<div class="content-area" [class.sidebar-expanded]="sidebarExpanded">
+<div class="content-area" [class.sidebar-expanded]="sidebarVisible">
 
   <button class="mobile-menu-btn" (click)="toggleSidebarMobile()" [class.sidebar-open]="sidebarVisible">
     <i class="fas" [class.fa-bars]="!sidebarVisible" [class.fa-times]="sidebarVisible"></i>
@@ -76,7 +76,7 @@
 
       <div class="permisos-grid">
         <label
-          *ngFor="let permiso of permisos"
+          *ngFor="let permiso of permisosPrincipales"
           class="permiso-card"
           [class.activo]="tienePermiso(permiso.idpermiso)"
         >
@@ -92,6 +92,15 @@
             <span class="permiso-nombre">{{ permiso.nombre }}</span>
             <span class="permiso-ruta">/{{ permiso.ruta }}</span>
           </div>
+          <button
+            *ngIf="subPermisosDe(permiso).length > 0 && tienePermiso(permiso.idpermiso)"
+            type="button"
+            class="btn-configurar-pestanas"
+            title="Configurar pestañas"
+            (click)="$event.preventDefault(); $event.stopPropagation(); abrirModalPestanas(permiso)"
+          >
+            <i class="fas fa-sliders-h"></i>
+          </button>
           <div class="permiso-check">
             <i class="fas fa-check-circle" *ngIf="tienePermiso(permiso.idpermiso)"></i>
             <i class="fas fa-circle" *ngIf="!tienePermiso(permiso.idpermiso)"></i>
@@ -99,6 +108,46 @@
         </label>
       </div>
 
+    </div>
+
+    <!-- MODAL: sub-permisos (pestañas) del permiso seleccionado -->
+    <div class="modal-backdrop-pestanas" *ngIf="mostrarModalPestanas && permisoEnModal" (click)="cerrarModalPestanas()">
+      <div class="modal-pestanas" (click)="$event.stopPropagation()">
+        <div class="modal-pestanas-header">
+          <div class="modal-pestanas-title">
+            <i class="fas" [class]="permisoEnModal.icono || 'fa-file'"></i>
+            Pestañas de {{ permisoEnModal.nombre }}
+          </div>
+          <button class="modal-pestanas-close" (click)="cerrarModalPestanas()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <p class="modal-pestanas-subtitulo">
+          Marca a cuáles de estas pestañas puede acceder "{{ rolSeleccionado?.nombre }}".
+        </p>
+        <div class="sub-permisos-grid">
+          <label
+            *ngFor="let hijo of subPermisosDe(permisoEnModal)"
+            class="sub-permiso-card"
+            [class.activo]="tienePermiso(hijo.idpermiso)"
+          >
+            <input
+              type="checkbox"
+              [checked]="tienePermiso(hijo.idpermiso)"
+              (change)="togglePermiso(hijo.idpermiso)"
+            >
+            <i class="fas" [class]="hijo.icono || 'fa-file'"></i>
+            <span>{{ nombreSubPermiso(hijo) }}</span>
+            <i class="fas fa-check-circle check" *ngIf="tienePermiso(hijo.idpermiso)"></i>
+            <i class="fas fa-circle check" *ngIf="!tienePermiso(hijo.idpermiso)"></i>
+          </label>
+        </div>
+        <div class="modal-pestanas-footer">
+          <button class="btn-modal-listo" (click)="cerrarModalPestanas()">
+            <i class="fas fa-check"></i> Listo
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Placeholder cuando no hay rol seleccionado -->
