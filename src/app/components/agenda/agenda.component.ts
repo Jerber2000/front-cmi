@@ -463,10 +463,20 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       });
     } else {
-      // Usuario administrador - puede seleccionar cualquier profesional
-      this.isSelectDisabled = false;
-      this.citaForm.get('fkusuario')?.enable();
-      
+      // Solo el administrador real desbloquea el selector; el resto (personal de
+      // apoyo que no es profesional clinico ni admin) se queda con el bloqueo que
+      // ya aplico configurarFiltroAutomatico(), y cargarCitas() lo hara caer a
+      // "Todos los profesionales" en cuanto vea que no tiene citas propias.
+      const esAdministrador = usuario.rol === 'administrador' ||
+                               usuario.rol === 'admin' ||
+                               usuario.fkrol === 1 ||
+                               usuario.idusuario === 1;
+
+      if (esAdministrador) {
+        this.isSelectDisabled = false;
+        this.citaForm.get('fkusuario')?.enable();
+      }
+
       this.UsuarioService.obtenerProfesionalesAgenda().subscribe({
         next: (response) => {
           if (response.success && response.data) {
