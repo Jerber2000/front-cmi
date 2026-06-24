@@ -882,12 +882,6 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     const usuario = usuarioData ? JSON.parse(usuarioData) : null;
     const usuarioRol = usuario?.fkrol;
     
-    // Determinar si debe pre-seleccionar usuario
-    let usuarioPreseleccionado = '';
-    if (usuarioRol == 2 || usuarioRol == 6 || usuarioRol == 7 || usuarioRol == 12 || usuarioRol == 13 || usuarioRol == 15) {
-      usuarioPreseleccionado = this.getCurrentUserId();
-    }
-
     // Resetear formulario con o sin usuario pre-seleccionado
     this.citaForm.reset({
       fkpaciente: null,
@@ -903,21 +897,27 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
       contactoEncargado: ''
     });
 
+    this.showModal = true;
+
+    // Preseleccionar profesional. Se difiere con setTimeout para que el ng-select
+    // del modal ya exista en el DOM y haya procesado [items] antes de asignarle
+    // un valor (si no, puede quedar visualmente en blanco aunque el FormControl
+    // si tenga el valor correcto).
     if (this.ROLES_PROFESIONAL.includes(usuarioRol)) {
       const currentUserId = parseInt(this.getCurrentUserId());
-      if (this.usuario.some(u => u.idusuario === currentUserId)) {
-        this.citaForm.get('fkusuario')?.setValue(currentUserId);
-      } else {
-        const interval = setInterval(() => {
-          if (this.usuario.some(u => u.idusuario === currentUserId)) {
-            this.citaForm.get('fkusuario')?.setValue(currentUserId);
-            clearInterval(interval);
-          }
-        }, 100);
-      }
+      setTimeout(() => {
+        if (this.usuario.some(u => u.idusuario === currentUserId)) {
+          this.citaForm.get('fkusuario')?.setValue(currentUserId);
+        } else {
+          const interval = setInterval(() => {
+            if (this.usuario.some(u => u.idusuario === currentUserId)) {
+              this.citaForm.get('fkusuario')?.setValue(currentUserId);
+              clearInterval(interval);
+            }
+          }, 100);
+        }
+      });
     }
-
-    this.showModal = true;
 
     const calendarApi = selectInfo.view.calendar;
     calendarApi.unselect();
@@ -1028,25 +1028,29 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
       contactoEncargado: ''
     });
 
-    // Preseleccionar profesional si el rol corresponde
+    this.showModal = true;
+
+    // Preseleccionar profesional si el rol corresponde. Se difiere con setTimeout
+    // para que el ng-select del modal ya exista en el DOM y haya procesado [items]
+    // antes de asignarle un valor (si no, puede quedar visualmente en blanco aunque
+    // el FormControl si tenga el valor correcto).
     if (this.ROLES_PROFESIONAL.includes(usuarioRol)) {
       const currentUserId = parseInt(this.getCurrentUserId());
 
-      // Si la lista ya cargó e incluye al usuario actual, setear directo
-      if (this.usuario.some(u => u.idusuario === currentUserId)) {
-        this.citaForm.get('fkusuario')?.setValue(currentUserId);
-      } else {
-        // Esperar a que cargue la lista (o el fallback que agrega al usuario actual)
-        const interval = setInterval(() => {
-          if (this.usuario.some(u => u.idusuario === currentUserId)) {
-            this.citaForm.get('fkusuario')?.setValue(currentUserId);
-            clearInterval(interval);
-          }
-        }, 100);
-      }
+      setTimeout(() => {
+        if (this.usuario.some(u => u.idusuario === currentUserId)) {
+          this.citaForm.get('fkusuario')?.setValue(currentUserId);
+        } else {
+          // Esperar a que cargue la lista (o el fallback que agrega al usuario actual)
+          const interval = setInterval(() => {
+            if (this.usuario.some(u => u.idusuario === currentUserId)) {
+              this.citaForm.get('fkusuario')?.setValue(currentUserId);
+              clearInterval(interval);
+            }
+          }, 100);
+        }
+      });
     }
-
-    this.showModal = true;
   }
 
   cerrarModal(): void {
