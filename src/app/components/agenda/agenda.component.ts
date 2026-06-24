@@ -183,7 +183,11 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
   usuario: Usuario[] = [];
   paciente: Paciente[] = [];
   private calendarApi: any = null;
-  private readonly ROLES_PROFESIONAL: number[] = [5, 6, 10, 12, 13, 15];
+  // Por NOMBRE, no por ID: el idrol de cada uno cambia entre entornos e incluso
+  // entre momentos distintos del mismo entorno (ya se ha confirmado mas de una vez).
+  private readonly ROLES_PROFESIONAL_NOMBRES: string[] = [
+    'Fisioterapeuta', 'Medico General', 'Psicólogo', 'Odontólogo', 'Nutricionista', 'Psicopedagogo'
+  ];
 
   showModalReporte = false;
   reporteTransportes: any[] = [];
@@ -288,11 +292,9 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
       const usuarioData = localStorage.getItem('usuario');
       if (usuarioData) {
         const usuario = JSON.parse(usuarioData);
-        const esAdministrador = usuario.rol === 'administrador' || 
-                              usuario.rol === 'admin' ||
-                              usuario.fkrol === 1 ||
-                              usuario.idusuario === 1;
-        
+        // Por nombre de rol, no por ID (idrol cambia entre entornos y momentos)
+        const esAdministrador = usuario.rol?.nombre === 'Administrador' || usuario.rol?.nombre === 'Sistemas';
+
         if (!esAdministrador && usuario.idusuario) {
           this.selectedMedico = usuario.idusuario.toString();
           this.isSelectDisabled = true;
@@ -393,11 +395,11 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const usuario = JSON.parse(usuarioData);
-    const usuarioRol = usuario.fkrol;
+    const usuarioRolNombre = usuario.rol?.nombre;
 
     this.loadingUsuarios = true;
 
-    if(this.ROLES_PROFESIONAL.includes(usuarioRol)){
+    if(this.ROLES_PROFESIONAL_NOMBRES.includes(usuarioRolNombre)){
       const currentUserId = this.getCurrentUserId();
       this.selectedMedico = currentUserId;
 
@@ -467,10 +469,7 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
       // apoyo que no es profesional clinico ni admin) se queda con el bloqueo que
       // ya aplico configurarFiltroAutomatico(), y cargarCitas() lo hara caer a
       // "Todos los profesionales" en cuanto vea que no tiene citas propias.
-      const esAdministrador = usuario.rol === 'administrador' ||
-                               usuario.rol === 'admin' ||
-                               usuario.fkrol === 1 ||
-                               usuario.idusuario === 1;
+      const esAdministrador = usuario.rol?.nombre === 'Administrador' || usuario.rol?.nombre === 'Sistemas';
 
       if (esAdministrador) {
         this.isSelectDisabled = false;
@@ -880,8 +879,8 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     // Obtener el usuario actual
     const usuarioData = localStorage.getItem('usuario');
     const usuario = usuarioData ? JSON.parse(usuarioData) : null;
-    const usuarioRol = usuario?.fkrol;
-    
+    const usuarioRolNombre = usuario?.rol?.nombre;
+
     // Resetear formulario con o sin usuario pre-seleccionado
     this.citaForm.reset({
       fkpaciente: null,
@@ -903,7 +902,7 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     // del modal ya exista en el DOM y haya procesado [items] antes de asignarle
     // un valor (si no, puede quedar visualmente en blanco aunque el FormControl
     // si tenga el valor correcto).
-    if (this.ROLES_PROFESIONAL.includes(usuarioRol)) {
+    if (this.ROLES_PROFESIONAL_NOMBRES.includes(usuarioRolNombre)) {
       const currentUserId = parseInt(this.getCurrentUserId());
       setTimeout(() => {
         if (this.usuario.some(u => u.idusuario === currentUserId)) {
@@ -1012,7 +1011,7 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const usuarioData = localStorage.getItem('usuario');
     const usuario = usuarioData ? JSON.parse(usuarioData) : null;
-    const usuarioRol = usuario?.fkrol;
+    const usuarioRolNombre = usuario?.rol?.nombre;
 
     this.citaForm.reset({
       fkpaciente: null,        // null en lugar de '' para ng-select
@@ -1034,7 +1033,7 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     // para que el ng-select del modal ya exista en el DOM y haya procesado [items]
     // antes de asignarle un valor (si no, puede quedar visualmente en blanco aunque
     // el FormControl si tenga el valor correcto).
-    if (this.ROLES_PROFESIONAL.includes(usuarioRol)) {
+    if (this.ROLES_PROFESIONAL_NOMBRES.includes(usuarioRolNombre)) {
       const currentUserId = parseInt(this.getCurrentUserId());
 
       setTimeout(() => {
