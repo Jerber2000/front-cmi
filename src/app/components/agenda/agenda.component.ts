@@ -397,7 +397,7 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.loadingUsuarios = true;
 
-    if(usuarioRol == 2 || usuarioRol == 6 || usuarioRol == 7 || usuarioRol == 12 || usuarioRol == 13 || usuarioRol == 15){
+    if(this.ROLES_PROFESIONAL.includes(usuarioRol)){
       const currentUserId = this.getCurrentUserId();
       this.selectedMedico = currentUserId;
 
@@ -426,7 +426,7 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
                       ...responseUsuario.data,
                       nombreCompleto: `Dr. ${responseUsuario.data.nombres} ${responseUsuario.data.apellidos}`.trim()
                     };
-                    this.usuario.unshift(usuarioConNombre);
+                    this.usuario = [usuarioConNombre, ...this.usuario];
                     this.filtrarPorMedico();
                     this.loadingUsuarios = false;
                     
@@ -729,8 +729,16 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     try {
       this.agendaService.obtenerCitas().subscribe({
         next: (citas: CitaRequest[]) => {
+          // Si el filtro automático (médico sin citas propias) no encuentra nada, mostrar todos
+          if (this.selectedMedico && this.isSelectDisabled) {
+            const tieneCitasPropias = citas.some((c: CitaRequest) => c.fkusuario.toString() === this.selectedMedico);
+            if (!tieneCitasPropias) {
+              this.selectedMedico = '';
+            }
+          }
+
           // Filtrar por médico si está seleccionado
-          const citasFiltradas = this.selectedMedico 
+          const citasFiltradas = this.selectedMedico
             ? citas.filter((c: CitaRequest) => c.fkusuario.toString() === this.selectedMedico)
             : citas;
           
@@ -887,11 +895,11 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (this.ROLES_PROFESIONAL.includes(usuarioRol)) {
       const currentUserId = parseInt(this.getCurrentUserId());
-      if (this.usuario.length > 0) {
+      if (this.usuario.some(u => u.idusuario === currentUserId)) {
         this.citaForm.get('fkusuario')?.setValue(currentUserId);
       } else {
         const interval = setInterval(() => {
-          if (this.usuario.length > 0) {
+          if (this.usuario.some(u => u.idusuario === currentUserId)) {
             this.citaForm.get('fkusuario')?.setValue(currentUserId);
             clearInterval(interval);
           }
@@ -1014,13 +1022,13 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.ROLES_PROFESIONAL.includes(usuarioRol)) {
       const currentUserId = parseInt(this.getCurrentUserId());
 
-      // Si la lista ya cargó, setear directo
-      if (this.usuario.length > 0) {
+      // Si la lista ya cargó e incluye al usuario actual, setear directo
+      if (this.usuario.some(u => u.idusuario === currentUserId)) {
         this.citaForm.get('fkusuario')?.setValue(currentUserId);
       } else {
-        // Esperar a que cargue la lista
+        // Esperar a que cargue la lista (o el fallback que agrega al usuario actual)
         const interval = setInterval(() => {
-          if (this.usuario.length > 0) {
+          if (this.usuario.some(u => u.idusuario === currentUserId)) {
             this.citaForm.get('fkusuario')?.setValue(currentUserId);
             clearInterval(interval);
           }

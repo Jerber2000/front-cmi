@@ -647,7 +647,7 @@
         *ngIf="puedeConfirmar(referidoSeleccionado!)"
         class="btn-confirmar" 
         (click)="confirmarDesdeDetalle()"
-        [disabled]="necesitaDocumentoFinal()"
+        [disabled]="necesitaDocumentoFinal() || subiendoDocumento"
       >
         <i class="fas fa-check"></i> 
         {{ obtenerTextoBotonConfirmar() }}

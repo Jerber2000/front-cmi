@@ -801,7 +801,7 @@ verDetalleReferido(referido: Referido): void {
 
 async confirmarDesdeDetalle(): Promise<void> {
 
-  if (!this.referidoSeleccionado) {
+  if (!this.referidoSeleccionado || this.subiendoDocumento) {
     return;
   }
 
