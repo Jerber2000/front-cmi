@@ -852,3 +852,16 @@
     </div>
   </div>
 </div>
+
+<!-- ============================================================================
+     OVERLAY DE CARGA - SUBIDA DE DOCUMENTOS
+     ============================================================================ -->
+<div class="loading-overlay" *ngIf="subiendoDocumento">
+  <div class="loading-content">
+    <i class="fas fa-spinner fa-spin"></i>
+    <div>
+      <span>Subiendo documento...</span>
+      <small>Puede tardar varios segundos si el archivo es pesado. No cierres esta ventana.</small>
+    </div>
+  </div>
+</div>
