@@ -169,6 +169,10 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
   citasDiaSeleccionado: CitaRequest[] = [];
   selectedMedico: string = '';
   isSelectDisabled: boolean = false;
+  // Distingue el filtro auto-asignado al cargar la pagina (puede caer a "Todos"
+  // si el medico no tiene citas) de una seleccion manual del usuario (esa nunca
+  // se debe revertir, aunque el medico elegido no tenga citas en el mes visible).
+  private filtroEsAutomatico: boolean = false;
   currentView: string = 'dayGridMonth';
   loading = false;
   estadoSeleccionado: 'confirmada' | 'no-presentara' | null = null;
@@ -298,14 +302,17 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
         if (!esAdministrador && usuario.idusuario) {
           this.selectedMedico = usuario.idusuario.toString();
           this.isSelectDisabled = true;
+          this.filtroEsAutomatico = true;
         } else {
           this.selectedMedico = '';
           this.isSelectDisabled = false;
+          this.filtroEsAutomatico = false;
         }
       }
     } catch (error) {
       this.selectedMedico = '';
       this.isSelectDisabled = false;
+      this.filtroEsAutomatico = false;
     }
   }
 
@@ -738,12 +745,16 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     try {
       this.agendaService.obtenerCitas().subscribe({
         next: (citas: CitaRequest[]) => {
-          // Si el filtro automático (médico sin citas propias) no encuentra nada, mostrar todos
-          if (this.selectedMedico && this.isSelectDisabled) {
+          // Si el filtro automático (médico sin citas propias) no encuentra nada, mostrar
+          // todos. Solo aplica mientras el filtro sigue siendo el asignado automáticamente
+          // al cargar la página — una selección manual del usuario nunca se revierte,
+          // aunque el médico elegido no tenga citas en el mes visible.
+          if (this.filtroEsAutomatico && this.selectedMedico && this.isSelectDisabled) {
             const tieneCitasPropias = citas.some((c: CitaRequest) => c.fkusuario.toString() === this.selectedMedico);
             if (!tieneCitasPropias) {
               this.selectedMedico = '';
             }
+            this.filtroEsAutomatico = false;
           }
 
           // Filtrar por médico si está seleccionado
@@ -1483,6 +1494,9 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async filtrarPorMedico(): Promise<void> {
+    // El usuario tomo control manual del filtro: ya no se debe revertir a
+    // "Todos los profesionales" aunque el medico elegido no tenga citas.
+    this.filtroEsAutomatico = false;
     await this.cargarCitas();
   }
 
