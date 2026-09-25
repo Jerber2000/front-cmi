@@ -58,12 +58,15 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           const yaEnLogin = router.url.startsWith('/login');
 
           if (!yaEnLogin) {
-            // Determinar el mensaje apropiado
-            const mensaje = error.error?.message || 'Sesión expirada';
+            // Determinar el mensaje apropiado. Solo se muestra el aviso de
+            // "otro dispositivo" cuando el backend lo dice explícitamente
+            // (ej. login rechazado por límite de sesiones) - cualquier otro
+            // 401 (token vencido, sesión cerrada, servidor reiniciado) usa
+            // el mensaje genérico de sesión expirada, sin inventar la causa.
+            const mensaje = error.error?.message;
 
-            // Mostrar alerta apropiada
-            if (mensaje.includes('otro dispositivo') || mensaje.includes('sesión')) {
-              alerta.alertaInfo('Tu sesión fue cerrada porque iniciaste sesión en otro dispositivo');
+            if (mensaje && mensaje.includes('otro dispositivo')) {
+              alerta.alertaInfo(mensaje);
             } else {
               alerta.alertaError('Sesión expirada. Por favor, inicia sesión nuevamente.');
             }
