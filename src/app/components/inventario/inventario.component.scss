@@ -585,6 +585,13 @@
   }
 
   .pagination-dots { padding: 0 4px; }
+
+  // En pantallas muy angostas, 2 columnas dejan los inputs (unidades,
+  // precio, fechas) demasiado estrechos y provocan scroll horizontal en
+  // el modal - una sola columna se lee mejor y evita el desbordamiento.
+  .form-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .busqueda-grupo {

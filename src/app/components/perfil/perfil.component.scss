@@ -1006,7 +1006,11 @@ $shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.2);
     }
   }
 
+  // En pantallas muy angostas, 2 columnas dejan los inputs demasiado
+  // estrechos y provocan scroll horizontal - una sola columna evita el
+  // desbordamiento.
   .form-row {
+    grid-template-columns: 1fr;
     gap: 8px;
   }
 

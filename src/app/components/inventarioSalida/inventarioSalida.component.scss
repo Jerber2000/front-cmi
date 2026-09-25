@@ -1218,6 +1218,13 @@ textarea.form-control {
     height: 32px;
     font-size: 12px;
   }
+
+  // En pantallas muy angostas, 2 columnas dejan los inputs (cantidad,
+  // fecha, motivo, destino) demasiado estrechos y provocan scroll
+  // horizontal en el modal - una sola columna evita el desbordamiento.
+  .form-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 // ========================

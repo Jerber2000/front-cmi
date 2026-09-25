@@ -1205,6 +1205,15 @@
   }
 }
 
+/* En pantallas muy angostas, 2 columnas dejan los campos del formulario
+   de usuario demasiado estrechos y provocan scroll horizontal en el
+   modal - una sola columna evita el desbordamiento. */
+@media (max-width: 480px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* 🆕 ESTILOS PARA PAGINACIÓN */
 .pagination-container {
   display: flex;

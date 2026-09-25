@@ -1410,7 +1410,11 @@ $color-info: #17a2b8;
     gap: 6px;
   }
 
+  // En pantallas muy angostas, 2 columnas dejan los campos demasiado
+  // estrechos y provocan scroll horizontal - una sola columna evita el
+  // desbordamiento.
   .grilla-formulario {
+    grid-template-columns: 1fr;
     gap: 8px;
     padding: 8px;
   }
