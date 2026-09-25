@@ -1,0 +1,28 @@
+<div class="scanner-overlay" (click)="onCerrar()">
+  <div class="scanner-modal" (click)="$event.stopPropagation()">
+    <div class="scanner-header">
+      <h3><i class="fas fa-camera"></i> Escanear código</h3>
+      <button type="button" class="btn-cerrar" (click)="onCerrar()" aria-label="Cerrar">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="scanner-body">
+      <div *ngIf="iniciando" class="scanner-estado">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Iniciando cámara...</p>
+      </div>
+
+      <div *ngIf="error" class="scanner-estado scanner-error">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>{{ error }}</p>
+      </div>
+
+      <div [id]="scannerElementId" class="scanner-viewport" [class.oculto]="!!error"></div>
+
+      <p class="scanner-ayuda" *ngIf="!error">
+        Apunta la cámara al código de barras del producto
+      </p>
+    </div>
+  </div>
+</div>

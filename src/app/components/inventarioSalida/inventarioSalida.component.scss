@@ -300,6 +300,57 @@
 }
 
 // ========================
+// ESCANEO DE CÓDIGO DE BARRAS (SALIDA)
+// ========================
+.scan-row {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.scan-wrapper {
+  flex: 1;
+}
+
+.btn-escanear-camara {
+  background: linear-gradient(135deg, #2d5f5d, #1f4340);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: linear-gradient(135deg, #1f4340, #16302d);
+    transform: translateY(-2px);
+  }
+}
+
+@media (max-width: 768px) {
+  .scan-row {
+    flex-wrap: wrap;
+  }
+
+  .btn-escanear-camara {
+    flex: 1;
+    justify-content: center;
+
+    .btn-escanear-texto {
+      display: none;
+    }
+  }
+}
+
+// ========================
 // TARJETA PRINCIPAL (TABLA)
 // ========================
 .main-card {

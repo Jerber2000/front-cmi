@@ -1,5 +1,5 @@
 // src/app/components/inventarioSalida/inventarioSalida.component.ts
-import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PerfilService } from '../../services/perfil.service';
 import { Subscription } from 'rxjs';
@@ -18,11 +18,12 @@ import {
 import { ArchivoService } from '../../services/archivo.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AlertaService } from '../../services/alerta.service';
+import { BarcodeScannerComponent } from '../barcode-scanner/barcode-scanner.component';
 
 @Component({
   selector: 'app-inventario-salida',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent, BarcodeScannerComponent],
   templateUrl: './inventarioSalida.component.html',
   styleUrls: ['./inventarioSalida.component.scss']
 })
@@ -71,7 +72,16 @@ export class InventarioSalidaComponent implements OnInit, AfterViewInit, OnDestr
   medicamentoBusqueda: string = '';
   medicamentosFiltrados: Medicamento[] = [];
   mostrarDropdownMed: boolean = false;
-  
+
+  // ESCANEO DE CÓDIGO DE BARRAS (cámara del teléfono o pistola USB/Bluetooth)
+  // La pistola funciona como teclado: escribe el código en este campo y
+  // envía Enter automáticamente, por lo que no requiere lógica adicional.
+  codigoEscaneo = '';
+  mostrarScannerCamara = false;
+  buscandoCodigo = false;
+
+  @ViewChild('cantidadInput') cantidadInputRef?: ElementRef<HTMLInputElement>;
+
   Math = Math;
   
   constructor(
@@ -344,7 +354,72 @@ export class InventarioSalidaComponent implements OnInit, AfterViewInit, OnDestr
     this.mostrarDropdownMed = false;
   }
 
-  onMedicamentoChange(idmedicina: any): void { 
+  // ============ ESCANEO DE CÓDIGO DE BARRAS (SALIDA) ============
+
+  abrirScannerCamara(): void {
+    this.mostrarScannerCamara = true;
+  }
+
+  cerrarScannerCamara(): void {
+    this.mostrarScannerCamara = false;
+  }
+
+  onCodigoEscaneadoCamara(codigo: string): void {
+    this.mostrarScannerCamara = false;
+    this.codigoEscaneo = codigo;
+    this.procesarCodigoEscaneado(codigo);
+  }
+
+  // Se dispara con (keyup.enter) en el input: cubre tanto el Enter manual
+  // como el que envía automáticamente una pistola lectora de códigos.
+  procesarCodigoDesdeInput(): void {
+    const codigo = this.codigoEscaneo.trim();
+    if (!codigo) {
+      return;
+    }
+    this.procesarCodigoEscaneado(codigo);
+  }
+
+  private procesarCodigoEscaneado(codigo: string): void {
+    if (this.buscandoCodigo) {
+      return;
+    }
+    this.buscandoCodigo = true;
+
+    this.inventarioService.buscarPorCodigo(codigo).subscribe({
+      next: (medicamento) => {
+        this.buscandoCodigo = false;
+        this.codigoEscaneo = '';
+
+        if (!medicamento) {
+          this.alerta.alertaError('No se encontró ningún medicamento con ese código');
+          return;
+        }
+
+        if (medicamento.estado === 0) {
+          this.alerta.alertaError(`"${medicamento.nombre}" está inactivo, no se puede registrar salida`);
+          return;
+        }
+
+        if (!medicamento.unidades || medicamento.unidades <= 0) {
+          this.alerta.alertaError(`"${medicamento.nombre}" no tiene stock disponible`);
+          return;
+        }
+
+        this.abrirModalNueva();
+        this.seleccionarMedicamentoDesdeDropdown(medicamento);
+
+        // Enfocar el campo de cantidad para completar el registro rápido
+        setTimeout(() => this.cantidadInputRef?.nativeElement.focus(), 100);
+      },
+      error: () => {
+        this.buscandoCodigo = false;
+        this.alerta.alertaError('Error al buscar el código escaneado');
+      }
+    });
+  }
+
+  onMedicamentoChange(idmedicina: any): void {
     const id = idmedicina ? parseInt(idmedicina.toString()) : null;
     
     if (!id) {

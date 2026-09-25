@@ -103,7 +103,34 @@
         <i class="fas fa-plus"></i> Nueva Salida
       </button>
     </div>
+
+    <!-- ESCANEO DE CÓDIGO (SALIDA): cámara del teléfono o pistola lectora -->
+    <div class="scan-row">
+      <div class="search-wrapper scan-wrapper">
+        <i class="fas fa-barcode search-icon"></i>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Escanea con la pistola o escribe el código y presiona Enter"
+          [(ngModel)]="codigoEscaneo"
+          (keyup.enter)="procesarCodigoDesdeInput()"
+          [disabled]="buscandoCodigo"
+        >
+        <i *ngIf="buscandoCodigo" class="fas fa-spinner fa-spin"></i>
+      </div>
+      <button class="btn-escanear-camara" (click)="abrirScannerCamara()" title="Escanear con la cámara">
+        <i class="fas fa-camera"></i>
+        <span class="btn-escanear-texto">Usar cámara</span>
+      </button>
+    </div>
   </div>
+
+  <!-- MODAL: ESCÁNER DE CÁMARA -->
+  <app-barcode-scanner
+    *ngIf="mostrarScannerCamara"
+    (codigoEscaneado)="onCodigoEscaneadoCamara($event)"
+    (cerrar)="cerrarScannerCamara()"
+  ></app-barcode-scanner>
 
   <!-- LISTA DE SALIDAS -->
   <div class="main-card">
@@ -379,8 +406,9 @@
                   Cantidad 
                   <span class="text-danger">*</span>
                 </label>
-                <input 
-                  type="number" 
+                <input
+                  #cantidadInput
+                  type="number"
                   formControlName="cantidad"
                   class="form-control"
                   [class.is-invalid]="isFieldInvalid('cantidad')"

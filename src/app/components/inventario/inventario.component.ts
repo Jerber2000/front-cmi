@@ -14,11 +14,12 @@ import {
 import { ArchivoService } from '../../services/archivo.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AlertaService } from '../../services/alerta.service';
+import { BarcodeScannerComponent } from '../barcode-scanner/barcode-scanner.component';
 
 @Component({
   selector: 'app-inventario',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, SidebarComponent, BarcodeScannerComponent],
   templateUrl: './inventario.component.html',
   styleUrls: ['./inventario.component.scss']
 })
@@ -58,7 +59,20 @@ export class InventarioComponent implements OnInit, AfterViewInit, OnDestroy {
   // Selección
   medicamentoSeleccionado: Medicamento | null = null;
   modoEdicion = false;
-  
+
+  // ESCANEO DE CÓDIGO DE BARRAS (cámara del teléfono o pistola USB/Bluetooth)
+  // La pistola funciona como teclado: escribe el código en este campo y
+  // envía Enter automáticamente, por lo que no requiere lógica adicional.
+  codigoEscaneo = '';
+  mostrarScannerCamara = false;
+  buscandoCodigo = false;
+
+  // Modal de entrada rápida (sumar stock a un medicamento ya existente)
+  mostrarModalSumarStock = false;
+  medicamentoParaSumar: Medicamento | null = null;
+  cantidadASumar = 1;
+  sumandoStock = false;
+
   Math = Math;
   
   constructor(
@@ -321,6 +335,101 @@ export class InventarioComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (error) => {
         this.alerta.alertaError(error.error?.message || 'Error al crear medicamento');
         this.guardando = false;
+      }
+    });
+  }
+
+  // ============ ESCANEO DE CÓDIGO DE BARRAS (ENTRADA) ============
+
+  abrirScannerCamara(): void {
+    this.mostrarScannerCamara = true;
+  }
+
+  cerrarScannerCamara(): void {
+    this.mostrarScannerCamara = false;
+  }
+
+  onCodigoEscaneadoCamara(codigo: string): void {
+    this.mostrarScannerCamara = false;
+    this.codigoEscaneo = codigo;
+    this.procesarCodigoEscaneado(codigo);
+  }
+
+  // Se dispara con (keyup.enter) en el input: cubre tanto el Enter manual
+  // como el que envía automáticamente una pistola lectora de códigos.
+  procesarCodigoDesdeInput(): void {
+    const codigo = this.codigoEscaneo.trim();
+    if (!codigo) {
+      return;
+    }
+    this.procesarCodigoEscaneado(codigo);
+  }
+
+  private procesarCodigoEscaneado(codigo: string): void {
+    if (this.buscandoCodigo) {
+      return;
+    }
+    this.buscandoCodigo = true;
+
+    this.inventarioService.buscarPorCodigo(codigo).subscribe({
+      next: (medicamento) => {
+        this.buscandoCodigo = false;
+
+        if (medicamento) {
+          // El código ya existe: pedir cantidad y sumar al stock actual
+          this.abrirModalSumarStock(medicamento);
+        } else {
+          // Código nuevo: abrir el modal de creación con el código precargado
+          this.abrirModalNuevo();
+          this.medicamentoForm.patchValue({ codigoproducto: codigo });
+        }
+      },
+      error: () => {
+        this.buscandoCodigo = false;
+        this.alerta.alertaError('Error al buscar el código escaneado');
+      }
+    });
+  }
+
+  abrirModalSumarStock(medicamento: Medicamento): void {
+    this.medicamentoParaSumar = medicamento;
+    this.cantidadASumar = 1;
+    this.mostrarModalSumarStock = true;
+  }
+
+  cerrarModalSumarStock(): void {
+    this.mostrarModalSumarStock = false;
+    this.medicamentoParaSumar = null;
+    this.cantidadASumar = 1;
+    this.codigoEscaneo = '';
+  }
+
+  confirmarSumaStock(): void {
+    if (!this.medicamentoParaSumar || !this.usuarioActual) {
+      return;
+    }
+
+    if (!this.cantidadASumar || this.cantidadASumar <= 0) {
+      this.alerta.alertaError('La cantidad debe ser mayor a 0');
+      return;
+    }
+
+    this.sumandoStock = true;
+
+    this.inventarioService.sumarStock(
+      this.medicamentoParaSumar.idmedicina,
+      this.cantidadASumar,
+      this.usuarioActual.usuario
+    ).subscribe({
+      next: (medicamento) => {
+        this.alerta.alertaExito(`Stock actualizado. Unidades actuales: ${medicamento.unidades}`);
+        this.sumandoStock = false;
+        this.cerrarModalSumarStock();
+        this.cargarMedicamentos();
+      },
+      error: (error) => {
+        this.sumandoStock = false;
+        this.alerta.alertaError(error.error?.message || 'Error al actualizar el stock');
       }
     });
   }

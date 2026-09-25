@@ -663,6 +663,85 @@
 }
 
 /* ====================================
+   ESCANEO DE CÓDIGO DE BARRAS (ENTRADA)
+   ==================================== */
+.scan-container {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.scan-box {
+  input::placeholder {
+    color: #9aa5ab;
+  }
+}
+
+.btn-escanear-camara {
+  background: linear-gradient(135deg, #2c6662, #1f4540);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: linear-gradient(135deg, #1f4540, #163530);
+    transform: translateY(-2px);
+  }
+}
+
+@media (max-width: 768px) {
+  .scan-container {
+    flex-wrap: wrap;
+  }
+
+  .btn-escanear-camara {
+    flex: 1;
+    justify-content: center;
+
+    .btn-escanear-texto {
+      display: none;
+    }
+  }
+}
+
+.modal-sumar-stock {
+  max-width: 420px;
+
+  .scan-medicamento-nombre {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f4540;
+    margin: 0 0 4px;
+  }
+
+  .scan-medicamento-codigo {
+    font-size: 13px;
+    color: #6c757d;
+    margin: 0 0 10px;
+  }
+
+  .scan-medicamento-stock {
+    margin: 0 0 18px;
+    color: #333;
+  }
+
+  .scan-medicamento-resultante {
+    margin: 14px 0 0;
+    color: #2c6662;
+  }
+}
+
+/* ====================================
    TARJETA PRINCIPAL (TABLA)
    ==================================== */
 .main-card {

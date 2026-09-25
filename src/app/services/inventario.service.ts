@@ -131,6 +131,27 @@ export class InventarioService {
     );
   }
 
+  // Buscar medicamento por código de barras/producto (usado por el escáner)
+  buscarPorCodigo(codigo: string): Observable<Medicamento | null> {
+    return this.http.get<ApiResponse<Medicamento | null>>(
+      `${this.apiUrl}/codigo/${encodeURIComponent(codigo)}`,
+      { headers: this.getHeaders() }
+    ).pipe(
+      map(response => response.data ?? null)
+    );
+  }
+
+  // Sumar unidades al stock existente (entrada rápida por código escaneado)
+  sumarStock(id: number, cantidad: number, usuariomodificacion: string): Observable<Medicamento> {
+    return this.http.put<ApiResponse<Medicamento>>(
+      `${this.apiUrl}/${id}/sumar-stock`,
+      { cantidad, usuariomodificacion },
+      { headers: this.getHeaders() }
+    ).pipe(
+      map(response => response.data!)
+    );
+  }
+
   // Métodos auxiliares
   formatearFecha(fecha: string | undefined): string {
     if (!fecha) return 'N/A';

@@ -117,6 +117,83 @@
         </button>
       </div>
     </div>
+
+    <!-- ESCANEO DE CÓDIGO (ENTRADA): cámara del teléfono o pistola lectora -->
+    <div class="scan-container">
+      <div class="search-box scan-box">
+        <i class="fas fa-barcode"></i>
+        <input
+          type="text"
+          placeholder="Escanea con la pistola o escribe el código y presiona Enter"
+          [(ngModel)]="codigoEscaneo"
+          (keyup.enter)="procesarCodigoDesdeInput()"
+          [disabled]="buscandoCodigo"
+        >
+        <i *ngIf="buscandoCodigo" class="fas fa-spinner fa-spin"></i>
+      </div>
+      <button class="btn-escanear-camara" (click)="abrirScannerCamara()" title="Escanear con la cámara">
+        <i class="fas fa-camera"></i>
+        <span class="btn-escanear-texto">Usar cámara</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: ESCÁNER DE CÁMARA -->
+  <app-barcode-scanner
+    *ngIf="mostrarScannerCamara"
+    (codigoEscaneado)="onCodigoEscaneadoCamara($event)"
+    (cerrar)="cerrarScannerCamara()"
+  ></app-barcode-scanner>
+
+  <!-- MODAL: SUMAR STOCK (código ya existente) -->
+  <div class="modal-backdrop" *ngIf="mostrarModalSumarStock" (click)="cerrarModalSumarStock()">
+    <div class="modal-content modal-sumar-stock" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="fas fa-boxes"></i> Entrada de Stock</h3>
+        <button class="modal-close" (click)="cerrarModalSumarStock()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body" *ngIf="medicamentoParaSumar">
+        <p class="scan-medicamento-nombre">{{ medicamentoParaSumar.nombre }}</p>
+        <p class="scan-medicamento-codigo" *ngIf="medicamentoParaSumar.codigoproducto">
+          Código: {{ medicamentoParaSumar.codigoproducto }}
+        </p>
+        <p class="scan-medicamento-stock">
+          Stock actual: <strong>{{ medicamentoParaSumar.unidades }}</strong> unidades
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Unidades que ingresan *</label>
+          <input
+            type="number"
+            class="form-input"
+            min="1"
+            [(ngModel)]="cantidadASumar"
+            [ngModelOptions]="{standalone: true}"
+          >
+        </div>
+
+        <p class="scan-medicamento-resultante" *ngIf="cantidadASumar > 0">
+          Stock resultante: <strong>{{ medicamentoParaSumar.unidades + cantidadASumar }}</strong> unidades
+        </p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancelar" (click)="cerrarModalSumarStock()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button
+          class="btn-guardar"
+          (click)="confirmarSumaStock()"
+          [disabled]="sumandoStock || !cantidadASumar || cantidadASumar <= 0"
+        >
+          <span *ngIf="sumandoStock"><i class="fas fa-spinner fa-spin"></i> Guardando...</span>
+          <span *ngIf="!sumandoStock"><i class="fas fa-save"></i> Confirmar entrada</span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- TABLA DE MEDICAMENTOS -->

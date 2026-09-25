@@ -1,0 +1,121 @@
+.scanner-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.scanner-modal {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.scanner-header {
+  background: linear-gradient(135deg, #2c6662, #1f4540);
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.btn-cerrar {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.35);
+  }
+}
+
+.scanner-body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.scanner-viewport {
+  width: 100%;
+  min-height: 260px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+
+  &.oculto {
+    display: none;
+  }
+
+  ::ng-deep video {
+    border-radius: 10px;
+    width: 100% !important;
+  }
+}
+
+.scanner-estado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 30px 10px;
+  color: #555;
+
+  i {
+    font-size: 26px;
+    color: #2c6662;
+  }
+
+  p {
+    margin: 0;
+    text-align: center;
+  }
+}
+
+.scanner-error {
+  i {
+    color: #c0392b;
+  }
+  p {
+    color: #c0392b;
+  }
+}
+
+.scanner-ayuda {
+  margin: 0;
+  font-size: 13px;
+  color: #777;
+  text-align: center;
+}
