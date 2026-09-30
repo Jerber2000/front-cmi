@@ -11,8 +11,14 @@ import { PermisoService } from '../services/permiso.service';
 // Por NOMBRE, no por ID: el idrol de cada uno cambia entre entornos (local/produccion)
 const ROLES_SUPERADMIN = ['Administrador', 'Sistemas'];
 
-// Rutas que no necesitan permiso de BD (accesibles a cualquier autenticado)
-const RUTAS_LIBRES = ['menu', 'bienvenida', 'perfil', 'gestion-permisos'];
+// Rutas que no necesitan permiso de BD (accesibles a cualquier autenticado).
+// OJO: 'gestion-permisos' NO va aquí a propósito — el sidebar ya la oculta
+// para quien no tenga ese permiso asignado (hoy, nadie salvo superadmin), así
+// que el guard debe exigir el mismo permiso en vez de dejarla libre; si no,
+// cualquier usuario podía entrar escribiendo la URL directamente y se topaba
+// con una pantalla vacía (el backend igual le rechazaba los datos con 403,
+// no había fuga de información, pero la experiencia quedaba inconsistente).
+const RUTAS_LIBRES = ['menu', 'bienvenida', 'perfil'];
 
 export const roleGuard: CanActivateFn = (route, state): Observable<boolean> | boolean => {
   const authService  = inject(AuthService);
